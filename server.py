@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-CargoMatch unified server — board UI + capacity/demand ingest APIs.
+ForwardDesk unified server — board UI + capacity/demand ingest APIs.
 
 Python 3 stdlib only. Bind 0.0.0.0; PORT from env (default 8080).
 
@@ -184,7 +184,7 @@ def board_capacity() -> list[dict]:
 
 
 class Handler(BaseHTTPRequestHandler):
-    server_version = "CargoMatch/0.3"
+    server_version = "ForwardDesk/0.3"
 
     def log_message(self, fmt: str, *args) -> None:
         sys.stderr.write("[%s] %s\n" % (self.log_date_time_string(), fmt % args))
@@ -236,7 +236,7 @@ class Handler(BaseHTTPRequestHandler):
                 200,
                 {
                     "ok": True,
-                    "service": "cargomatch",
+                    "service": "forwarddesk",
                     "capacity_rows": len(store.all()),
                     "demand_rows": len(demand_store.all()),
                     "matchable_rfqs": len(demand_store.matchable()),
@@ -622,7 +622,7 @@ def main() -> None:
         )
     httpd = ThreadingHTTPServer(("0.0.0.0", PORT), Handler)
     print("=" * 64, flush=True)
-    print("  CargoMatch · board + capacity/demand ingest")
+    print("  ForwardDesk · board + capacity/demand ingest")
     print(f"  Board    →  http://0.0.0.0:{PORT}/")
     print(f"  Capacity →  http://0.0.0.0:{PORT}/capacity")
     print(f"  Demand   →  http://0.0.0.0:{PORT}/demand")

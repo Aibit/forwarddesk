@@ -1,10 +1,11 @@
-# Product note — CargoMatch forwarder desk
+# Product note — ForwardDesk
 
 ## Wedge
 
+**Product:** ForwardDesk — region-agnostic freight-forwarder quoting desk.  
 **Primary user:** freight forwarder desk quoting shippers and buying carrier soft space.  
-**Corridor:** UAE ↔ KSA (Dubai / Jebel Ali / Abu Dhabi / Sharjah ↔ Riyadh / Jeddah / Dammam / NEOM).  
-**Modes:** road truck + air cargo handoff.  
+**Lane / corridor:** a **filter and data attribute** on RFQs and capacity — not the product identity. Demo seed includes UAE↔KSA plus other example lanes.  
+**Modes:** road truck + air cargo handoff (ocean/air booking APIs still out of scope).  
 **Problem:** Forwarders juggle customer RFQs (max sell) against buy-side soft capacity (rate bands, ETA, reliability, border/compliance). Margin is the desk KPI; humans still confirm with carriers — no auto-book / payments.
 
 ## What this prototype proves
@@ -21,19 +22,20 @@
 - No real bookings, customs, insurance, or settlement  
 - Ocean/air **booking** APIs still require commercial credentials  
 - Schedules/listings ingested are **not** leftover soft space  
+- Not locked to a single corridor — lane is a desk filter
 
 ## Capacity ingest (shipped)
 
 Public soft-capacity **discovery** + carrier **publish intake** (`ingest/`, `/capacity`).  
-Working sources: Saudia Cargo freighter CSV, OpenFlights UAE↔KSA routes, adsb.fi DXB traffic.  
+Working sources include Saudia Cargo freighter CSV, OpenFlights route samples, adsb.fi DXB traffic (demo feeds; more lanes welcome).  
 See CAPACITY_SOURCES.md.
 
 ## Demand ingest (shipped)
 
 Soft-demand **discovery** + shipper **publish intake** (`/demand`) — surfaces as customer RFQs on the desk.  
-Working: LoadUp public loads (`public_rfq`), BidsFactory UAE logistics tenders, Comtrade ARE→SAU (**proxy**).  
+Working: LoadUp public loads (`public_rfq`), BidsFactory logistics tenders, Comtrade trade proxies.  
 Etimad / eSupply / TruKKer blocked or auth. Strategy: [DEMAND.md](./DEMAND.md).
 
 ## Next product steps
 
-Programmable compliance packs per border, human-in-the-loop approval SLAs, credentialed DCSA/SeaRates schedule APIs, road TMS soft-space feeds, quote PDF / email handoff.
+Programmable compliance packs per border/lane, human-in-the-loop approval SLAs, credentialed DCSA/SeaRates schedule APIs, road TMS soft-space feeds, quote PDF / email handoff.

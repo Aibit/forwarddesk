@@ -1,6 +1,6 @@
-# CargoMatch — UAE ↔ KSA agentic cargo matching (prototype)
+# ForwardDesk — forwarder quoting desk (prototype)
 
-Interactive demo of an **agentic supply–demand matching** wedge for the Middle East corridor (UAE–KSA): shipper RFQs, soft carrier capacity, match negotiation, compliance veto, booking under policy, and exception rematch.
+Interactive demo of a **freight-forwarder quoting desk**: customer RFQs, buy-side soft capacity, buy/sell/margin quotes, match negotiation, compliance veto, booking under policy, and exception rematch. Lane/corridor is a filter on the data — not the product identity (demo seed still includes UAE↔KSA plus other example lanes).
 
 > **Demo only.** No real bookings, carrier APIs, payments, or customs filings. Carrier names are illustrative.
 
