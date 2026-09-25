@@ -2,8 +2,8 @@
 
 ## Wedge
 
-**Product:** ForwardDesk — region-agnostic freight-forwarder quoting desk.  
-**Primary user:** freight forwarder desk quoting shippers and buying carrier soft space.  
+**Product:** ForwardDesk — sales + quoting tool for freight forwarders (pitch the lane, then lock buy/sell) — not only an ops matcher.  
+**Primary user:** freight forwarder desk pitching shippers and buying carrier soft space.  
 **Lane / corridor:** a **filter and data attribute** on RFQs and capacity — not the product identity. Demo seed includes UAE↔KSA plus other example lanes.  
 **Modes:** road truck + air cargo handoff (ocean/air booking APIs still out of scope).  
 **Problem:** Forwarders juggle customer RFQs (max sell) against buy-side soft capacity (rate bands, ETA, reliability, border/compliance). Margin is the desk KPI; humans still confirm with carriers — no auto-book / payments.

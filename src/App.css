@@ -22,7 +22,7 @@
   color: var(--text);
   background: var(--bg);
   line-height: 1.35;
-  font-size: 16px;
+  font-size: 20px;
 }
 
 * {
@@ -57,7 +57,7 @@ body {
   justify-content: space-between;
   gap: 0.75rem;
   flex-wrap: wrap;
-  padding: 0.4rem 0.75rem;
+  padding: 0.45rem 0.85rem;
   background: var(--panel);
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
@@ -164,7 +164,7 @@ body {
   align-items: center;
   gap: 0.75rem;
   flex-wrap: wrap;
-  padding: 0.35rem 0.75rem;
+  padding: 0.4rem 0.85rem;
   background: var(--row-selected);
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
@@ -282,13 +282,13 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.06em;
   text-align: left;
-  padding: 0.35rem 0.5rem;
+  padding: 0.4rem 0.55rem;
   border-bottom: 1px solid var(--border);
   white-space: nowrap;
 }
 
 .data-table td {
-  padding: 0.35rem 0.5rem;
+  padding: 0.4rem 0.55rem;
   border-bottom: 1px solid var(--border);
   vertical-align: middle;
   white-space: nowrap;
@@ -879,4 +879,359 @@ body {
 .stamp-booked {
   font-size: 0.58rem;
   letter-spacing: 0.02em;
+}
+
+/* ── Desk / Pitch view toggle ── */
+.view-toggle {
+  display: inline-flex;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-right: 0.35rem;
+}
+
+.view-toggle button {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-family: var(--font);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 0.35rem 0.7rem;
+  cursor: pointer;
+}
+
+.view-toggle button.active {
+  background: var(--amber);
+  color: #12100e;
+}
+
+.view-toggle button:not(.active):hover {
+  background: var(--row-hover);
+  color: var(--text);
+}
+
+.ops-grid.pitch-mode {
+  grid-template-columns: minmax(240px, 0.85fr) minmax(420px, 1.8fr) minmax(220px, 0.75fr);
+}
+
+.match-ticket.selected-pitch {
+  box-shadow: inset 3px 0 0 var(--amber), 0 0 0 1px var(--amber);
+  background: var(--row-selected);
+}
+
+/* ── Sales pitch / route simulation ── */
+.sales-sim {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  background:
+    radial-gradient(ellipse 80% 50% at 50% 0%, rgba(245, 166, 35, 0.08), transparent 60%),
+    var(--bg);
+  overflow: auto;
+}
+
+.sales-sim-empty {
+  margin: auto;
+  text-align: center;
+  color: var(--muted);
+  padding: 2rem;
+}
+
+.sales-sim-empty strong {
+  display: block;
+  color: var(--text);
+  font-size: 1.1rem;
+  margin-bottom: 0.4rem;
+}
+
+.sales-sim-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 0.85rem 1rem 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.sales-kicker {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.14em;
+  color: var(--amber);
+  margin-bottom: 0.25rem;
+}
+
+.sales-shipper {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.sales-meta {
+  margin-top: 0.25rem;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.sales-badges {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.sales-mode-badge {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  padding: 0.3rem 0.55rem;
+  border: 1px solid var(--amber);
+  color: var(--amber);
+  background: var(--amber-dim);
+  border-radius: var(--radius);
+}
+
+.sales-pressure {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  padding: 0.3rem 0.55rem;
+  border: 1px solid var(--border-strong);
+  color: var(--muted);
+  border-radius: var(--radius);
+}
+
+.sales-pressure.tight {
+  color: var(--warn);
+  border-color: var(--warn);
+}
+
+.sales-pressure.hot {
+  color: var(--veto);
+  border-color: var(--veto);
+  background: var(--veto-dim);
+}
+
+.sales-route-labels {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.25rem;
+  padding: 1.1rem 1rem 0.4rem;
+  flex-wrap: wrap;
+}
+
+.sales-endpoint {
+  text-align: center;
+  min-width: 8rem;
+}
+
+.sales-endpoint-kicker {
+  display: block;
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.16em;
+  color: var(--muted);
+  margin-bottom: 0.2rem;
+}
+
+.sales-endpoint-city {
+  display: block;
+  font-size: 1.75rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1.1;
+}
+
+.sales-endpoint.origin .sales-endpoint-city {
+  color: var(--text);
+}
+
+.sales-endpoint.dest .sales-endpoint-city {
+  color: var(--amber);
+}
+
+.sales-route-arrow {
+  font-size: 1.5rem;
+  color: var(--amber);
+  opacity: 0.7;
+}
+
+.sales-map-wrap {
+  margin: 0.5rem 1rem;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.sales-map {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 280px;
+}
+
+.sales-grid {
+  stroke: var(--border);
+  stroke-width: 0.6;
+  opacity: 0.45;
+}
+
+.sales-arc {
+  stroke-dasharray: 8 6;
+  animation: sales-dash 18s linear infinite;
+}
+
+@keyframes sales-dash {
+  to {
+    stroke-dashoffset: -280;
+  }
+}
+
+.sales-dot {
+  fill: var(--amber);
+  stroke: #12100e;
+  stroke-width: 2;
+}
+
+.sales-dot.origin {
+  fill: var(--text);
+}
+
+.sales-svg-label {
+  fill: var(--muted);
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+}
+
+.sales-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+}
+
+@media (max-width: 900px) {
+  .sales-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.sales-stat {
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.65rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.sales-stat-label {
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+}
+
+.sales-stat-value {
+  font-size: 1.55rem;
+  font-weight: 600;
+  color: var(--amber);
+  line-height: 1.15;
+}
+
+.sales-stat-sm {
+  font-size: 1.05rem !important;
+}
+
+.sales-unit {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--muted);
+  margin-left: 0.15rem;
+}
+
+.sales-stat-sub {
+  font-size: 0.68rem;
+  color: var(--muted);
+}
+
+.sales-quote-callouts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.55rem;
+  padding: 0 1rem 1.1rem;
+}
+
+.sales-callout {
+  border-radius: var(--radius);
+  border: 1px solid var(--border-strong);
+  padding: 0.85rem 0.9rem;
+  background: var(--panel);
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.sales-callout.sell {
+  border-color: var(--amber);
+  background: linear-gradient(160deg, var(--amber-dim), var(--panel));
+}
+
+.sales-callout.margin {
+  border-color: var(--pass);
+  background: linear-gradient(160deg, var(--pass-dim), var(--panel));
+}
+
+.sales-callout-label {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.14em;
+  color: var(--muted);
+}
+
+.sales-callout-value {
+  font-size: 1.85rem;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.1;
+}
+
+.sales-callout.sell .sales-callout-value {
+  color: var(--amber);
+}
+
+.sales-callout.margin .sales-callout-value {
+  color: var(--pass);
+}
+
+.sales-callout-pct {
+  font-size: 0.95rem;
+  font-weight: 600;
+  opacity: 0.85;
+}
+
+.sales-quote-hint {
+  margin: 0 1rem 1.1rem;
+  padding: 0.75rem 0.9rem;
+  border: 1px dashed var(--border-strong);
+  color: var(--muted);
+  font-size: 0.85rem;
+  background: var(--panel);
+  border-radius: var(--radius);
+}
+
+.sales-quote-hint strong {
+  color: var(--amber);
 }

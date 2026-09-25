@@ -5,6 +5,7 @@ import { CapacityForm } from './components/CapacityForm';
 import { LiveBoard } from './components/LiveBoard';
 import { MatchCards } from './components/MatchCards';
 import { RfqForm } from './components/RfqForm';
+import { SalesSim } from './components/SalesSim';
 import { AGENT_META, initialCapacity, initialRfqs } from './data';
 import { buildProposals } from './matching';
 import type {
@@ -42,7 +43,7 @@ function App() {
       id: 'boot-1',
       agent: 'System',
       role: 'system',
-      text: 'ForwardDesk online · multi-lane quoting · buy carrier soft space · human confirm only.',
+      text: 'ForwardDesk online · sales + quoting for forwarders · pitch the lane, then lock buy/sell · human confirm only.',
       ts: nowLabel(),
       tone: 'info',
     },
@@ -51,6 +52,8 @@ function App() {
   const [busy, setBusy] = useState(false);
   const [showRfqForm, setShowRfqForm] = useState(false);
   const [showCapForm, setShowCapForm] = useState(false);
+  const [viewMode, setViewMode] = useState<'desk' | 'pitch'>('desk');
+  const [selectedProposalId, setSelectedProposalId] = useState<string | null>(null);
 
   const pushMsg = useCallback(
     (
@@ -512,6 +515,29 @@ function App() {
 
   const selected = rfqs.find((r) => r.id === selectedRfqId);
 
+  const rfqProposals = proposals.filter(
+    (p) =>
+      p.rfqId === selectedRfqId &&
+      (p.status === 'proposed' || p.status === 'vetoed' || p.status === 'booked')
+  );
+  const selectedProposal =
+    rfqProposals.find((p) => p.id === selectedProposalId) ??
+    rfqProposals
+      .filter((p) => p.compliance === 'pass' && p.status !== 'vetoed')
+      .sort((a, b) => b.score - a.score)[0] ??
+    rfqProposals[0] ??
+    null;
+
+  useEffect(() => {
+    // Drop stale selection when RFQ/proposals change
+    if (
+      selectedProposalId &&
+      !proposals.some((p) => p.id === selectedProposalId && p.rfqId === selectedRfqId)
+    ) {
+      setSelectedProposalId(null);
+    }
+  }, [selectedRfqId, proposals, selectedProposalId]);
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.defaultPrevented || e.metaKey || e.ctrlKey || e.altKey) return;
@@ -550,7 +576,7 @@ function App() {
           <div className="logo">FD</div>
           <div>
             <h1>FORWARDDESK</h1>
-            <p className="corridor">MULTI-LANE QUOTING DESK</p>
+            <p className="corridor">SALES + QUOTING DESK</p>
           </div>
         </div>
         <div className="top-meta">
@@ -585,6 +611,22 @@ function App() {
           <a href="/capacity">/capacity</a>
         </div>
         <div className="top-actions">
+          <div className="view-toggle" role="group" aria-label="Desk or Pitch view">
+            <button
+              type="button"
+              className={viewMode === 'desk' ? 'active' : ''}
+              onClick={() => setViewMode('desk')}
+            >
+              Desk
+            </button>
+            <button
+              type="button"
+              className={viewMode === 'pitch' ? 'active' : ''}
+              onClick={() => setViewMode('pitch')}
+            >
+              Pitch
+            </button>
+          </div>
           <button
             type="button"
             className="btn ghost sm"
@@ -662,7 +704,7 @@ function App() {
         </div>
       )}
 
-      <main className="ops-grid">
+      <main className={`ops-grid ${viewMode === 'pitch' ? 'pitch-mode' : ''}`}>
         <section className="ops-col" aria-label="Customer RFQs and buy-side capacity">
           <LiveBoard
             rfqs={rfqs}
@@ -671,17 +713,26 @@ function App() {
             onSelectRfq={setSelectedRfqId}
           />
         </section>
-        <section className="ops-col" aria-label="Quote workbench">
-          <MatchCards
-            proposals={proposals}
-            rfqs={rfqs}
-            capacity={capacity}
-            busy={busy}
-            selectedRfqId={selectedRfqId}
-            onAccept={(id) => void acceptBook(id)}
-            onException={(id, reason) => void triggerException(id, reason)}
-            onRunMatch={() => void runMatch()}
-          />
+        <section
+          className="ops-col"
+          aria-label={viewMode === 'pitch' ? 'Sales pitch simulation' : 'Quote workbench'}
+        >
+          {viewMode === 'pitch' ? (
+            <SalesSim rfq={selected ?? null} proposal={selectedProposal} />
+          ) : (
+            <MatchCards
+              proposals={proposals}
+              rfqs={rfqs}
+              capacity={capacity}
+              busy={busy}
+              selectedRfqId={selectedRfqId}
+              selectedProposalId={selectedProposal?.id ?? null}
+              onSelectProposal={setSelectedProposalId}
+              onAccept={(id) => void acceptBook(id)}
+              onException={(id, reason) => void triggerException(id, reason)}
+              onRunMatch={() => void runMatch()}
+            />
+          )}
         </section>
         <aside className="ops-col" aria-label="Ops log">
           <AgentFeed messages={messages} />
@@ -692,7 +743,7 @@ function App() {
         <span>
           <kbd>R</kbd> build quotes on selected RFQ
         </span>
-        <span>ForwardDesk · human confirm · no payments/auto-book</span>
+        <span>ForwardDesk · sales + quoting · pitch lane then lock buy/sell · human confirm</span>
         <span>Schedules ≠ soft leftover</span>
       </footer>
 

@@ -1,6 +1,6 @@
 # ForwardDesk — forwarder quoting desk (prototype)
 
-Interactive demo of a **freight-forwarder quoting desk**: customer RFQs, buy-side soft capacity, buy/sell/margin quotes, match negotiation, compliance veto, booking under policy, and exception rematch. Lane/corridor is a filter on the data — not the product identity (demo seed still includes UAE↔KSA plus other example lanes).
+Interactive demo of a **freight-forwarder sales + quoting desk** (pitch the lane, then lock buy/sell): customer RFQs, buy-side soft capacity, buy/sell/margin quotes, match negotiation, compliance veto, booking under policy, and exception rematch. Lane/corridor is a filter on the data — not the product identity (demo seed still includes UAE↔KSA plus other example lanes).
 
 > **Demo only.** No real bookings, carrier APIs, payments, or customs filings. Carrier names are illustrative.
 
@@ -39,10 +39,6 @@ API endpoints:
 | `POST /api/capacity/reload` | Confirms files readable (GET already re-reads) |
 
 If the API is unreachable (e.g. opened `dist/index.html` as a file), the UI falls back to **Seed data (offline)** from `src/data.ts`. A banner shows **Data source: TMS stub (CSV)** vs **Seed data (offline)**.
-
-### GitHub Pages (static UI)
-
-The static board is published at [aibit.github.io/forwarddesk](https://aibit.github.io/forwarddesk/). GitHub Pages does not provide the Python `/api/*` endpoints, so the Vite build uses `base: '/forwarddesk/'` and `loadBoardData` gracefully falls back to `initialCapacity` and `initialRfqs` when the live API is unavailable. The seed desk remains fully interactive; run `python3 server.py` for live TMS/ingest data.
 
 
 

@@ -1,6 +1,33 @@
+# Python
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
+*.egg-info/
+.venv/
+venv/
+
+# Secrets / local env
 .env
-.cache/
+.env.local
+.env.*.local
+!.env.example
+
+# Node (frontend rebuild only)
 node_modules/
+*.local
+
+# Logs / OS
+logs/
+*.log
 .DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Transient store / cache writes
+data/*.tmp
+data/*.jsonl.tmp
+cache/*.tmp
+
+# Keep dist/ committed for Python-only deploys (no npm on host)
+# Keep tms-stub/, data/*.jsonl seed, cache/*.dat OpenFlights seeds

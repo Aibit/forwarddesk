@@ -6,6 +6,8 @@ interface Props {
   capacity: CapacityOffer[];
   busy: boolean;
   selectedRfqId: string | null;
+  selectedProposalId?: string | null;
+  onSelectProposal?: (matchId: string) => void;
   onAccept: (matchId: string) => void;
   onException: (matchId: string, reason: string) => void;
   onRunMatch: () => void;
@@ -17,6 +19,8 @@ export function MatchCards({
   capacity,
   busy,
   selectedRfqId,
+  selectedProposalId = null,
+  onSelectProposal,
   onAccept,
   onException,
   onRunMatch,
@@ -83,10 +87,24 @@ export function MatchCards({
                 const isVeto = p.compliance === 'veto' || p.status === 'vetoed';
                 const marginClass =
                   p.marginPct >= 12 ? 'margin-ok' : p.marginPct > 0 ? 'margin-thin' : 'margin-neg';
+                const isSelected = selectedProposalId === p.id;
                 return (
                   <article
                     key={p.id}
-                    className={`match-ticket ${isVeto ? 'vetoed' : ''} ${isBooked ? 'booked' : ''}`}
+                    className={`match-ticket ${isVeto ? 'vetoed' : ''} ${isBooked ? 'booked' : ''} ${isSelected ? 'selected-pitch' : ''}`}
+                    onClick={() => onSelectProposal?.(p.id)}
+                    role={onSelectProposal ? 'button' : undefined}
+                    tabIndex={onSelectProposal ? 0 : undefined}
+                    onKeyDown={
+                      onSelectProposal
+                        ? (e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              onSelectProposal(p.id);
+                            }
+                          }
+                        : undefined
+                    }
                   >
                     <div
                       className={`stamp ${
