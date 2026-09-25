@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: cargomatch
+    runtime: python
+    plan: free
+    buildCommand: "true"
+    startCommand: python server.py
+    envVars:
+      - key: PORT
+        value: "8080"

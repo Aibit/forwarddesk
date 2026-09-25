@@ -1,0 +1,10 @@
+id,carrier,mode,origin,destination,availableWeightKg,availableVolumeCbm,rateMinUsd,rateMaxUsd,departureStart,departureEnd,reliability,hazmatCapable,borderDocsOk,restrictedCapable,etaHours,notes
+CAP-501,RegionalFleet Logistics,road,Jebel Ali,Riyadh,8000,40,1600,2100,2026-09-23 06:00,2026-09-23 14:00,92,false,true,false,18,FTL soft hold · GST window
+CAP-502,Aramex Freight (demo),road+air,Dubai,Jeddah,2000,12,3200,4100,2026-09-23 10:00,2026-09-23 16:00,96,false,true,false,10,Air handoff DXB
+CAP-503,GulfHaul Express,road,Abu Dhabi,Riyadh,12000,55,1400,1850,2026-09-24 04:00,2026-09-24 12:00,88,false,true,false,20,Bulk lane soft capacity
+CAP-504,SafeChem Transport,road,Sharjah,Dammam,5000,25,2400,3200,2026-09-24 08:00,2026-09-24 18:00,94,true,true,false,16,ADR/hazmat-licensed fleet
+CAP-505,BudgetWheels GCC,road,Dubai,NEOM,3000,18,2800,3600,2026-09-25 05:00,2026-09-25 11:00,71,false,false,false,22,COMPLIANCE FAIL: missing UAE–KSA border docs
+CAP-506,SkyBridge Cargo,air,Dubai,Riyadh,1500,6,3800,5200,2026-09-23 14:00,2026-09-23 20:00,97,false,true,true,6,Air freighter · controlled-goods capable
+CAP-507,Peninsula Linehaul,road,Jebel Ali,Riyadh,6000,32,1750,2300,2026-09-23 12:00,2026-09-23 20:00,90,false,true,false,19,Alternate JA→RUH capacity
+CAP-508,ClearPath Controlled,road+air,Dubai,NEOM,800,4,4200,5400,2026-09-25 09:00,2026-09-25 15:00,95,false,true,true,14,Export-control cleared for restricted goods
+CAP-509,NoHaz CheapHaul,road,Sharjah,Dammam,4000,20,1800,2400,2026-09-24 06:00,2026-09-24 14:00,78,false,true,false,17,COMPLIANCE FAIL for hazmat: no hazmat license

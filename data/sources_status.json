@@ -1,0 +1,49 @@
+{
+  "updated_at": "2026-09-22T18:11:09Z",
+  "sources": [
+    {
+      "id": "saudia_cargo_freighter",
+      "name": "Saudia Cargo freighter schedule CSV",
+      "ok": true,
+      "rows": 63,
+      "error": null,
+      "http_status": 200,
+      "url": "https://svcazureweb.azurewebsites.net/getmedia/3df29127-fb10-4614-9a5f-b5c8909357fe/SV-FREIGHTER-S-26-SCHEDULE_18-8-2026.csv?ext=.csv",
+      "notes": "Parsed public freighter CSV. Rows limited to legs touching KSA/UAE airports. kind=schedule; weight/volume left 0 (unknown leftover).",
+      "checked_at": "2026-09-22T18:11:08Z"
+    },
+    {
+      "id": "openflights_uae_ksa",
+      "name": "OpenFlights UAE↔KSA routes",
+      "ok": true,
+      "rows": 93,
+      "error": null,
+      "http_status": 200,
+      "url": "https://raw.githubusercontent.com/jpatokal/openflights/master/data/routes.dat",
+      "notes": "Deduped airline+airport pairs for UAE↔KSA. ODbL / see OpenFlights data page for license. kind=public_listing.",
+      "checked_at": "2026-09-22T18:11:08Z"
+    },
+    {
+      "id": "adsb_fi_dxb",
+      "name": "adsb.fi live traffic near Dubai",
+      "ok": true,
+      "rows": 28,
+      "error": null,
+      "http_status": 200,
+      "url": "https://opendata.adsb.fi/api/v2/lat/25.25/lon/55.36/dist/120",
+      "notes": "Filtered 28/76 aircraft to EK/EY/SV/FZ/XY families. kind=derived; no destination → soft space unknown.",
+      "checked_at": "2026-09-22T18:11:09Z"
+    },
+    {
+      "id": "dpworld_jeddah_berth",
+      "name": "DP World Jeddah berthing schedule",
+      "ok": false,
+      "rows": 0,
+      "error": "API HTTP 403 after page HTTP 200. Likely Cloudflare bot protection on /api/*.",
+      "http_status": 403,
+      "url": "https://dpworld.sa/api/BerthingScheduleApi/GetBerthingSchedule?StartDate=22%2F09%2F2026&EndDate=29%2F09%2F2026",
+      "notes": "Angular UI calls api/BerthingScheduleApi/GetBerthingSchedule with StartDate/EndDate. Endpoint exists but is not reliably fetchable without a browser challenge. No fabricated berthing rows stored.",
+      "checked_at": "2026-09-22T18:11:09Z"
+    }
+  ]
+}

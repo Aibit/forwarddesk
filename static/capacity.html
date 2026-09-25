@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CargoMatch · Capacity Inbox (UAE↔KSA)</title>
+<style>
+  :root {
+    --bg: #0f1419;
+    --panel: #1a2332;
+    --panel2: #243044;
+    --text: #e7eef8;
+    --muted: #9aalbb;
+    --muted: #9aa8bb;
+    --accent: #3d9cf0;
+    --ok: #3ecf8e;
+    --warn: #f0b429;
+    --danger: #f07178;
+    --border: #2e3b50;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; font-family: "IBM Plex Sans", system-ui, sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.45;
+  }
+  header.app {
+    padding: 1rem 1.5rem; border-bottom: 1px solid var(--border);
+    display: flex; flex-wrap: wrap; gap: 1rem; align-items: center;
+    justify-content: space-between; background: #121a24;
+  }
+  header.app h1 { margin: 0; font-size: 1.15rem; font-weight: 600; }
+  header.app .sub { color: var(--muted); font-size: 0.85rem; }
+  .btn {
+    background: var(--accent); color: #041018; border: 0; border-radius: 8px;
+    padding: 0.55rem 0.9rem; font-weight: 600; cursor: pointer;
+  }
+  .btn.secondary { background: var(--panel2); color: var(--text); border: 1px solid var(--border); }
+  .btn:disabled { opacity: 0.5; cursor: wait; }
+  main { display: grid; grid-template-columns: 1.4fr 1fr; gap: 1rem; padding: 1rem 1.5rem 2rem; }
+  @media (max-width: 960px) { main { grid-template-columns: 1fr; } }
+  .panel {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 1rem;
+  }
+  .panel h2 { margin: 0 0 0.75rem; font-size: 1rem; }
+  .notice {
+    background: #2a2410; border: 1px solid #5a4a18; color: #f5e6a8;
+    padding: 0.75rem 1rem; border-radius: 8px; margin-bottom: 1rem; font-size: 0.9rem;
+  }
+  .cards { display: flex; flex-direction: column; gap: 0.65rem; max-height: 70vh; overflow: auto; }
+  .card {
+    background: var(--panel2); border: 1px solid var(--border); border-radius: 10px; padding: 0.75rem 0.9rem;
+  }
+  .card-top { display: flex; justify-content: space-between; gap: 0.5rem; align-items: center; }
+  .id { font-family: ui-monospace, monospace; font-size: 0.75rem; color: var(--muted); }
+  .route { font-weight: 600; margin: 0.25rem 0; }
+  .meta { font-size: 0.82rem; color: var(--muted); }
+  .badges { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.45rem; }
+  .badge {
+    font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.03em;
+    padding: 0.15rem 0.45rem; border-radius: 999px; border: 1px solid var(--border);
+  }
+  .badge.schedule { background: #1e3a5f; color: #9ec9ff; }
+  .badge.public_listing { background: #1e3f35; color: #8fe0c0; }
+  .badge.published { background: #1f4a2c; color: #8dffb0; }
+  .badge.derived { background: #3a2f14; color: #ffd27a; }
+  .badge.warn { background: #4a2a14; color: #ffb087; }
+  .badge.conf { background: #2a2a3a; color: #c8c8e0; }
+  form.publish { display: grid; gap: 0.55rem; }
+  form.publish label { display: grid; gap: 0.2rem; font-size: 0.8rem; color: var(--muted); }
+  form.publish input, form.publish select, form.publish textarea {
+    background: #0f1620; color: var(--text); border: 1px solid var(--border);
+    border-radius: 8px; padding: 0.45rem 0.55rem; font: inherit;
+  }
+  form.publish .row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.55rem; }
+  .sources { font-size: 0.82rem; }
+  .sources table { width: 100%; border-collapse: collapse; }
+  .sources th, .sources td { text-align: left; padding: 0.35rem 0.25rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+  .ok { color: var(--ok); } .fail { color: var(--danger); }
+  .empty { color: var(--muted); padding: 1rem 0; }
+  .statusline { font-size: 0.85rem; color: var(--muted); min-height: 1.2em; }
+</style>
+</head>
+<body>
+<header class="app">
+  <div>
+    <h1>Capacity Inbox · UAE ↔ KSA</h1>
+    <div class="sub">Ingested schedules / listings + carrier publish intake — with provenance</div>
+    <div style="margin-top:0.35rem"><a style="color:#8ec7ff;font-size:0.85rem;margin-right:0.75rem" href="/">Capacity</a><a style="color:#8ec7ff;font-size:0.85rem" href="/demand">Demand Inbox</a></div>
+  </div>
+  <div style="display:flex;gap:0.5rem;align-items:center;">
+    <button class="btn secondary" id="btnRefresh" type="button">Refresh</button>
+    <button class="btn" id="btnIngest" type="button">Run ingest</button>
+  </div>
+</header>
+
+<main>
+  <section class="panel">
+    <div class="notice">
+      <strong>Honesty rule:</strong> <code>schedule</code> and <code>public_listing</code> rows are
+      <em>not</em> leftover soft space. Only <code>published</code> intake (and future bookable feeds)
+      assert carrier soft capacity. Weight/volume = 0 means unknown — we do not invent numbers.
+    </div>
+    <h2>Board <span class="sub" id="countLabel"></span></h2>
+    <div class="statusline" id="boardStatus"></div>
+    <div class="cards" id="cards"></div>
+  </section>
+
+  <div style="display:flex;flex-direction:column;gap:1rem;">
+    <section class="panel">
+      <h2>Publish soft capacity</h2>
+      <p class="meta">Carriers push soft leftover when public data is thin. Stored as <code>kind=published</code>.</p>
+      <form class="publish" id="publishForm">
+        <div class="row">
+          <label>Carrier *<input name="carrier" required placeholder="ClearPath Logistics" /></label>
+          <label>Mode
+            <select name="mode">
+              <option value="road">road</option>
+              <option value="air">air</option>
+              <option value="ocean">ocean</option>
+              <option value="road+air">road+air</option>
+            </select>
+          </label>
+        </div>
+        <div class="row">
+          <label>Origin *<input name="origin" required placeholder="Jebel Ali" /></label>
+          <label>Destination *<input name="destination" required placeholder="Riyadh" /></label>
+        </div>
+        <div class="row">
+          <label>Weight kg<input name="availableWeightKg" type="number" min="0" value="8000" /></label>
+          <label>Volume m³<input name="availableVolumeCbm" type="number" min="0" step="0.1" value="45" /></label>
+        </div>
+        <div class="row">
+          <label>Rate min USD<input name="rateMinUsd" type="number" min="0" value="1200" /></label>
+          <label>Rate max USD<input name="rateMaxUsd" type="number" min="0" value="1800" /></label>
+        </div>
+        <div class="row">
+          <label>Departure window<input name="departureWindow" placeholder="23–25 Sep GST" /></label>
+          <label>ETA hours<input name="etaHours" type="number" min="0" value="18" /></label>
+        </div>
+        <label>Notes<textarea name="notes" rows="2" placeholder="Soft space on return leg DJB→RUH"></textarea></label>
+        <div class="row">
+          <label><input type="checkbox" name="docsOk" /> Border docs OK</label>
+          <label><input type="checkbox" name="hazmatOk" /> Hazmat OK</label>
+        </div>
+        <button class="btn" type="submit">Publish to board</button>
+        <div class="statusline" id="publishStatus"></div>
+      </form>
+    </section>
+
+    <section class="panel sources">
+      <h2>Sources status</h2>
+      <div id="sources" class="empty">No ingest run yet — click <strong>Run ingest</strong>.</div>
+    </section>
+  </div>
+</main>
+
+<script>
+const KIND_HINT = {
+  schedule: "Timetable — not leftover soft space",
+  public_listing: "Service/route listing — capacity unknown",
+  published: "Carrier-published soft capacity",
+  derived: "Derived signal — not bookable leftover",
+};
+
+async function jfetch(url, opts) {
+  const res = await fetch(url, Object.assign({ cache: "no-store" }, opts || {}));
+  const text = await res.text();
+  let data;
+  try { data = JSON.parse(text); } catch { data = { raw: text }; }
+  if (!res.ok) throw new Error((data && data.error) || (res.status + " " + url));
+  return data;
+}
+
+function badge(kind) {
+  return `<span class="badge ${kind}" title="${KIND_HINT[kind] || ""}">${kind}</span>`;
+}
+
+function renderCards(rows) {
+  const el = document.getElementById("cards");
+  document.getElementById("countLabel").textContent = `(${rows.length})`;
+  if (!rows.length) {
+    el.innerHTML = `<div class="empty">No capacity rows yet. Run ingest and/or publish soft capacity. We do <strong>not</strong> seed fake ingested rows.</div>`;
+    return;
+  }
+  el.innerHTML = rows.map(r => {
+    const wt = r.availableWeightKg || 0;
+    const vol = r.availableVolumeCbm || 0;
+    const softNote = (r.kind === "published")
+      ? `${wt} kg / ${vol} m³ · $${r.rateMinUsd||0}–${r.rateMaxUsd||0}`
+      : `soft space unknown (not asserted)`;
+    return `<article class="card">
+      <div class="card-top">
+        <span class="id">${r.id || ""}</span>
+        <span class="meta">${r.fetched_at || ""}</span>
+      </div>
+      <div class="route">${r.lane || ((r.pickupCity||"") + " → " + (r.dropCity||""))} · ${r.mode||""}</div>
+      <div><strong>${r.carrier || ""}</strong> <span class="meta">${r.flightOrVoyage ? "· " + r.flightOrVoyage : ""}</span></div>
+      <div class="meta">${r.departureWindow || "TBD"} · ${softNote}</div>
+      <div class="badges">
+        ${badge(r.kind || "derived")}
+        <span class="badge conf">${r.confidence || ""}</span>
+        <span class="badge">${r.source || ""}</span>
+        ${wt === 0 && r.kind !== "published" ? `<span class="badge warn">schedule ≠ soft leftover</span>` : ""}
+      </div>
+      ${r.notes ? `<div class="meta" style="margin-top:0.35rem">${r.notes}</div>` : ""}
+      ${r.source_url ? `<div class="meta"><a style="color:#8ec7ff" href="${r.source_url}" target="_blank" rel="noopener">source</a></div>` : ""}
+    </article>`;
+  }).join("");
+}
+
+function renderSources(payload) {
+  const el = document.getElementById("sources");
+  const sources = (payload && payload.sources) || [];
+  if (!sources.length) {
+    el.innerHTML = `<div class="empty">No ingest run yet.</div>`;
+    return;
+  }
+  el.innerHTML = `<div class="meta">Updated ${payload.updated_at || "—"}</div>
+    <table>
+      <thead><tr><th>Source</th><th>OK</th><th>Rows</th><th>Detail</th></tr></thead>
+      <tbody>
+        ${sources.map(s => `<tr>
+          <td><strong>${s.name || s.id}</strong><div class="meta">${s.id || ""}</div></td>
+          <td class="${s.ok ? "ok" : "fail"}">${s.ok ? "yes" : "no"}</td>
+          <td>${s.rows ?? 0}</td>
+          <td class="meta">${s.error || s.notes || ""} ${s.http_status != null ? "(HTTP " + s.http_status + ")" : ""}</td>
+        </tr>`).join("")}
+      </tbody>
+    </table>`;
+}
+
+async function refresh() {
+  document.getElementById("boardStatus").textContent = "Loading…";
+  try {
+    const [rows, sources] = await Promise.all([
+      jfetch("/api/capacity"),
+      jfetch("/api/sources"),
+    ]);
+    renderCards(Array.isArray(rows) ? rows : []);
+    renderSources(sources || {});
+    document.getElementById("boardStatus").textContent = "";
+  } catch (e) {
+    document.getElementById("boardStatus").textContent = String(e.message || e);
+  }
+}
+
+document.getElementById("btnRefresh").onclick = refresh;
+document.getElementById("btnIngest").onclick = async () => {
+  const btn = document.getElementById("btnIngest");
+  btn.disabled = true;
+  document.getElementById("boardStatus").textContent = "Running ingest (live fetches)…";
+  try {
+    const result = await jfetch("/api/ingest/run", { method: "POST" });
+    document.getElementById("boardStatus").textContent =
+      `Ingest done · wrote ${result.ingested_this_run || 0} rows this run · store ${result.total_capacity_rows || 0}`;
+    renderSources({ updated_at: result.ran_at, sources: result.sources || [] });
+    await refresh();
+  } catch (e) {
+    document.getElementById("boardStatus").textContent = String(e.message || e);
+  } finally {
+    btn.disabled = false;
+  }
+};
+
+document.getElementById("publishForm").onsubmit = async (ev) => {
+  ev.preventDefault();
+  const fd = new FormData(ev.target);
+  const payload = Object.fromEntries(fd.entries());
+  payload.docsOk = fd.get("docsOk") === "on";
+  payload.hazmatOk = fd.get("hazmatOk") === "on";
+  payload.restrictedOk = fd.get("restrictedOk") === "on";
+  ["availableWeightKg","availableVolumeCbm","rateMinUsd","rateMaxUsd","etaHours"].forEach(k => {
+    if (payload[k] != null && payload[k] !== "") payload[k] = Number(payload[k]);
+  });
+  document.getElementById("publishStatus").textContent = "Publishing…";
+  try {
+    const res = await jfetch("/api/capacity/publish", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    document.getElementById("publishStatus").textContent = `Published ${res.record && res.record.id}`;
+    ev.target.reset();
+    await refresh();
+  } catch (e) {
+    document.getElementById("publishStatus").textContent = String(e.message || e);
+  }
+};
+
+refresh();
+</script>
+</body>
+</html>

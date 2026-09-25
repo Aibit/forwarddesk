@@ -1,0 +1,7 @@
+id,shipper,commodity,commodityLabel,weightKg,volumeCbm,pickupCity,dropCity,deadline,maxPriceUsd,hazmat,notes
+RFQ-1001,Gulf Electronics FZE,electronics,Consumer electronics (HS 8517),1200,8.5,Jebel Ali,Riyadh,2026-09-25,2800,false,Fragile — prefer air handoff if road ETA slips
+RFQ-1002,MedSupply GCC,pharma,Cold-chain pharma (HS 3004),450,2.2,Dubai,Jeddah,2026-09-24,4200,false,2–8°C required; GDP-certified carrier preferred
+RFQ-1003,Desert Dates Co.,perishable,Fresh dates (HS 0804),3500,14,Abu Dhabi,Riyadh,2026-09-26,1900,false,
+RFQ-1004,Al Noor Chemicals,hazmat,Industrial solvents (HS 3814),800,3.1,Sharjah,Dammam,2026-09-27,3500,true,UN-classed; needs ADR/hazmat-licensed fleet
+RFQ-1005,NEOM Projects LLC,restricted,Dual-use sensors (restricted),220,1.0,Dubai,NEOM,2026-09-28,5500,false,Export control screening required at UAE–KSA border
+RFQ-1006,Riyadh Retail Hub,general,FMCG mixed pallet (HS 2106),2100,11,Jebel Ali,Riyadh,2026-09-26,2200,false,

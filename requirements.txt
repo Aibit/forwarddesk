@@ -1,0 +1,2 @@
+# CargoMatch is Python 3 stdlib only — no pip packages required.
+# Kept empty so platforms that expect requirements.txt succeed.

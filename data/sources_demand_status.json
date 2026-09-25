@@ -1,0 +1,49 @@
+{
+  "updated_at": "2026-09-22T18:26:02Z",
+  "sources": [
+    {
+      "id": "loadup_public",
+      "name": "LoadUp public shipper loads (Dubai location page)",
+      "ok": true,
+      "rows": 11,
+      "error": null,
+      "http_status": 200,
+      "url": "https://loadupae.com/locations/dubai-emirate",
+      "notes": "2 UAE↔KSA; HTML scrape of public location page (API requires login)",
+      "checked_at": "2026-09-22T18:25:55Z"
+    },
+    {
+      "id": "bidsfactory_uae",
+      "name": "BidsFactory UAE tenders (logistics filter)",
+      "ok": true,
+      "rows": 26,
+      "error": null,
+      "http_status": 200,
+      "url": "https://bidsfactory.com/en/tenders/country/ae",
+      "notes": "Aggregator of UAE MOF / Dubai eSupply; keyword+transport sector filter. Lots are often goods/services — not lane-specific RFQs.",
+      "checked_at": "2026-09-22T18:25:57Z"
+    },
+    {
+      "id": "comtrade_uae_ksa",
+      "name": "UN Comtrade UAE→KSA exports (proxy)",
+      "ok": true,
+      "rows": 3,
+      "error": null,
+      "http_status": 200,
+      "url": "https://comtradeapi.un.org/public/v1/preview/C/A/HS?reporterCode=784&partnerCode=682&period=2023&flowCode=X&cmdCode=TOTAL",
+      "notes": "Public preview API (no key). PROXY — do not treat as soft demand.",
+      "checked_at": "2026-09-22T18:26:01Z"
+    },
+    {
+      "id": "etimad_visitor",
+      "name": "Etimad visitor tenders (KSA)",
+      "ok": false,
+      "rows": 0,
+      "error": "Bot wall / challenge (TSPD) or non-200 — no public JSON without account",
+      "http_status": 200,
+      "url": "https://tenders.etimad.sa/Tender/AllTendersForVisitor",
+      "notes": "Official API via apiportal.etimad.sa requires subscription + keys",
+      "checked_at": "2026-09-22T18:26:02Z"
+    }
+  ]
+}

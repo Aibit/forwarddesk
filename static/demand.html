@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CargoMatch · Demand Inbox (UAE→KSA)</title>
+<style>
+  :root {
+    --bg: #0f1419;
+    --panel: #1a2332;
+    --panel2: #243044;
+    --text: #e7eef8;
+    --muted: #9aa8bb;
+    --accent: #e8a04a;
+    --ok: #3ecf8e;
+    --warn: #f0b429;
+    --danger: #f07178;
+    --border: #2e3b50;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; font-family: "IBM Plex Sans", system-ui, sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.45;
+  }
+  header.app {
+    padding: 1rem 1.5rem; border-bottom: 1px solid var(--border);
+    display: flex; flex-wrap: wrap; gap: 1rem; align-items: center;
+    justify-content: space-between; background: #121a24;
+  }
+  header.app h1 { margin: 0; font-size: 1.15rem; font-weight: 600; }
+  header.app .sub { color: var(--muted); font-size: 0.85rem; }
+  .nav a { color: #8ec7ff; margin-right: 0.75rem; font-size: 0.85rem; }
+  .btn {
+    background: var(--accent); color: #1a1004; border: 0; border-radius: 8px;
+    padding: 0.55rem 0.9rem; font-weight: 600; cursor: pointer;
+  }
+  .btn.secondary { background: var(--panel2); color: var(--text); border: 1px solid var(--border); }
+  .btn:disabled { opacity: 0.5; cursor: wait; }
+  main { display: grid; grid-template-columns: 1.4fr 1fr; gap: 1rem; padding: 1rem 1.5rem 2rem; }
+  @media (max-width: 960px) { main { grid-template-columns: 1fr; } }
+  .panel {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 1rem;
+  }
+  .panel h2 { margin: 0 0 0.75rem; font-size: 1rem; }
+  .notice {
+    background: #2a2410; border: 1px solid #5a4a18; color: #f5e6a8;
+    padding: 0.75rem 1rem; border-radius: 8px; margin-bottom: 1rem; font-size: 0.9rem;
+  }
+  .cards { display: flex; flex-direction: column; gap: 0.65rem; max-height: 70vh; overflow: auto; }
+  .card {
+    background: var(--panel2); border: 1px solid var(--border); border-radius: 10px; padding: 0.75rem 0.9rem;
+  }
+  .card-top { display: flex; justify-content: space-between; gap: 0.5rem; align-items: center; }
+  .id { font-family: ui-monospace, monospace; font-size: 0.75rem; color: var(--muted); }
+  .route { font-weight: 600; margin: 0.25rem 0; }
+  .meta { font-size: 0.82rem; color: var(--muted); }
+  .badges { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.45rem; }
+  .badge {
+    font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.03em;
+    padding: 0.15rem 0.45rem; border-radius: 999px; border: 1px solid var(--border);
+  }
+  .badge.tender { background: #3a2a4a; color: #d4b8ff; }
+  .badge.public_rfq { background: #1e3f35; color: #8fe0c0; }
+  .badge.published { background: #1f4a2c; color: #8dffb0; }
+  .badge.proxy { background: #3a2f14; color: #ffd27a; }
+  .badge.warn { background: #4a2a14; color: #ffb087; }
+  .badge.conf { background: #2a2a3a; color: #c8c8e0; }
+  form.publish { display: grid; gap: 0.55rem; }
+  form.publish label { display: grid; gap: 0.2rem; font-size: 0.8rem; color: var(--muted); }
+  form.publish input, form.publish select, form.publish textarea {
+    background: #0f1620; color: var(--text); border: 1px solid var(--border);
+    border-radius: 8px; padding: 0.45rem 0.55rem; font: inherit;
+  }
+  form.publish .row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.55rem; }
+  .sources { font-size: 0.82rem; }
+  .sources table { width: 100%; border-collapse: collapse; }
+  .sources th, .sources td { text-align: left; padding: 0.35rem 0.25rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+  .ok { color: var(--ok); } .fail { color: var(--danger); }
+  .empty { color: var(--muted); padding: 1rem 0; }
+  .statusline { font-size: 0.85rem; color: var(--muted); min-height: 1.2em; }
+  .filters { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.75rem; }
+  .filters label { font-size: 0.8rem; color: var(--muted); display: flex; align-items: center; gap: 0.3rem; }
+</style>
+</head>
+<body>
+<header class="app">
+  <div>
+    <h1>Demand Inbox · UAE → KSA</h1>
+    <div class="sub">Soft demand = shipper/forwarder intent before hard booking — with provenance</div>
+    <div class="nav" style="margin-top:0.35rem">
+      <a href="/">Capacity Inbox</a>
+      <a href="/demand">Demand Inbox</a>
+    </div>
+  </div>
+  <div style="display:flex;gap:0.5rem;align-items:center;">
+    <button class="btn secondary" id="btnRefresh" type="button">Refresh</button>
+    <button class="btn" id="btnIngest" type="button">Run demand ingest</button>
+  </div>
+</header>
+
+<main>
+  <section class="panel">
+    <div class="notice">
+      <strong>Honesty rule:</strong> <code>proxy</code> rows (trade stats) are
+      <em>not</em> soft demand. <code>tender</code> / <code>public_rfq</code> are public intent signals.
+      Only <code>published</code> intake is shipper-asserted soft RFQ. We never fabricate live RFQs.
+    </div>
+    <div class="filters">
+      <label><input type="checkbox" id="hideProxy" checked /> Hide proxies</label>
+      <label>Kind
+        <select id="kindFilter">
+          <option value="">all</option>
+          <option value="published">published</option>
+          <option value="public_rfq">public_rfq</option>
+          <option value="tender">tender</option>
+          <option value="proxy">proxy</option>
+        </select>
+      </label>
+    </div>
+    <h2>Inbox <span class="sub" id="countLabel"></span></h2>
+    <div class="statusline" id="boardStatus"></div>
+    <div class="cards" id="cards"></div>
+  </section>
+
+  <div style="display:flex;flex-direction:column;gap:1rem;">
+    <section class="panel">
+      <h2>Publish soft RFQ</h2>
+      <p class="meta">Shippers / forwarders push intent when public RFQs are thin. Stored as <code>kind=published</code>.</p>
+      <form class="publish" id="publishForm">
+        <div class="row">
+          <label>Shipper / broker *<input name="shipper_or_broker" required placeholder="Gulf Forwarding LLC" /></label>
+          <label>Mode
+            <select name="mode">
+              <option value="road">road</option>
+              <option value="air">air</option>
+              <option value="ocean">ocean</option>
+              <option value="road+air">road+air</option>
+            </select>
+          </label>
+        </div>
+        <div class="row">
+          <label>Origin *<input name="origin" required placeholder="Jebel Ali" /></label>
+          <label>Destination *<input name="dest" required placeholder="Riyadh" /></label>
+        </div>
+        <div class="row">
+          <label>Commodity<input name="commodity" placeholder="electronics / general" /></label>
+          <label>Window / deadline<input name="window" placeholder="ship by 30 Sep GST" /></label>
+        </div>
+        <div class="row">
+          <label>Weight kg<input name="weightKg" type="number" min="0" placeholder="5000" /></label>
+          <label>Volume m³<input name="volumeCbm" type="number" min="0" step="0.1" placeholder="28" /></label>
+        </div>
+        <div class="row">
+          <label>Max price USD<input name="max_price" type="number" min="0" placeholder="2200" /></label>
+          <label>&nbsp;</label>
+        </div>
+        <label>Notes<textarea name="notes" rows="2" placeholder="Recurring weekly LTL; need border docs support"></textarea></label>
+        <button class="btn" type="submit">Publish soft RFQ</button>
+        <div class="statusline" id="publishStatus"></div>
+      </form>
+    </section>
+
+    <section class="panel sources">
+      <h2>Demand sources status</h2>
+      <div id="sources" class="empty">No ingest run yet — click <strong>Run demand ingest</strong>.</div>
+    </section>
+  </div>
+</main>
+
+<script>
+const KIND_HINT = {
+  tender: "Public procurement / logistics lot",
+  public_rfq: "Load-board / marketplace shipper listing",
+  published: "Shipper-published soft RFQ via intake",
+  proxy: "Trade/stats proxy — NOT soft demand",
+};
+
+async function jfetch(url, opts) {
+  const res = await fetch(url, Object.assign({ cache: "no-store" }, opts || {}));
+  const text = await res.text();
+  let data;
+  try { data = JSON.parse(text); } catch { data = { raw: text }; }
+  if (!res.ok) throw new Error((data && data.error) || (res.status + " " + url));
+  return data;
+}
+
+function badge(kind) {
+  return `<span class="badge ${kind}" title="${KIND_HINT[kind] || ""}">${kind}</span>`;
+}
+
+function renderCards(rows) {
+  const el = document.getElementById("cards");
+  document.getElementById("countLabel").textContent = `(${rows.length})`;
+  if (!rows.length) {
+    el.innerHTML = `<div class="empty">No demand rows yet. Run ingest and/or publish a soft RFQ. We do <strong>not</strong> seed fake RFQs.</div>`;
+    return;
+  }
+  el.innerHTML = rows.map(r => {
+    const wt = r.weightKg != null ? r.weightKg + " kg" : "weight ?";
+    const vol = r.volumeCbm != null ? r.volumeCbm + " m³" : "vol ?";
+    const price = r.max_price != null ? ("max $" + r.max_price) : (r.maxPriceUsd ? ("max $" + r.maxPriceUsd) : "price ?");
+    const softNote = (r.kind === "published")
+      ? `${wt} / ${vol} · ${price}`
+      : (r.kind === "proxy" ? "aggregate trade signal" : "public intent — details on source");
+    return `<article class="card">
+      <div class="card-top">
+        <span class="id">${r.id || ""}</span>
+        <span class="meta">${r.fetched_at || ""}</span>
+      </div>
+      <div class="route">${r.lane || ((r.origin||"") + " → " + (r.dest||r.destination||""))} · ${r.mode||""}</div>
+      <div><strong>${r.shipper_or_broker || r.shipper || ""}</strong></div>
+      <div class="meta">${r.commodity || r.commodityLabel || ""} · ${r.window || r.deadline || "TBD"} · ${softNote}</div>
+      <div class="badges">
+        ${badge(r.kind || "proxy")}
+        <span class="badge conf">${r.confidence || ""}</span>
+        <span class="badge">${r.source || ""}</span>
+        ${r.kind === "proxy" ? `<span class="badge warn">not soft demand</span>` : ""}
+      </div>
+      ${r.notes ? `<div class="meta" style="margin-top:0.35rem">${r.notes}</div>` : ""}
+      ${r.source_url ? `<div class="meta"><a style="color:#8ec7ff" href="${r.source_url}" target="_blank" rel="noopener">source</a></div>` : ""}
+    </article>`;
+  }).join("");
+}
+
+function renderSources(payload) {
+  const el = document.getElementById("sources");
+  const sources = (payload && payload.sources) || [];
+  if (!sources.length) {
+    el.innerHTML = `<div class="empty">No ingest run yet.</div>`;
+    return;
+  }
+  el.innerHTML = `<div class="meta">Updated ${payload.updated_at || "—"}</div>
+    <table>
+      <thead><tr><th>Source</th><th>OK</th><th>Rows</th><th>Detail</th></tr></thead>
+      <tbody>
+        ${sources.map(s => `<tr>
+          <td><strong>${s.name || s.id}</strong><div class="meta">${s.id || ""}</div></td>
+          <td class="${s.ok ? "ok" : "fail"}">${s.ok ? "yes" : "no"}</td>
+          <td>${s.rows ?? 0}</td>
+          <td class="meta">${s.error || s.notes || ""} ${s.http_status != null ? "(HTTP " + s.http_status + ")" : ""}</td>
+        </tr>`).join("")}
+      </tbody>
+    </table>`;
+}
+
+function demandUrl() {
+  const params = new URLSearchParams();
+  const kind = document.getElementById("kindFilter").value;
+  if (kind) params.set("kind", kind);
+  if (document.getElementById("hideProxy").checked && !kind) params.set("exclude_proxy", "1");
+  const q = params.toString();
+  return "/api/demand" + (q ? ("?" + q) : "");
+}
+
+async function refresh() {
+  document.getElementById("boardStatus").textContent = "Loading…";
+  try {
+    const [rows, sources] = await Promise.all([
+      jfetch(demandUrl()),
+      jfetch("/api/sources/demand"),
+    ]);
+    renderCards(Array.isArray(rows) ? rows : []);
+    renderSources(sources || {});
+    document.getElementById("boardStatus").textContent = "";
+  } catch (e) {
+    document.getElementById("boardStatus").textContent = String(e.message || e);
+  }
+}
+
+document.getElementById("btnRefresh").onclick = refresh;
+document.getElementById("hideProxy").onchange = refresh;
+document.getElementById("kindFilter").onchange = refresh;
+
+document.getElementById("btnIngest").onclick = async () => {
+  const btn = document.getElementById("btnIngest");
+  btn.disabled = true;
+  document.getElementById("boardStatus").textContent = "Running demand ingest (live fetches)…";
+  try {
+    const result = await jfetch("/api/ingest/demand/run", { method: "POST" });
+    document.getElementById("boardStatus").textContent =
+      `Ingest done · wrote ${result.ingested_this_run || 0} rows this run · store ${result.total_demand_rows || 0}`;
+    renderSources({ updated_at: result.ran_at, sources: result.sources || [] });
+    await refresh();
+  } catch (e) {
+    document.getElementById("boardStatus").textContent = String(e.message || e);
+  } finally {
+    btn.disabled = false;
+  }
+};
+
+document.getElementById("publishForm").onsubmit = async (ev) => {
+  ev.preventDefault();
+  const fd = new FormData(ev.target);
+  const payload = Object.fromEntries(fd.entries());
+  ["weightKg","volumeCbm","max_price"].forEach(k => {
+    if (payload[k] != null && payload[k] !== "") payload[k] = Number(payload[k]);
+    else delete payload[k];
+  });
+  document.getElementById("publishStatus").textContent = "Publishing…";
+  try {
+    const res = await jfetch("/api/demand/publish", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    document.getElementById("publishStatus").textContent = `Published ${res.record && res.record.id}`;
+    ev.target.reset();
+    await refresh();
+  } catch (e) {
+    document.getElementById("publishStatus").textContent = String(e.message || e);
+  }
+};
+
+refresh();
+</script>
+</body>
+</html>
