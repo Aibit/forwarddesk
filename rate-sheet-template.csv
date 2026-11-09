@@ -1,0 +1,36 @@
+mode,origin,destination,equipment,charge,side,basis,currency,buy,min,valid_until,transit_days,carrier
+fcl,Shanghai (Yangshan),Barcelona,40HC,Ocean freight,freight,per_container,USD,2150,,2026-12-01,32,Sample Line A
+fcl,Shanghai (Yangshan),Barcelona,40HC,BAF (bunker surcharge),freight,per_container,USD,380,,2026-11-07,,Sample Line A
+fcl,Shanghai (Yangshan),Barcelona,20GP,Ocean freight,freight,per_container,USD,1250,,2026-12-01,32,Sample Line A
+fcl,Shanghai (Yangshan),Barcelona,20GP,BAF (bunker surcharge),freight,per_container,USD,200,,2026-11-07,,Sample Line A
+fcl,Shanghai (Waigaoqiao),Barcelona,40HC,Ocean freight,freight,per_container,USD,2230,,2026-12-01,34,Sample Line B
+fcl,Shanghai (Waigaoqiao),Barcelona,40HC,BAF (bunker surcharge),freight,per_container,USD,360,,2026-11-24,,Sample Line B
+fcl,Shanghai (Waigaoqiao),Barcelona,20GP,Ocean freight,freight,per_container,USD,1300,,2026-12-01,34,Sample Line B
+fcl,Shanghai (Waigaoqiao),Barcelona,20GP,BAF (bunker surcharge),freight,per_container,USD,190,,2026-11-24,,Sample Line B
+fcl,Shanghai (Yangshan),*,*,Origin THC,origin,per_container,USD,120,,2026-12-10,,Terminal tariff
+fcl,Shanghai (Yangshan),*,*,Origin trucking (incl. bridge toll),origin,per_container,USD,260,,2026-12-10,,Sample trucker
+fcl,Shanghai (Waigaoqiao),*,*,Origin THC,origin,per_container,USD,115,,2026-12-10,,Terminal tariff
+fcl,Shanghai (Waigaoqiao),*,*,Origin trucking,origin,per_container,USD,150,,2026-12-10,,Sample trucker
+fcl,Shanghai (Yangshan),*,*,Export docs / B/L fee,origin,per_shipment,USD,60,,2027-01-09,,Sample agent
+fcl,Shanghai (Waigaoqiao),*,*,Export docs / B/L fee,origin,per_shipment,USD,60,,2027-01-09,,Sample agent
+fcl,*,Barcelona,*,Destination THC,destination,per_container,USD,260,,2026-12-25,,Terminal tariff
+fcl,*,Barcelona,*,Delivery order / handling,destination,per_shipment,USD,90,,2026-12-25,,Sample agent
+fcl,*,Barcelona,*,Import customs clearance,customs,per_shipment,USD,110,,2027-02-08,,Sample broker
+lcl,Ningbo,Valencia,*,Ocean freight (LCL),freight,per_wm,USD,48,48,2026-12-01,34,Sample Consol
+lcl,Ningbo,Valencia,*,BAF (LCL),freight,per_wm,USD,9,,2026-11-20,,Sample Consol
+lcl,Ningbo,*,*,Origin CFS,origin,per_wm,USD,18,36,2026-12-10,,Sample Consol
+lcl,Ningbo,*,*,Pickup to CFS,origin,per_shipment,USD,95,,2026-12-10,,Sample trucker
+lcl,*,Valencia,*,Destination CFS / handling,destination,per_wm,USD,32,64,2026-12-25,,Sample Consol
+lcl,*,Valencia,*,Destination docs,destination,per_shipment,USD,65,,2026-12-25,,Sample agent
+lcl,*,Valencia,*,Import customs clearance,customs,per_shipment,USD,95,,2027-02-08,,Sample broker
+air,Dubai (DXB),Madrid (MAD),*,Air freight,freight,per_kg,USD,2.35,120,2026-11-17,2,Sample Airline
+air,Dubai (DXB),Madrid (MAD),*,Fuel surcharge,freight,per_kg,USD,0.85,,2026-11-17,,Sample Airline
+air,Dubai (DXB),Madrid (MAD),*,Security surcharge,freight,per_kg,USD,0.15,,2026-12-10,,Sample Airline
+air,Dubai (DXB),*,*,Origin handling,origin,per_kg,USD,0.12,35,2026-12-10,,Sample handler
+air,Dubai (DXB),*,*,AWB fee,origin,per_shipment,USD,30,,2027-01-09,,Sample agent
+air,*,Madrid (MAD),*,Destination handling,destination,per_kg,USD,0.18,45,2026-12-10,,Sample handler
+air,*,Madrid (MAD),*,Import customs clearance,customs,per_shipment,USD,95,,2027-02-08,,Sample broker
+road,Jebel Ali,Riyadh,FTL,Linehaul (FTL),freight,per_truck,USD,1450,,2026-11-24,3,Sample Haulier
+road,Jebel Ali,Riyadh,FTL,Border / transit docs,freight,per_truck,USD,60,,2026-12-10,,Sample Haulier
+road,Jebel Ali,*,*,UAE export clearance,origin,per_shipment,USD,85,,2027-01-09,,Sample broker
+road,*,Riyadh,*,KSA import clearance,customs,per_shipment,USD,140,,2027-01-09,,Sample broker
