@@ -17,7 +17,8 @@ export interface QuoteFields {
   dg: DgState;
 }
 
-export type IssueKind = 'missing' | 'ambiguous' | 'assumed';
+/** missing = blocks pricing (red); ambiguous / confirm = priced, but ask the customer (amber); assumed = info. */
+export type IssueKind = 'missing' | 'ambiguous' | 'confirm' | 'assumed';
 
 export interface Issue {
   field: keyof QuoteFields | 'route';
@@ -38,6 +39,7 @@ export interface ParseResult {
   destinationOptions?: string[];
   originBase: string | null;
   destBase: string | null;
+  weightPerUnit: boolean;
   language: 'en' | 'es';
 }
 
@@ -169,11 +171,14 @@ export function parseRequest(raw: string, extraLocations: string[] = [], today =
 
   // ── Weight / volume / pieces ──
   let weightKg: number | null = null;
+  let weightPerUnit = false;
   const wm = lower.match(new RegExp(`${NUM}\\s*(kgs?|kilos?|kilogramos?|t|tons?|tonnes?|mt|toneladas?)\\b`));
   if (wm) {
     const v = parseNum(wm[1]);
     weightKg = /^(kg|kgs|kilo|kilos|kilogramo|kilogramos)$/.test(wm[2]) ? v : v * 1000;
-    evidence.weightKg = wm[0];
+    const after = lower.slice((wm.index ?? 0) + wm[0].length, (wm.index ?? 0) + wm[0].length + 22);
+    weightPerUnit = /^\s*(\/\s*(cntr|ctr|cont|container|box|unit|truck)|per (container|cntr|ctr|box|unit|truck)|each|por (contenedor|cont|camion)|cada uno)/.test(after);
+    evidence.weightKg = (wm[0] + (weightPerUnit ? after.match(/^\s*(\/\s*[a-z]+|per [a-z]+|each|por [a-z]+|cada uno)/)?.[0] ?? '' : '')).trim();
   }
   let volumeCbm: number | null = null;
   const vm = lower.match(new RegExp(`${NUM}\\s*(cbm|m3|m³|cubic meters?|metros cubicos)`));
@@ -220,8 +225,15 @@ export function parseRequest(raw: string, extraLocations: string[] = [], today =
 
   // ── Route ──
   const hits = findLocationHits(text, extraLocations);
+  // "Shanghai Yangshan" / "Yangshan, Shanghai": the specific terminal replaces the generic city.
+  const specific = new Set<string>();
+  for (const h of hits) {
+    const def = findLocation(h.base);
+    const choices = def?.choices ? Object.values(def.choices).flat() : [];
+    if (hits.some((o) => o !== h && choices.includes(o.base) && Math.abs(o.index - h.index) <= 24)) specific.add(h.base);
+  }
   const distinct: Hit[] = [];
-  for (const h of hits) if (!distinct.some((d) => d.base === h.base)) distinct.push(h);
+  for (const h of hits) if (!specific.has(h.base) && !distinct.some((d) => d.base === h.base)) distinct.push(h);
   let originBase: string | null = null;
   let destBase: string | null = null;
   for (const h of distinct) {
@@ -273,8 +285,8 @@ export function parseRequest(raw: string, extraLocations: string[] = [], today =
 
   // ── Ready date ──
   let readyDate: string | null = null;
-  const dm1 = lower.match(/\b(\d{1,2})(?:st|nd|rd|th)?\s*(?:de\s+)?([a-z]{3,10})\b/);
-  const dm2 = lower.match(/\b([a-z]{3,10})\s+(\d{1,2})(?:st|nd|rd|th)?\b/);
+  const dm1 = [...lower.matchAll(/\b(\d{1,2})(?:st|nd|rd|th)?\s*(?:de\s+)?([a-z]{3,10})\b/g)].find((m) => MONTHS[m[2]] !== undefined);
+  const dm2 = [...lower.matchAll(/\b([a-z]{3,10})\s+(\d{1,2})(?:st|nd|rd|th)?\b/g)].find((m) => MONTHS[m[1]] !== undefined);
   const dm3 = lower.match(/\b(\d{1,2})[/.-](\d{1,2})(?:[/.-](\d{2,4}))?\b/);
   const readyCtx = /(ready|cargo ready|lista|listo|disponible|pickup|recogida|from|desde|loading|carga)/;
   if (dm1 && MONTHS[dm1[2]] !== undefined) {
@@ -330,6 +342,7 @@ export function parseRequest(raw: string, extraLocations: string[] = [], today =
     destinationOptions,
     originBase,
     destBase,
+    weightPerUnit,
     language,
   };
 }
@@ -357,17 +370,17 @@ export function missingIssues(f: QuoteFields): Issue[] {
   if (f.mode === 'fcl' && Object.keys(f.equipment).filter((k) => k !== 'FTL').length === 0)
     out.push({ field: 'equipment', kind: 'missing', message: 'Container count / type missing.', question: q('How many containers, and which type (20GP / 40GP / 40HC)?', '¿Cuántos contenedores y de qué tipo (20GP / 40GP / 40HC)?') });
   if (f.mode === 'fcl' && f.weightKg == null)
-    out.push({ field: 'weightKg', kind: 'missing', message: 'Gross weight per container missing (needed for VGM / overweight check).', question: q('What is the approximate gross weight per container?', '¿Cuál es el peso bruto aproximado por contenedor?') });
+    out.push({ field: 'weightKg', kind: 'confirm', message: 'Gross weight per container not given — priced anyway; needed for VGM / overweight check.', question: q('What is the approximate gross weight per container?', '¿Cuál es el peso bruto aproximado por contenedor?') });
   if ((f.mode === 'air' || f.mode === 'lcl' || f.mode === 'road') && f.weightKg == null)
-    out.push({ field: 'weightKg', kind: 'missing', message: 'Gross weight missing.', question: q('What is the total gross weight (kg)?', '¿Cuál es el peso bruto total (kg)?') });
+    out.push({ field: 'weightKg', kind: f.mode === 'road' ? 'confirm' : 'missing', message: 'Gross weight not given.', question: q('What is the total gross weight (kg)?', '¿Cuál es el peso bruto total (kg)?') });
   if ((f.mode === 'air' || f.mode === 'lcl') && f.volumeCbm == null)
     out.push({ field: 'volumeCbm', kind: 'missing', message: 'Volume / dimensions missing — chargeable weight can’t be checked.', question: q('Could you send the number of pieces and dimensions (L×W×H cm)?', '¿Nos podéis pasar número de bultos y medidas (largo×ancho×alto cm)?') });
   if (f.mode === 'road' && f.equipment.FTL && !/flatbed|curtain|reefer|box/.test(f.cargo ?? ''))
     out.push({ field: 'equipment', kind: 'ambiguous', message: 'Trailer type not stated.', question: q('Which trailer do you need — curtainsider or flatbed? Any loading restrictions?', '¿Qué tipo de tráiler necesitáis — lona o plataforma? ¿Alguna restricción de carga?') });
-  if (!f.incoterm) out.push({ field: 'incoterm', kind: 'missing', message: 'Incoterm missing — scope of charges unclear (assumed FOB).', question: q('Which Incoterm applies (e.g. EXW, FOB, CIF, DAP)?', '¿Qué Incoterm aplica (EXW, FOB, CIF, DAP…)?') });
-  if (!f.readyDate) out.push({ field: 'readyDate', kind: 'missing', message: 'Cargo ready date missing.', question: q('When will the cargo be ready?', '¿Cuándo estará lista la mercancía?') });
-  if (!f.cargo) out.push({ field: 'cargo', kind: 'missing', message: 'Commodity not described.', question: q('What is the commodity (short description / HS code)?', '¿Qué mercancía es (descripción breve / código HS)?') });
-  if (f.dg === 'unknown') out.push({ field: 'dg', kind: 'missing', message: 'DG status unknown.', question: q('Is the cargo dangerous goods? If yes, please send the MSDS and UN number.', '¿Es mercancía peligrosa? En ese caso, enviadnos la MSDS y el número UN.') });
+  if (!f.incoterm) out.push({ field: 'incoterm', kind: 'confirm', message: 'Incoterm not given — priced as FOB.', question: q('Which Incoterm applies (e.g. EXW, FOB, CIF, DAP)?', '¿Qué Incoterm aplica (EXW, FOB, CIF, DAP…)?') });
+  if (!f.readyDate) out.push({ field: 'readyDate', kind: 'confirm', message: 'Cargo ready date not given.', question: q('When will the cargo be ready?', '¿Cuándo estará lista la mercancía?') });
+  if (!f.cargo) out.push({ field: 'cargo', kind: 'confirm', message: 'Commodity not described.', question: q('What is the commodity (short description / HS code)?', '¿Qué mercancía es (descripción breve / código HS)?') });
+  if (f.dg === 'unknown') out.push({ field: 'dg', kind: 'confirm', message: 'DG status unknown.', question: q('Is the cargo dangerous goods? If yes, please send the MSDS and UN number.', '¿Es mercancía peligrosa? En ese caso, enviadnos la MSDS y el número UN.') });
   if (f.dg === 'yes') out.push({ field: 'dg', kind: 'ambiguous', message: 'Dangerous goods — DG surcharges and carrier acceptance not in sample rates.', question: q('Please send the MSDS, UN number and class so we can confirm DG acceptance.', 'Por favor enviad la MSDS, número UN y clase para confirmar la aceptación DG.') });
   return out;
 }

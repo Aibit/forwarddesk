@@ -96,7 +96,7 @@ function quoteText(f: QuoteFields, q: Quote, issues: Issue[], lang: Lang): strin
   const mode = f.mode ? (es ? MODE_LABEL_ES : MODE_LABEL)[f.mode] : '';
   const units = f.mode === 'fcl' || f.mode === 'road' ? equipmentText(f.equipment).replace(/x/g, '×') : f.mode === 'air' ? `${q.chargeable} kg ${es ? 'tasables' : 'chargeable'}` : `${q.units}`;
   const cargoBits = [f.cargo, f.dg === 'no' ? (es ? 'no peligrosa' : 'non-DG') : f.dg === 'yes' ? 'DG' : null].filter(Boolean).join(' · ');
-  const weightBits = [f.pieces ? `${f.pieces} ${es ? 'bultos' : 'pcs'}` : null, f.weightKg ? `${f.weightKg.toLocaleString('en-US')} kg` : null, f.volumeCbm ? `${f.volumeCbm} cbm` : null].filter(Boolean).join(' / ');
+  const weightBits = [f.pieces ? `${f.pieces} ${es ? 'bultos' : 'pcs'}` : null, f.weightKg ? `${f.weightKg.toLocaleString('en-US')} kg${f.mode === 'fcl' ? (es ? ' por contenedor' : ' per container') : ''}` : null, f.volumeCbm ? `${f.volumeCbm} cbm` : null].filter(Boolean).join(' / ');
   const cur = q.currencies.length === 1 ? q.currencies[0] : q.currencies.join('/');
   const width = Math.max(...q.lines.map((l) => l.charge.length), 12) + 2;
   const lines = [...q.lines]
@@ -178,7 +178,7 @@ function Chip({ label, value, status, evidence, editing, onEdit, editor }: ChipP
           {value}
         </button>
       )}
-      {status !== 'ok' && !editing && <span className="q-chip-flag">{status === 'missing' ? 'MISSING' : status === 'ambiguous' ? 'CHECK' : 'ASSUMED'}</span>}
+      {status !== 'ok' && !editing && <span className="q-chip-flag">{status === 'missing' ? 'MISSING' : status === 'ambiguous' ? 'TO CONFIRM' : 'ASSUMED'}</span>}
     </div>
   );
 }
@@ -198,6 +198,7 @@ export function QuoteView() {
   const [copied, setCopied] = useState<'quote' | 'questions' | null>(null);
   const [showFormat, setShowFormat] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const quoteRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (startedAt == null || doneMs != null) return;
@@ -253,7 +254,7 @@ export function QuoteView() {
       out.push({ field: 'destination', kind: 'ambiguous', message: `${parsed.destBase}: choose port (${destOptions.join(' / ')}).`, options: destOptions });
     for (const i of parsed.parseIssues) if (overrides[i.field as FieldKey] === undefined) out.push(i);
     for (const i of missingIssues(fields)) if (!out.some((o) => o.field === i.field && o.kind === i.kind)) out.push(i);
-    const rank = { missing: 0, ambiguous: 1, assumed: 2 };
+    const rank = { missing: 0, ambiguous: 1, confirm: 1, assumed: 2 };
     return out.sort((a, b) => rank[a.kind] - rank[b.kind]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [text, parsed, JSON.stringify(overrides), JSON.stringify(fields), originOptions?.join(), destOptions?.join()]);
@@ -261,7 +262,7 @@ export function QuoteView() {
   const statusOf = (k: FieldKey): ChipProps['status'] => {
     const mine = issues.filter((i) => i.field === k);
     if (mine.some((i) => i.kind === 'missing')) return 'missing';
-    if (mine.some((i) => i.kind === 'ambiguous')) return 'ambiguous';
+    if (mine.some((i) => i.kind === 'ambiguous' || i.kind === 'confirm')) return 'ambiguous';
     if (mine.some((i) => i.kind === 'assumed')) return 'assumed';
     return 'ok';
   };
@@ -420,6 +421,34 @@ export function QuoteView() {
         </div>
 
         {text.trim() && (
+          <div className={`q-summary ${quote && quote.hasFreight ? 'priced' : 'unpriced'}`} data-testid="quote-summary">
+            {quote && quote.hasFreight ? (
+              <>
+                <span className="q-summary-tag">PRICED</span>
+                <span className="mono">
+                  SELL <strong>${money(quote.sellTotal)}</strong> · margin ${money(quote.marginUsd)} ({quote.marginPct}%) · {quote.transitDays ?? '?'} d
+                </span>
+                <span className="q-summary-meta">
+                  {issues.filter((i) => i.kind === 'missing').length === 0
+                    ? issues.filter((i) => i.kind === 'ambiguous' || i.kind === 'confirm').length === 0
+                      ? 'all details present — ready to send'
+                      : `${issues.filter((i) => i.kind === 'ambiguous' || i.kind === 'confirm').length} to confirm with customer`
+                    : `${issues.filter((i) => i.kind === 'missing').length} missing`}
+                </span>
+                <button type="button" className="btn sm primary" onClick={() => quoteRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>
+                  View quote →
+                </button>
+              </>
+            ) : (
+              <>
+                <span className="q-summary-tag">NOT PRICED</span>
+                <span>{!quote ? 'Needs mode, origin and destination.' : `No freight rate for ${fields.origin} → ${fields.destination} in this rate sheet.`}</span>
+              </>
+            )}
+          </div>
+        )}
+
+        {text.trim() && (
           <div className="q-panel">
             <div className="q-head">
               <h2>What it read</h2>
@@ -441,7 +470,7 @@ export function QuoteView() {
                   editor={inp('equipment', equipmentText(fields.equipment), (v) => setField('equipment', parseEquipmentInput(v)))} />
               )}
               <Chip label="Weight" status={statusOf('weightKg')} evidence={parsed.evidence.weightKg} editing={editing === 'weightKg'} onEdit={() => setEditing('weightKg')}
-                value={fields.weightKg != null ? `${fields.weightKg.toLocaleString('en-US')} kg` : '—'}
+                value={fields.weightKg != null ? `${fields.weightKg.toLocaleString('en-US')} kg${fields.mode === 'fcl' ? ' / cntr' : fields.mode === 'road' && parsed.weightPerUnit ? ' / truck' : ''}` : '—'}
                 editor={inp('weightKg', fields.weightKg != null ? String(fields.weightKg) : '', (v) => setField('weightKg', numOrNull(v)), 'number')} />
               <Chip label="Volume" status={statusOf('volumeCbm')} evidence={parsed.evidence.volumeCbm} editing={editing === 'volumeCbm'} onEdit={() => setEditing('volumeCbm')}
                 value={fields.volumeCbm != null ? `${fields.volumeCbm} cbm` : '—'}
@@ -476,12 +505,12 @@ export function QuoteView() {
           <div className="q-panel">
             <div className="q-head">
               <h2>What to ask the customer</h2>
-              <span className="q-muted">{issues.filter((i) => i.kind === 'missing').length} missing · {issues.filter((i) => i.kind === 'ambiguous').length} to check · {issues.filter((i) => i.kind === 'assumed').length} assumed</span>
+              <span className="q-muted">{issues.filter((i) => i.kind === 'missing').length} missing · {issues.filter((i) => i.kind === 'ambiguous' || i.kind === 'confirm').length} to confirm · {issues.filter((i) => i.kind === 'assumed').length} assumed</span>
             </div>
             <ul className="q-issues">
               {issues.map((i, n) => (
-                <li key={n} className={`q-issue q-${i.kind}`}>
-                  <span className="q-issue-tag">{i.kind === 'missing' ? 'MISSING' : i.kind === 'ambiguous' ? 'CHECK' : 'ASSUMED'}</span>
+                <li key={n} className={`q-issue q-${i.kind === 'confirm' ? 'ambiguous' : i.kind}`}>
+                  <span className="q-issue-tag">{i.kind === 'missing' ? 'MISSING' : i.kind === 'assumed' ? 'ASSUMED' : 'TO CONFIRM'}</span>
                   <div>
                     <div className="q-issue-msg">{i.message}</div>
                     {i.question && <div className="q-issue-q">“{i.question[lang]}”</div>}
@@ -585,10 +614,10 @@ export function QuoteView() {
           <>
             {quote.staleCount > 0 && (
               <div className="q-warn stale">
-                <strong>STALE RATE</strong> — {quote.lines.filter((l) => l.stale).map((l) => `${l.charge} expired ${fmtDate(l.validUntil, 'en')}`).join('; ')}. Re-check with the carrier before sending.
+                <strong>RATE TO RE-CHECK</strong> — {quote.lines.filter((l) => l.stale).map((l) => `${l.charge} expired ${fmtDate(l.validUntil, 'en')}`).join('; ')}. Re-check with the carrier before sending.
               </div>
             )}
-            <div className="q-panel">
+            <div className="q-panel q-quote-panel" ref={quoteRef}>
               <div className="q-head">
                 <h2>
                   Quote · {fields.origin} → {fields.destination}

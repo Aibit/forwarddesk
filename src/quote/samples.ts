@@ -10,7 +10,13 @@ export const SAMPLE_REQUESTS: SampleRequest[] = [
     id: 'fcl',
     label: 'Ocean FCL · Shanghai → Barcelona',
     channel: 'Email',
-    text: 'hi, need price 2x40HC Shanghai to Barcelona, ready 20 Nov, FOB, general cargo. thx',
+    text: 'Hi, need price for 2x40HC Shanghai Yangshan to Barcelona, approx 18 tons per container, ready 20 Nov, FOB, general cargo. Thanks',
+  },
+  {
+    id: 'fcl-messy',
+    label: 'Ocean FCL (messy) · Shanghai',
+    channel: 'WhatsApp',
+    text: 'hi need price 2x40 shanghai - barcelona asap pls',
   },
   {
     id: 'air',
