@@ -15,6 +15,13 @@ export const CITIES = [
   'Hamburg',
 ] as const;
 
+/** Demo deadlines stay relative to today so the seed desk never shows overdue RFQs. */
+function daysFromToday(n: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() + n);
+  return d.toISOString().slice(0, 10);
+}
+
 /** Seed = customer RFQs on the FF desk (multi-lane demo; lane is a filter). */
 export const initialRfqs: ShipperRfq[] = [
   {
@@ -26,7 +33,7 @@ export const initialRfqs: ShipperRfq[] = [
     volumeCbm: 8.5,
     pickupCity: 'Jebel Ali',
     dropCity: 'Riyadh',
-    deadline: '2026-09-25',
+    deadline: daysFromToday(3),
     maxPriceUsd: 2800,
     hazmat: false,
     notes: 'Customer max sell $2,800 — desk to protect margin; air handoff OK if road ETA slips',
@@ -41,7 +48,7 @@ export const initialRfqs: ShipperRfq[] = [
     volumeCbm: 2.2,
     pickupCity: 'Dubai',
     dropCity: 'Jeddah',
-    deadline: '2026-09-24',
+    deadline: daysFromToday(2),
     maxPriceUsd: 4200,
     hazmat: false,
     notes: '2–8°C · GDP carrier only — desk quoting shipper, buying soft space',
@@ -56,7 +63,7 @@ export const initialRfqs: ShipperRfq[] = [
     volumeCbm: 14,
     pickupCity: 'Abu Dhabi',
     dropCity: 'Riyadh',
-    deadline: '2026-09-26',
+    deadline: daysFromToday(4),
     maxPriceUsd: 1900,
     hazmat: false,
     notes: 'Tight sell ceiling — prefer healthy buy rate under $1,650',
@@ -71,7 +78,7 @@ export const initialRfqs: ShipperRfq[] = [
     volumeCbm: 3.1,
     pickupCity: 'Sharjah',
     dropCity: 'Dammam',
-    deadline: '2026-09-27',
+    deadline: daysFromToday(5),
     maxPriceUsd: 3500,
     hazmat: true,
     notes: 'UN-classed · only hazmat-licensed buy-side capacity — compliance first',
@@ -86,7 +93,7 @@ export const initialRfqs: ShipperRfq[] = [
     volumeCbm: 1.0,
     pickupCity: 'Dubai',
     dropCity: 'NEOM',
-    deadline: '2026-09-28',
+    deadline: daysFromToday(6),
     maxPriceUsd: 5500,
     hazmat: false,
     notes: 'Export-control screening at UAE–KSA border — desk may veto cheap buy options',
@@ -101,7 +108,7 @@ export const initialRfqs: ShipperRfq[] = [
     volumeCbm: 11,
     pickupCity: 'Jebel Ali',
     dropCity: 'Riyadh',
-    deadline: '2026-09-26',
+    deadline: daysFromToday(4),
     maxPriceUsd: 2200,
     hazmat: false,
     notes: 'Routine quoting lane — build buy/sell options with visible margin',
@@ -116,7 +123,7 @@ export const initialRfqs: ShipperRfq[] = [
     volumeCbm: 4.5,
     pickupCity: 'Singapore',
     dropCity: 'Jakarta',
-    deadline: '2026-09-27',
+    deadline: daysFromToday(5),
     maxPriceUsd: 2400,
     hazmat: false,
     notes: 'Example SEA lane — same desk choreography, different corridor filter',
@@ -131,7 +138,7 @@ export const initialRfqs: ShipperRfq[] = [
     volumeCbm: 16,
     pickupCity: 'Rotterdam',
     dropCity: 'Hamburg',
-    deadline: '2026-09-26',
+    deadline: daysFromToday(4),
     maxPriceUsd: 1800,
     hazmat: false,
     notes: 'Example EU short-haul lane — desk buy/sell/margin still applies',

@@ -608,7 +608,7 @@ function App() {
           {bookings.length > 0 && (
             <span className="mono">{bookings.length} CFM</span>
           )}
-          <a href="/capacity">/capacity</a>
+          {dataSource !== 'seed' && <a href="/capacity">/capacity</a>}
         </div>
         <div className="top-actions">
           <div className="view-toggle" role="group" aria-label="Desk or Pitch view">
