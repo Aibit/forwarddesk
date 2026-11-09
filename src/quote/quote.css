@@ -146,3 +146,6 @@
 .q-warn.stale { border-color: var(--amber); background: var(--amber-dim); color: #f5d08a; }
 .q-table tr.stale td { color: #f5d08a; }
 .q-stale-tag { background: var(--amber); color: #12100e; }
+.q-pdf-internal { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.72rem; color: var(--muted); cursor: pointer; }
+.q-pdf-internal input { accent-color: var(--amber); }
+.q-send-note { margin-top: 0.4rem; font-size: 0.72rem; }

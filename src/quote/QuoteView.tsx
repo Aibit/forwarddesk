@@ -197,6 +197,8 @@ export function QuoteView() {
   const [lang, setLang] = useState<Lang>('en');
   const [copied, setCopied] = useState<'quote' | 'questions' | null>(null);
   const [showFormat, setShowFormat] = useState(false);
+  const [pdfInternal, setPdfInternal] = useState(false);
+  const [pdfState, setPdfState] = useState<'idle' | 'busy' | 'done' | 'error'>('idle');
   const fileRef = useRef<HTMLInputElement>(null);
   const quoteRef = useRef<HTMLDivElement>(null);
 
@@ -317,6 +319,30 @@ export function QuoteView() {
   const askText = questionsText(issues, lang);
   const elapsed = startedAt == null ? null : (doneMs ?? now - startedAt);
   const usingSample = !sheet || sheet.rows === 0;
+
+  async function doPdf() {
+    if (!quote || !quote.hasFreight) return;
+    setPdfState('busy');
+    try {
+      const { generateQuotePdf } = await import('./pdf');
+      const { blob, filename } = await generateQuotePdf({
+        fields, quote, issues: issues.filter((i) => i.kind !== 'assumed'), lang, internal: pdfInternal, sampleRates: usingSample, sourceText: text, marginTarget: margin,
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 10000);
+      setPdfState('done');
+      setTimeout(() => setPdfState('idle'), 2500);
+    } catch (err) {
+      console.warn('PDF generation failed', err);
+      setPdfState('error');
+    }
+  }
   const templateHref = `${import.meta.env.BASE_URL}rate-sheet-template.csv`;
 
   const doCopy = async (what: 'quote' | 'questions') => {
@@ -697,8 +723,14 @@ export function QuoteView() {
                 <button type="button" className="btn primary" onClick={() => void doCopy('quote')}>
                   {copied === 'quote' ? 'Copied ✓' : 'Copy quote'}
                 </button>
-                <span className="q-muted">Human sends it. Nothing is booked or emailed from here.</span>
+                <button type="button" className="btn" data-testid="generate-pdf" disabled={pdfState === 'busy'} onClick={() => void doPdf()}>
+                  {pdfState === 'busy' ? 'Building PDF…' : pdfState === 'done' ? 'PDF downloaded ✓' : pdfState === 'error' ? 'PDF failed — retry' : 'Generate PDF'}
+                </button>
+                <label className="q-pdf-internal" title="Adds buy and margin columns. Never send this version to the customer.">
+                  <input type="checkbox" data-testid="pdf-internal" checked={pdfInternal} onChange={(e) => setPdfInternal(e.target.checked)} /> Internal (with buy/margin)
+                </label>
               </div>
+              <div className="q-muted q-send-note">Human sends it. Nothing is booked or emailed from here.</div>
             </div>
           </>
         )}
