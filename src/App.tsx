@@ -6,6 +6,7 @@ import { LiveBoard } from './components/LiveBoard';
 import { MatchCards } from './components/MatchCards';
 import { RfqForm } from './components/RfqForm';
 import { SalesSim } from './components/SalesSim';
+import { QuoteView } from './quote/QuoteView';
 import { AGENT_META, initialCapacity, initialRfqs } from './data';
 import { buildProposals } from './matching';
 import type {
@@ -52,7 +53,7 @@ function App() {
   const [busy, setBusy] = useState(false);
   const [showRfqForm, setShowRfqForm] = useState(false);
   const [showCapForm, setShowCapForm] = useState(false);
-  const [viewMode, setViewMode] = useState<'desk' | 'pitch'>('desk');
+  const [viewMode, setViewMode] = useState<'quote' | 'desk' | 'pitch'>('quote');
   const [selectedProposalId, setSelectedProposalId] = useState<string | null>(null);
 
   const pushMsg = useCallback(
@@ -551,7 +552,7 @@ function App() {
       ) {
         return;
       }
-      if (showRfqForm || showCapForm) return;
+      if (showRfqForm || showCapForm || viewMode === 'quote') return;
       if (e.key === 'r' || e.key === 'R') {
         e.preventDefault();
         void runMatch();
@@ -560,7 +561,7 @@ function App() {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedRfqId, busy, showRfqForm, showCapForm, rfqs, capacity]);
+  }, [selectedRfqId, busy, showRfqForm, showCapForm, rfqs, capacity, viewMode]);
 
   const srcLabel =
     dataSource === 'ingest'
@@ -576,9 +577,10 @@ function App() {
           <div className="logo">FD</div>
           <div>
             <h1>FORWARDDESK</h1>
-            <p className="corridor">SALES + QUOTING DESK</p>
+            <p className="corridor">{viewMode === 'quote' ? 'REQUEST → QUOTE IN MINUTES' : 'SALES + QUOTING DESK'}</p>
           </div>
         </div>
+        {viewMode !== 'quote' && (
         <div className="top-meta">
           <span
             className="corridor-chip"
@@ -610,8 +612,16 @@ function App() {
           )}
           {dataSource !== 'seed' && <a href="/capacity">/capacity</a>}
         </div>
+        )}
         <div className="top-actions">
-          <div className="view-toggle" role="group" aria-label="Desk or Pitch view">
+          <div className="view-toggle" role="group" aria-label="Quote, Desk or Pitch view">
+            <button
+              type="button"
+              className={viewMode === 'quote' ? 'active' : ''}
+              onClick={() => setViewMode('quote')}
+            >
+              Quote
+            </button>
             <button
               type="button"
               className={viewMode === 'desk' ? 'active' : ''}
@@ -627,6 +637,7 @@ function App() {
               Pitch
             </button>
           </div>
+          {viewMode !== 'quote' && (<>
           <button
             type="button"
             className="btn ghost sm"
@@ -658,10 +669,13 @@ function App() {
           >
             {busy ? 'Working…' : 'Build quotes'}
           </button>
+          </>)}
         </div>
       </header>
 
-      {selected && (
+      {viewMode === 'quote' && <QuoteView />}
+
+      {viewMode !== 'quote' && selected && (
         <div className="sticky-bar">
           <span className="mono">{selected.id}</span>
           <span className="route-label">
@@ -704,6 +718,7 @@ function App() {
         </div>
       )}
 
+      {viewMode !== 'quote' && (
       <main className={`ops-grid ${viewMode === 'pitch' ? 'pitch-mode' : ''}`}>
         <section className="ops-col" aria-label="Customer RFQs and buy-side capacity">
           <LiveBoard
@@ -738,10 +753,11 @@ function App() {
           <AgentFeed messages={messages} />
         </aside>
       </main>
+      )}
 
       <footer className="ops-footer">
         <span>
-          <kbd>R</kbd> build quotes on selected RFQ
+          {viewMode === 'quote' ? 'Paste → read → ask → price → copy' : <><kbd>R</kbd> build quotes on selected RFQ</>}
         </span>
         <span>ForwardDesk · sales + quoting · pitch lane then lock buy/sell · human confirm</span>
         <span>Schedules ≠ soft leftover</span>

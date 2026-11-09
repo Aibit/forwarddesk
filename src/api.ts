@@ -123,6 +123,10 @@ async function fetchJson(url: string): Promise<unknown> {
  * This keeps the static GitHub Pages build usable while preserving live API mode.
  */
 export async function loadBoardData(): Promise<LoadResult> {
+  // Static GitHub Pages build has no API: skip the requests (avoids 404 noise in the console).
+  if (typeof window !== 'undefined' && window.location.hostname.endsWith('github.io')) {
+    return { capacity: initialCapacity, rfqs: initialRfqs, source: 'seed', error: 'static hosting' };
+  }
   try {
     const [capRaw, rfqRaw] = await Promise.all([
       fetchJson('/api/capacity'),
