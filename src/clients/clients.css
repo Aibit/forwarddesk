@@ -1,0 +1,81 @@
+/* ── Clients (setup + dashboard) ── */
+.clients-view .c-muted, .c-muted { color: var(--muted); font-size: 0.78rem; }
+.c-small { font-size: 0.72rem; line-height: 1.4; }
+.c-top-actions { display: flex; align-items: center; gap: 0.45rem; flex-wrap: wrap; }
+.c-company { display: flex; align-items: center; gap: 0.75rem; }
+.c-company-txt { flex: 1; min-width: 0; font-size: 0.84rem; }
+.c-logo { max-height: 34px; max-width: 120px; object-fit: contain; background: #fff; border-radius: 3px; padding: 2px; }
+.c-logo.lg { max-height: 48px; max-width: 160px; }
+.c-logo-ph { width: 34px; height: 34px; display: inline-grid; place-items: center; background: var(--panel-2); border: 1px dashed var(--border-strong); color: var(--muted); font-family: var(--mono); font-size: 0.7rem; border-radius: 3px; }
+.c-logo-row { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
+
+.c-table { display: flex; flex-direction: column; }
+.c-row {
+  display: grid; grid-template-columns: minmax(0, 1.6fr) 0.45fr minmax(0, 1.9fr) 0.85fr 1.05fr 0.75fr 0.9fr 0.7fr; gap: 0.6rem; align-items: center;
+  padding: 0.5rem 0.45rem; border: none; border-bottom: 1px solid var(--border); background: transparent; color: var(--text);
+  text-align: start; font: inherit; font-size: 0.84rem; cursor: pointer;
+}
+.c-row:hover { background: var(--row-hover); }
+.c-row-head { cursor: default; font-size: 0.66rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.c-row-head:hover { background: transparent; }
+.clients-view[dir='rtl'] .c-row-head { text-transform: none; letter-spacing: 0; font-size: 0.76rem; }
+.c-row-head small { text-transform: none; letter-spacing: 0; }
+.c-name { display: flex; flex-direction: column; gap: 0.1rem; min-width: 0; }
+.c-sub { display: block; color: var(--muted); font-size: 0.74rem; }
+.c-sub .j-sample.sm { margin-inline-start: 0.4rem; }
+.c-num { font-size: 0.8rem; white-space: nowrap; }
+.c-amber, .q-amber { color: var(--amber); }
+.c-red { color: #ff8a8a; }
+.c-amber-sub { color: var(--amber); font-size: 0.74rem; }
+.c-dl { font-size: 0.76rem; white-space: nowrap; }
+.c-dl.amber { color: var(--amber); }
+.c-dl.red { color: #ff8a8a; }
+.c-dl.ok { color: #8fd6a6; }
+
+.c-dash { display: flex; flex-direction: column; gap: 0.75rem; }
+.c-dash-head { display: flex; align-items: center; gap: 0.6rem; }
+.c-dash-title { flex: 1; display: flex; align-items: baseline; gap: 0.6rem; min-width: 0; }
+.c-dash-title h2 { margin: 0; font-size: 1.15rem; }
+.c-dash-main { display: grid; grid-template-columns: minmax(0, 1fr) minmax(260px, 0.42fr); gap: 0.75rem; align-items: start; }
+.c-dash-left { display: flex; flex-direction: column; gap: 0.75rem; min-width: 0; }
+.c-jobs, .c-quotes { display: flex; flex-direction: column; }
+.c-job {
+  display: grid; grid-template-columns: 6.5rem minmax(0, 1.4fr) minmax(0, 1.4fr) minmax(0, 1fr) auto; gap: 0.6rem; align-items: center;
+  border: none; border-bottom: 1px solid var(--border); background: transparent; color: var(--text); text-align: start; font: inherit; font-size: 0.84rem;
+  padding: 0.5rem 0.3rem; cursor: pointer;
+}
+.c-job:hover { background: var(--row-hover); }
+.c-job-id { font-size: 0.8rem; }
+.c-job-step .j-code { font-family: var(--mono); font-size: 0.72rem; border: 1px solid var(--border-strong); padding: 0 0.25rem; border-radius: 2px; margin-inline-end: 0.2rem; }
+.c-job-open { font-size: 0.7rem; color: var(--amber); white-space: nowrap; }
+.c-quote { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.2fr) minmax(0, 1.2fr) auto; gap: 0.6rem; align-items: center; padding: 0.5rem 0.3rem; border-bottom: 1px solid var(--border); font-size: 0.84rem; }
+.c-q-id .mono { font-size: 0.78rem; }
+.c-status button { font-size: 0.68rem; padding: 0.2rem 0.5rem; }
+.c-status button.st-won.active { background: var(--pass); border-color: var(--pass); color: #fff; }
+.c-status button.st-lost.active { background: var(--border-strong); border-color: var(--border-strong); color: var(--text); }
+.c-info dl { margin: 0; display: grid; gap: 0.2rem; font-size: 0.82rem; }
+.c-info dt { color: var(--muted); font-size: 0.66rem; letter-spacing: 0.06em; text-transform: uppercase; margin-top: 0.45rem; }
+.clients-view[dir='rtl'] .c-info dt { text-transform: none; letter-spacing: 0; font-size: 0.76rem; }
+.c-info dd { margin: 0; }
+.c-info h3 { margin: 0.9rem 0 0.2rem; font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--amber); }
+.c-defs { grid-template-columns: auto 1fr; column-gap: 0.8rem; }
+.c-defs dt { margin-top: 0.15rem !important; }
+.c-notes { font-size: 0.82rem; margin: 0.2rem 0 0; line-height: 1.4; }
+
+.c-modal-bg { position: fixed; inset: 0; background: rgba(8, 7, 6, 0.65); z-index: 60; display: grid; place-items: center; padding: 1rem; }
+.c-modal { width: min(760px, 100%); max-height: calc(100vh - 2rem); overflow: auto; }
+.c-form { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem 0.75rem; }
+.c-field { display: flex; flex-direction: column; gap: 0.2rem; font-size: 0.7rem; color: var(--muted); }
+.c-field.wide { grid-column: 1 / -1; }
+.c-in { background: var(--bg); color: var(--text); border: 1px solid var(--border-strong); border-radius: 2px; padding: 0.35rem 0.45rem; font: inherit; font-size: 0.84rem; }
+.c-in:focus { outline: none; border-color: var(--amber); }
+.c-form-actions { display: flex; gap: 0.45rem; margin-top: 0.75rem; align-items: center; }
+
+/* Quote tab client picker */
+.q-client { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.55rem; font-size: 0.78rem; }
+.q-client select { background: var(--bg); color: var(--text); border: 1px solid var(--border-strong); border-radius: 2px; padding: 0.25rem 0.4rem; font: inherit; font-size: 0.8rem; }
+.q-client-defs { color: var(--muted); font-size: 0.72rem; font-family: var(--mono); }
+.q-client a, .q-linklike { color: var(--amber); cursor: pointer; background: none; border: none; font: inherit; font-size: 0.74rem; padding: 0; text-decoration: underline dotted; }
+.q-saved { color: #8fd6a6; font-size: 0.72rem; }
+.j-custlink { color: inherit; text-decoration: underline dotted; cursor: pointer; }
+.j-custlink:hover { color: var(--amber); }

@@ -8,12 +8,12 @@ import './jobs.css';
 
 const LIDX: Record<Lang, 0 | 1 | 2> = { en: 0, es: 1, fa: 2 };
 
-export function JobsView({ onDraftQuote }: { onDraftQuote: (text: string) => void }) {
+export function JobsView({ onDraftQuote, onOpenClient, openRequest }: { onDraftQuote: (text: string, customer?: string) => void; onOpenClient?: (customer: string) => void; openRequest?: { id: string; n: number } | null }) {
   const [lang, setLang] = useState<Lang>('en');
   const [now, setNow] = useState(() => Date.now());
   const [jobs] = useState<Job[]>(() => sampleJobs());
   const [tariffs, setTariffs] = useState<Tariffs>(() => loadTariffs());
-  const [openId, setOpenId] = useState<string | null>(null);
+  const [openId, setOpenId] = useState<string | null>(openRequest?.id ?? null);
   const [filter, setFilter] = useState<'all' | 'export' | 'import'>('all');
 
   useEffect(() => {
@@ -21,6 +21,17 @@ export function JobsView({ onDraftQuote }: { onDraftQuote: (text: string) => voi
     return () => window.clearInterval(t);
   }, []);
   useEffect(() => saveTariffs(tariffs), [tariffs]);
+  useEffect(() => {
+    if (openRequest) setOpenId(openRequest.id);
+  }, [openRequest?.n]); // eslint-disable-line react-hooks/exhaustive-deps
+  const custLink = (name: string): ReactNode =>
+    onOpenClient ? (
+      <span className="j-custlink" role="link" title={`${name} — client dashboard`} onClick={(e) => { e.stopPropagation(); onOpenClient(name); }} data-testid={`custlink-${name}`}>
+        {name}
+      </span>
+    ) : (
+      name
+    );
   useEffect(() => {
     if (!openId) return;
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpenId(null);
@@ -143,7 +154,7 @@ export function JobsView({ onDraftQuote }: { onDraftQuote: (text: string) => voi
                       <bdi>{j.pol} → {j.pod}</bdi>
                     </strong>
                     <span className="j-sub">
-                      {j.customer} · {j.commodity}
+                      {custLink(j.customer)} · {j.commodity}
                     </span>
                     <span className="j-sub">{j.line}</span>
                   </span>
@@ -347,7 +358,8 @@ export function JobsView({ onDraftQuote }: { onDraftQuote: (text: string) => voi
           tariffs={tariffs}
           T={T}
           onClose={() => setOpenId(null)}
-          onDraftQuote={() => open.quoteText && onDraftQuote(open.quoteText)}
+          onDraftQuote={() => open.quoteText && onDraftQuote(open.quoteText, open.customer)}
+          onOpenClient={onOpenClient ? () => onOpenClient(open.customer) : undefined}
         />
       )}
     </div>
@@ -406,7 +418,7 @@ const DOC_KEY: Record<Doc['key'], Key> = {
   originalBl: 'originalBl', packing: 'packing', arrival: 'arrival', loi: 'loi', do: 'do', warehouse: 'warehouse',
 };
 
-function JobDrawer({ job, lang, now, tariffs, T, onClose, onDraftQuote }: { job: Job; lang: Lang; now: number; tariffs: Tariffs; T: (k: Key) => ReactNode; onClose: () => void; onDraftQuote: () => void }) {
+function JobDrawer({ job, lang, now, tariffs, T, onClose, onDraftQuote, onOpenClient }: { job: Job; lang: Lang; now: number; tariffs: Tariffs; T: (k: Key) => ReactNode; onClose: () => void; onDraftQuote: () => void; onOpenClient?: () => void }) {
   const L = (k: Key) => tr(lang, k);
   const steps = stepsFor(job.dir);
   const cur = stepIndex(job.step);
@@ -437,6 +449,11 @@ function JobDrawer({ job, lang, now, tariffs, T, onClose, onDraftQuote }: { job:
             </p>
           </div>
           <div className="j-d-actions">
+            {onOpenClient && (
+              <button type="button" className="btn ghost" onClick={onOpenClient} data-testid="open-client">
+                {L('clientDash')} →
+              </button>
+            )}
             {canQuote && (
               <button type="button" className="btn primary" onClick={onDraftQuote} data-testid="draft-quote">
                 {L('draftQuote')} →

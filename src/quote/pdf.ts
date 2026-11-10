@@ -4,6 +4,8 @@ import type { QMode } from './locations';
 import type { Issue, QuoteFields } from './parser';
 import type { Badge, Quote, Side } from './rates';
 import { BADGE_L } from './optlabels';
+import { isoToday, quoteNumber } from './quoteno';
+import type { Company } from '../clients/store';
 
 export interface PdfInput {
   fields: QuoteFields;
@@ -17,6 +19,8 @@ export interface PdfInput {
   /** multi-option quote: options in customer order (options[0] === quote) */
   options?: Quote[];
   badges?: Badge[][];
+  company?: Company | null;
+  clientName?: string | null;
 }
 
 type RGB = [number, number, number];
@@ -142,16 +146,7 @@ function fmtDate(iso: string | null, lang: 'en' | 'es'): string {
 function shortDate(d: Date, lang: 'en' | 'es'): string {
   return d.toLocaleDateString(lang === 'es' ? 'es-ES' : 'en-GB', { day: 'numeric', month: 'short' }).replace('.', '');
 }
-function isoToday(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
-
-export function quoteNumber(text: string): string {
-  let h = 0;
-  for (const ch of text) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
-  return `FD-Q-${isoToday().replace(/-/g, '')}-${String(h % 1000).padStart(3, '0')}`;
-}
+export { quoteNumber };
 
 export async function generateQuotePdf(inp: PdfInput): Promise<{ blob: Blob; filename: string }> {
   const { fields: f, quote: q, lang } = inp;
@@ -159,6 +154,7 @@ export async function generateQuotePdf(inp: PdfInput): Promise<{ blob: Blob; fil
   const opts = inp.options && inp.options.length > 1 ? inp.options : null;
   const validMin = opts ? opts.map((o) => o.validUntil).filter((v): v is string => !!v).sort()[0] ?? q.validUntil : q.validUntil;
   const { fonts, land } = await loadAssets();
+  const co = inp.company && (inp.company.name || inp.company.logo || inp.company.contactName) ? inp.company : null;
   const render = (mh: number, noSchedule = false) => {
   let overflow = 0;
     const doc = new jsPDF({ unit: 'mm', format: 'a4', compress: true });
@@ -227,12 +223,14 @@ export async function generateQuotePdf(inp: PdfInput): Promise<{ blob: Blob; fil
       doc.setLineWidth(0.25);
       doc.line(M, H - 16, W - M, H - 16);
       font('PlexSB', 7.2, C.ink);
-      doc.text(`${L.preparedBy}: ${L.yourForwarder}`, M, H - 11.2);
+      const who = [co?.contactName, co?.name].filter(Boolean).join(' · ');
+      doc.text(fit(`${L.preparedBy}: ${who || L.yourForwarder}`, CW * 0.6), M, H - 11.2);
       font('PlexR', 6.8, C.muted);
-      doc.text(L.contact, M, H - 7.6);
+      const reach = [co?.email, co?.phone, co?.address].filter(Boolean).join(' · ');
+      doc.text(fit(reach || L.contact, CW * 0.6), M, H - 7.6);
       font('PlexR', 6.6, C.faint);
       doc.text(`${qn} · ${L.page} ${page}`, W - M, H - 11.2, { align: 'right' });
-      doc.text(inp.sampleRates ? L.sample : 'ForwardDesk', W - M, H - 7.6, { align: 'right' });
+      doc.text(inp.sampleRates ? L.sample : co?.name || 'ForwardDesk', W - M, H - 7.6, { align: 'right' });
     };
     const ensure = (y: number, need: number): number => {
       if (y + need <= H - 19) return y;
@@ -392,16 +390,35 @@ export async function generateQuotePdf(inp: PdfInput): Promise<{ blob: Blob; fil
     // ── Header ──
     fillC(C.amber);
     doc.rect(0, 0, W, 2.6, 'F');
-    fillC(C.ink);
-    doc.roundedRect(M, 11, 11, 11, 1.6, 1.6, 'F');
-    fillC(C.amber);
-    doc.rect(M + 2.2, 19.2, 6.6, 0.9, 'F');
-    font('PlexB', 9.5, C.amber);
-    doc.text('FD', M + 5.5, 17.6, { align: 'center' });
+    let hx = M + 14.5;
+    if (co?.logo) {
+      const lw0 = co.logoW ?? 100;
+      const lh0 = co.logoH ?? 100;
+      const lh = 11;
+      const lw = Math.min(34, (lw0 / lh0) * lh);
+      const lhh = Math.min(lh, (lh0 / lw0) * lw);
+      try {
+        doc.addImage(co.logo, 'PNG', M, 11 + (lh - lhh) / 2, lw, lhh);
+        hx = M + lw + 3.5;
+      } catch {
+        hx = M;
+      }
+    } else if (!co?.name) {
+      fillC(C.ink);
+      doc.roundedRect(M, 11, 11, 11, 1.6, 1.6, 'F');
+      fillC(C.amber);
+      doc.rect(M + 2.2, 19.2, 6.6, 0.9, 'F');
+      font('PlexB', 9.5, C.amber);
+      doc.text('FD', M + 5.5, 17.6, { align: 'center' });
+    } else hx = M;
     font('PlexB', 15, C.ink);
-    doc.text('ForwardDesk', M + 14.5, 17.2);
+    let nsz = 15;
+    const coName = co?.name || 'ForwardDesk';
+    while (doc.getTextWidth(coName) > 88 - (hx - M) && nsz > 9) doc.setFontSize(--nsz);
+    doc.text(coName, hx, 17.2);
     font('PlexR', 7.4, C.muted);
-    doc.text(lang === 'es' ? 'Transitario · Cotización de flete' : 'Freight forwarding · Quotation', M + 14.5, 21.6);
+    const forWhom = inp.clientName ? (lang === 'es' ? `Cotización para ${inp.clientName}` : `Quotation for ${inp.clientName}`) : lang === 'es' ? 'Transitario · Cotización de flete' : 'Freight forwarding · Quotation';
+    doc.text(fit(forWhom, 92 - (hx - M)), hx, 21.6);
     caps(L.title, W - M, 13.6, C.amberDeep, 8.2, 'right');
     font('MonoM', 10.5, C.ink);
     doc.text(qn, W - M, 19.2, { align: 'right' });

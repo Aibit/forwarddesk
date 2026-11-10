@@ -12,6 +12,8 @@ import {
 } from './parser';
 import { CSV_COLUMNS, buildOptions, buildQuote, loadRateCsv, optionBadges, sampleRates, type Badge, type Quote, type RateRow, type Side } from './rates';
 import { BADGE_L, MODE_L, ol, type QLang } from './optlabels';
+import { quoteNumber } from './quoteno';
+import { lineMatches, store, useStore } from '../clients/store';
 import { SAMPLE_REQUESTS } from './samples';
 import './quote.css';
 
@@ -234,7 +236,11 @@ function Chip({ label, value, status, evidence, editing, onEdit, editor }: ChipP
   );
 }
 
-export function QuoteView({ seed }: { seed?: { text: string; n: number } | null } = {}) {
+export function QuoteView({ seed, onOpenClient }: { seed?: { text: string; n: number; clientId?: string | null } | null; onOpenClient?: (id: string) => void } = {}) {
+  const { clients, company } = useStore();
+  const [clientId, setClientId] = useState<string | null>(null);
+  const client = clients.find((c) => c.id === clientId) ?? null;
+  const [savedTo, setSavedTo] = useState<string | null>(null);
   const [text, setText] = useState('');
   const [startedAt, setStartedAt] = useState<number | null>(null);
   const [doneMs, setDoneMs] = useState<number | null>(null);
@@ -272,13 +278,26 @@ export function QuoteView({ seed }: { seed?: { text: string; n: number } | null 
     setStartedAt(t.trim() ? Date.now() : null);
     setNow(Date.now());
     const p = parseRequest(t, extraLocs);
-    setLang(p.language);
+    setLang(client ? client.lang : p.language);
+    setSavedTo(null);
     setActiveCarrier(null);
     setOffCarriers([]);
   };
 
+  const applyClient = (id: string | null) => {
+    setClientId(id);
+    setSavedTo(null);
+    const c = clients.find((x) => x.id === id);
+    if (c) {
+      setMargin(c.marginPct);
+      setLang(c.lang);
+    }
+  };
+
   useEffect(() => {
-    if (seed?.text) startFresh(seed.text);
+    if (!seed) return;
+    if (seed.text) startFresh(seed.text);
+    if (seed.clientId !== undefined) applyClient(seed.clientId ?? null);
   }, [seed?.n]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const mode = overrides.mode !== undefined ? overrides.mode : parsed.fields.mode;
@@ -291,6 +310,8 @@ export function QuoteView({ seed }: { seed?: { text: string; n: number } | null 
     destination: destRes?.name ?? null,
     ...overrides,
   };
+  const clientIncoterm = !!client && parsed.fields.incoterm == null && overrides.incoterm === undefined;
+  if (clientIncoterm) fields.incoterm = client!.incoterm as QuoteFields['incoterm'];
   if (overrides.mode !== undefined && overrides.origin === undefined) fields.origin = originRes?.name ?? null;
   if (overrides.mode !== undefined && overrides.destination === undefined) fields.destination = destRes?.name ?? null;
 
@@ -313,12 +334,13 @@ export function QuoteView({ seed }: { seed?: { text: string; n: number } | null 
       });
     if (destOptions)
       out.push({ field: 'destination', kind: 'ambiguous', message: `${parsed.destBase}: choose port (${destOptions.join(' / ')}).`, options: destOptions });
-    for (const i of parsed.parseIssues) if (overrides[i.field as FieldKey] === undefined) out.push(i);
+    for (const i of parsed.parseIssues) if (overrides[i.field as FieldKey] === undefined && !(clientIncoterm && i.field === 'incoterm')) out.push(i);
+    if (clientIncoterm) out.push({ field: 'incoterm', kind: 'assumed', message: `No Incoterm in the request — using ${client!.name}'s default ${client!.incoterm} (client setup).` } as Issue);
     for (const i of missingIssues(fields)) if (!out.some((o) => o.field === i.field && o.kind === i.kind)) out.push(i);
     const rank = { missing: 0, ambiguous: 1, confirm: 1, assumed: 2 };
     return out.sort((a, b) => rank[a.kind] - rank[b.kind]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [text, parsed, JSON.stringify(overrides), JSON.stringify(fields), originOptions?.join(), destOptions?.join()]);
+  }, [text, parsed, JSON.stringify(overrides), JSON.stringify(fields), originOptions?.join(), destOptions?.join(), clientId, client?.incoterm]);
 
   const statusOf = (k: FieldKey): ChipProps['status'] => {
     const mine = issues.filter((i) => i.field === k);
@@ -329,7 +351,15 @@ export function QuoteView({ seed }: { seed?: { text: string; n: number } | null 
   };
 
   const rawQuote = useMemo(() => (text.trim() ? buildQuote(fields, rates, margin) : null), [text, JSON.stringify(fields), rates, margin]); // eslint-disable-line react-hooks/exhaustive-deps
-  const options = useMemo(() => (text.trim() ? buildOptions(fields, rates, margin) : []), [text, JSON.stringify(fields), rates, margin]); // eslint-disable-line react-hooks/exhaustive-deps
+  const allOptions = useMemo(() => (text.trim() ? buildOptions(fields, rates, margin) : []), [text, JSON.stringify(fields), rates, margin]); // eslint-disable-line react-hooks/exhaustive-deps
+  const clientLines = client?.lines ?? [];
+  const lineFiltered = clientLines.length ? allOptions.filter((o) => lineMatches(o.carrier, clientLines)) : allOptions;
+  const options = lineFiltered.length ? lineFiltered : allOptions;
+  const linesNote = client && clientLines.length && allOptions.length
+    ? lineFiltered.length
+      ? allOptions.length > lineFiltered.length ? `${client.name}'s lines only (${clientLines.join(', ')}): ${allOptions.length - lineFiltered.length} other option${allOptions.length - lineFiltered.length > 1 ? 's' : ''} hidden.` : null
+      : `None of ${client.name}'s lines (${clientLines.join(', ')}) has a rate on this lane — showing all lines.`
+    : null;
   const badges = useMemo(() => optionBadges(options), [options]);
   const recIdx = Math.max(0, badges.findIndex((b) => b.includes('recommended')));
   const activeIdx = options.findIndex((o) => o.carrier === activeCarrier) >= 0 ? options.findIndex((o) => o.carrier === activeCarrier) : recIdx;
@@ -399,7 +429,9 @@ export function QuoteView({ seed }: { seed?: { text: string; n: number } | null 
       const { generateQuotePdf } = await import('./pdf');
       const { blob, filename } = await generateQuotePdf({
         fields, quote: custOpts[0], options: custOpts, badges: custBadges, issues: issues.filter((i) => i.kind !== 'assumed'), lang: tl, internal: pdfInternal, sampleRates: usingSample, sourceText: text, marginTarget: margin,
+        company, clientName: client?.name ?? null,
       });
+      if (!pdfInternal) record('pdf');
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -417,8 +449,19 @@ export function QuoteView({ seed }: { seed?: { text: string; n: number } | null 
   }
   const templateHref = `${import.meta.env.BASE_URL}rate-sheet-template.csv`;
 
+  function record(via: 'copy' | 'pdf') {
+    if (!custOpts.length) return;
+    const units = fields.mode === 'fcl' || fields.mode === 'road' ? equipmentText(fields.equipment).replace(/x/g, '×') : fields.mode === 'air' ? `${custOpts[0].chargeable} kg` : String(custOpts[0].units);
+    store.recordQuote({
+      id: quoteNumber(text), clientId, at: Date.now(), route: `${fields.origin} → ${fields.destination}`, mode: fields.mode ? MODE_L.en[fields.mode] : '', units,
+      options: custOpts.map((o) => ({ carrier: o.carrier ?? '—', sell: o.sellTotal, transit: o.transitDays })), currency: custOpts[0].currencies.join('/') || 'USD', via, sample: usingSample,
+    });
+    setSavedTo(client ? client.name : 'unassigned');
+  }
+
   const doCopy = async (what: 'quote' | 'questions') => {
     const ok = await copyText(what === 'quote' ? qText : askText);
+    if (ok && what === 'quote') record('copy');
     if (ok) {
       setCopied(what);
       if (what === 'quote' && startedAt != null && doneMs == null) setDoneMs(Date.now() - startedAt);
@@ -480,6 +523,25 @@ export function QuoteView({ seed }: { seed?: { text: string; n: number } | null 
                 {doneMs != null ? 'QUOTE READY IN ' : 'TIME TO QUOTE '}
                 <strong>{fmtElapsed(elapsed)}</strong>
               </span>
+            )}
+          </div>
+          <div className="q-client" data-testid="quote-client">
+            <span className="q-muted">Client</span>
+            <select value={clientId ?? ''} onChange={(e) => applyClient(e.target.value || null)} data-testid="quote-client-select" aria-label="Client">
+              <option value="">— none —</option>
+              {clients.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}{c.sample ? ' (sample)' : ''}</option>
+              ))}
+            </select>
+            {client ? (
+              <>
+                <span className="q-client-defs">
+                  {client.marginPct}% · {client.incoterm} · {client.lang.toUpperCase()} · {client.lines.length ? client.lines.join(', ') : 'any line'}{client.freeTimeRequest ? ` · ask ${client.freeTimeRequest} d free` : ''}
+                </span>
+                {onOpenClient && <button type="button" className="q-linklike" onClick={() => onOpenClient(client.id)}>dashboard →</button>}
+              </>
+            ) : (
+              <span className="q-client-defs">pick one to apply their margin, Incoterm, language and lines</span>
             )}
           </div>
           <textarea
@@ -726,6 +788,7 @@ export function QuoteView({ seed }: { seed?: { text: string; n: number } | null 
                 <span className="q-muted">{quote.units}</span>
               </div>
               <div className="q-scope">{quote.scopeNote}</div>
+              {linesNote && <div className="q-scope q-amber" data-testid="lines-note">{linesNote}</div>}
               {options.length > 1 && (
                 <div className="q-opts-wrap" dir={lang === 'fa' ? 'rtl' : 'ltr'} lang={lang} data-testid="quote-options">
                   <div className="q-opts-head">
@@ -770,7 +833,7 @@ export function QuoteView({ seed }: { seed?: { text: string; n: number } | null 
                           <dl className="q-opt-facts">
                             <div><dt>{ol(lang, 'transit')}</dt><dd>{o.transitDays ?? '?'} {D}{dT ? <bdi className={`q-delta ${dT < 0 ? 'best' : ''}`}><bdi dir="ltr">{dT > 0 ? '+' : '−'}{Math.abs(dT)}</bdi> {D}</bdi> : null}</dd></div>
                             <div><dt>{ol(lang, 'sailing')}</dt><dd className="mono"><bdi dir={lang === 'fa' ? 'rtl' : 'ltr'}>{o.etd ? fmtShort(o.etd, lang) : '—'}{o.eta ? `${lang === 'fa' ? ' ← ' : ' → '}${fmtShort(o.eta, lang)}` : ''}</bdi></dd></div>
-                            <div><dt>{ol(lang, 'freeTime')}</dt><dd>{o.freeDays != null ? `${o.freeDays} ${D}` : ol(lang, 'na')}{dF ? <bdi className={`q-delta ${dF > 0 ? 'best' : ''}`}><bdi dir="ltr">{dF > 0 ? '+' : '−'}{Math.abs(dF)}</bdi> {D}</bdi> : null}</dd></div>
+                            <div><dt>{ol(lang, 'freeTime')}</dt><dd>{o.freeDays != null ? `${o.freeDays} ${D}` : ol(lang, 'na')}{client?.freeTimeRequest && o.freeDays != null && o.freeDays < client.freeTimeRequest ? <bdi className="q-delta q-amber" title={`${client.name} asks for ${client.freeTimeRequest} days`}>&lt; {client.freeTimeRequest}</bdi> : null}{dF ? <bdi className={`q-delta ${dF > 0 ? 'best' : ''}`}><bdi dir="ltr">{dF > 0 ? '+' : '−'}{Math.abs(dF)}</bdi> {D}</bdi> : null}</dd></div>
                             <div><dt>{ol(lang, 'validTo')}</dt><dd className="mono">{o.validUntil ?? '—'}</dd></div>
                           </dl>
                           {o.staleCount > 0 && <div className="q-opt-stale">{ol(lang, 'recheck')}: {o.lines.filter((l) => l.stale).map((l) => l.charge).join(', ')}</div>}
@@ -874,7 +937,14 @@ export function QuoteView({ seed }: { seed?: { text: string; n: number } | null 
                   <input type="checkbox" data-testid="pdf-internal" checked={pdfInternal} onChange={(e) => setPdfInternal(e.target.checked)} /> Internal (with buy/margin)
                 </label>
               </div>
-              <div className="q-muted q-send-note">Human sends it. Nothing is booked or emailed from here.</div>
+              <div className="q-muted q-send-note">
+                Human sends it. Nothing is booked or emailed from here.
+                {savedTo && (
+                  <span className="q-saved" data-testid="quote-saved">
+                    {' '}· Logged {savedTo === 'unassigned' ? 'without a client (pick one to attribute it)' : <>to {savedTo}'s dashboard{onOpenClient && clientId ? <> — <button type="button" className="q-linklike" onClick={() => onOpenClient(clientId)}>open</button></> : null}</>} · saved in this browser only
+                  </span>
+                )}
+              </div>
             </div>
           </>
         )}
