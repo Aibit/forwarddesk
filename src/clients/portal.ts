@@ -1,0 +1,86 @@
+import type { Client } from './store';
+import type { CLang } from './store';
+
+export const demoLogin = (c: Client) => (c.sample ? `${c.name.toLowerCase().replace(/\s+/g, '-')}@demo` : c.email.trim().toLowerCase());
+export const DEMO_PASSWORD = 'demo';
+
+type M = { from: number; to: number; en: string; es: string; fa: string };
+export const MILESTONES: Record<'export' | 'import', M[]> = {
+  export: [
+    { from: 1, to: 7, en: 'Quote & booking', es: 'Oferta y reserva', fa: 'قیمت و بوکینگ' },
+    { from: 8, to: 12, en: 'Container release & seals', es: 'Contenedor y precintos', fa: 'حواله کانتینر و پلمپ' },
+    { from: 13, to: 17, en: 'Loading at Bandar Abbas', es: 'Carga en Bandar Abbas', fa: 'بارگیری در بندرعباس' },
+    { from: 18, to: 20, en: 'Bill of lading', es: 'Conocimiento de embarque', fa: 'بارنامه' },
+    { from: 21, to: 22, en: 'Payment & original B/L', es: 'Pago y B/L original', fa: 'پرداخت و اصل بارنامه' },
+    { from: 23, to: 23, en: 'Completed', es: 'Completado', fa: 'تکمیل شد' },
+  ],
+  import: [
+    { from: 1, to: 4, en: 'Quote & booking', es: 'Oferta y reserva', fa: 'قیمت و بوکینگ' },
+    { from: 5, to: 9, en: 'At origin / on the water', es: 'En origen / navegando', fa: 'در مبدأ / در راه' },
+    { from: 10, to: 13, en: 'Arrived — clearance & DO', es: 'Llegada — despacho y DO', fa: 'رسیده — ترخیص و دی‌او' },
+    { from: 14, to: 15, en: 'Return the empty container', es: 'Devolver el vacío', fa: 'برگشت کانتینر خالی' },
+    { from: 16, to: 16, en: 'Completed', es: 'Completado', fa: 'تکمیل شد' },
+  ],
+};
+
+const S = {
+  portal: ['Client portal', 'Portal del cliente', 'پورتال مشتری'],
+  demoWarn: ['Demo login — not secure, no real accounts (static site). Anyone can open any sample client.', 'Acceso de demostración — no es seguro, no hay cuentas reales (sitio estático).', 'ورود نمایشی — امن نیست، حساب واقعی وجود ندارد (سایت ایستا).'],
+  signIn: ['Sign in to track your shipments', 'Accede para seguir tus envíos', 'برای پیگیری محموله‌ها وارد شوید'],
+  email: ['Email', 'Email', 'ایمیل'],
+  password: ['Password', 'Contraseña', 'رمز عبور'],
+  login: ['Sign in', 'Entrar', 'ورود'],
+  bad: ['Email or password not recognised. Use one of the demo logins below.', 'Email o contraseña no reconocidos. Usa uno de los accesos demo.', 'ایمیل یا رمز درست نیست. از ورودهای نمایشی زیر استفاده کنید.'],
+  demoCreds: ['Demo logins (sample clients)', 'Accesos demo (clientes de ejemplo)', 'ورودهای نمایشی (مشتریان نمونه)'],
+  use: ['Use', 'Usar', 'استفاده'],
+  logout: ['Log out', 'Salir', 'خروج'],
+  welcome: ['Welcome', 'Bienvenido', 'خوش آمدید'],
+  shipments: ['Your shipments', 'Tus envíos', 'محموله‌های شما'],
+  noShip: ['No active shipments.', 'No hay envíos activos.', 'محموله فعالی ندارید.'],
+  status: ['Status', 'Estado', 'وضعیت'],
+  eta: ['Vessel ETA', 'ETA del buque', 'زمان رسیدن کشتی'],
+  sailed: ['Sailed', 'Zarpó', 'حرکت کرد'],
+  freeTime: ['Free time', 'Free time', 'فری‌تایم'],
+  left: ['left', 'restante', 'مانده'],
+  overBy: ['over by', 'excedido', 'تأخیر'],
+  stopped: ['stopped in time', 'parado a tiempo', 'به‌موقع متوقف شد'],
+  notStarted: ['not started', 'sin iniciar', 'شروع نشده'],
+  overNote: ['Demurrage is running — the line will charge per day. Return / load as soon as possible.', 'Corre la demora: la naviera cobra por día.', 'حق توقف در جریان است — خط روزانه هزینه می‌گیرد.'],
+  docs: ['Documents', 'Documentos', 'اسناد'],
+  draftBl: ['Draft B/L', 'Borrador B/L', 'درفت بارنامه'],
+  originalBl: ['Original B/L', 'B/L original', 'اصل بارنامه'],
+  arrival: ['Arrival notice', 'Aviso de llegada', 'آرایوال نوتیس'],
+  do: ['Delivery order (DO)', 'Orden de entrega (DO)', 'دی‌او'],
+  toApprove: ['Please check and approve', 'Revisa y aprueba', 'لطفا بررسی و تأیید کنید'],
+  approve: ['Approve draft', 'Aprobar borrador', 'تأیید درفت'],
+  approved: ['Approved', 'Aprobado', 'تأیید شد'],
+  approvedDemo: ['Approved (demo — saved in this browser only, nobody is notified)', 'Aprobado (demo — solo en este navegador)', 'تأیید شد (نمایشی — فقط در همین مرورگر)'],
+  notYet: ['Not yet', 'Aún no', 'هنوز نه'],
+  ready: ['Ready', 'Listo', 'آماده'],
+  released: ['Released', 'Entregado', 'صادر شد'],
+  heldPay: ['Held until all charges are paid', 'Retenido hasta pagar todos los gastos', 'تا پرداخت همه هزینه‌ها نگه داشته می‌شود'],
+  waitingYou: ['Waiting for you', 'Pendiente de ti', 'در انتظار شما'],
+  charges: ['Charges to pay', 'Gastos a pagar', 'هزینه‌های قابل پرداخت'],
+  noCharges: ['Nothing to pay right now.', 'Nada pendiente de pago.', 'فعلا هزینه‌ای برای پرداخت نیست.'],
+  total: ['Total to pay', 'Total a pagar', 'جمع قابل پرداخت'],
+  payNote: ['Pay by bank transfer to your forwarder. Payment is not taken on this site.', 'Pago por transferencia a tu transitario. No se cobra en esta web.', 'پرداخت با حواله بانکی به فورواردر؛ در این سایت پرداختی انجام نمی‌شود.'],
+  cheques: ['Guarantee cheques held', 'Cheques de garantía', 'چک‌های تضمین'],
+  noCheques: ['No guarantee cheques held.', 'Sin cheques de garantía.', 'چک تضمینی نزد خط نیست.'],
+  chequeBack: ['returned when the empty container is back on time and undamaged', 'se devuelve si el vacío vuelve a tiempo y sin daños', 'با برگشت به‌موقع و سالم کانتینر مسترد می‌شود'],
+  heldBy: ['held by', 'en poder de', 'نزد'],
+  quotes: ['Your quotes', 'Tus ofertas', 'پیشنهادهای قیمت شما'],
+  noQuotes: ['No quotes yet.', 'Aún no hay ofertas.', 'هنوز پیشنهادی نیست.'],
+  accept: ['Accept', 'Aceptar', 'قبول'],
+  accepted: ['Accepted', 'Aceptada', 'قبول شد'],
+  declined: ['Not taken', 'No aceptada', 'پذیرفته نشد'],
+  option: ['Option', 'Opción', 'گزینه'],
+  days: ['days', 'días', 'روز'],
+  acceptNote: ['Accepting marks the quote as accepted on the forwarder\'s dashboard (demo, this browser only). Your forwarder confirms the booking.', 'Aceptar la marca como aceptada en el panel del transitario (demo, solo este navegador). El transitario confirma la reserva.', 'قبول، پیشنهاد را در داشبورد فورواردر «قبول شد» می‌کند (نمایشی). فورواردر بوکینگ را تأیید می‌کند.'],
+  sample: ['SAMPLE DATA', 'DATOS DE EJEMPLO', 'داده نمونه'],
+  contactUs: ['Questions? Contact', 'Dudas: contacta con', 'سؤال؟ تماس با'],
+  yourForwarder: ['your forwarder', 'tu transitario', 'فورواردر شما'],
+  containers: ['containers', 'contenedores', 'کانتینر'],
+} as const;
+export type PKey = keyof typeof S;
+const IDX: Record<CLang, number> = { en: 0, es: 1, fa: 2 };
+export const pt = (lang: CLang, k: PKey): string => S[k][IDX[lang]];

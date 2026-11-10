@@ -4,12 +4,19 @@ import { FA_TERM, GLOSSARY, dur, fmtDay, fmtWhen, num, tr, usd, type Key } from 
 import { CHARGE_LABEL, DAY, chargeAmount, chequeAmount, clock, cutoff, jobAlerts, nextDeadline, summarize, unpaidBeforeBl } from './logic';
 import { PHASES, stepDef, stepIndex, stepsFor, type Lang } from './steps';
 import { DEFAULT_TARIFFS, TARIFF_ROWS, loadTariffs, saveTariffs, type TariffKey, type Tariffs } from './tariffs';
+import { agentForPort, clientForJob, useStore } from '../clients/store';
+import { jobMsds } from '../clients/lanes';
+import { MsdsChip, MsdsSlot } from '../clients/Msds';
+import { store as clientStore, type Client } from '../clients/store';
 import './jobs.css';
 
 const LIDX: Record<Lang, 0 | 1 | 2> = { en: 0, es: 1, fa: 2 };
 
 export function JobsView({ onDraftQuote, onOpenClient, openRequest }: { onDraftQuote: (text: string, customer?: string) => void; onOpenClient?: (customer: string) => void; openRequest?: { id: string; n: number } | null }) {
   const [lang, setLang] = useState<Lang>('en');
+  const { clients } = useStore();
+  /** E: agent at the port of discharge; I: agent at the port of loading (I2, I4–I8). */
+  const agentOf = (j: Job) => agentForPort(clientForJob(clients, j.customer), j.dir === 'import' ? j.pol : j.pod);
   const [now, setNow] = useState(() => Date.now());
   const [jobs] = useState<Job[]>(() => sampleJobs());
   const [tariffs, setTariffs] = useState<Tariffs>(() => loadTariffs());
@@ -156,7 +163,11 @@ export function JobsView({ onDraftQuote, onOpenClient, openRequest }: { onDraftQ
                     <span className="j-sub">
                       {custLink(j.customer)} · {j.commodity}
                     </span>
-                    <span className="j-sub">{j.line}</span>
+                    <span className="j-sub">
+                      {j.line}
+                      {agentOf(j) && <span className="j-agent"> · {L('agent')}: {agentOf(j)!.name}</span>}
+                      {(() => { const m = jobMsds(clientForJob(clients, j.customer)?.lanes, j); return m.need === 'required' ? <> <MsdsChip hs={m.hs} meta={m.meta} lang={lang} /></> : null; })()}
+                    </span>
                   </span>
                   <span className="j-c-step">
                     <span className="j-stepname">
@@ -360,6 +371,8 @@ export function JobsView({ onDraftQuote, onOpenClient, openRequest }: { onDraftQ
           onClose={() => setOpenId(null)}
           onDraftQuote={() => open.quoteText && onDraftQuote(open.quoteText, open.customer)}
           onOpenClient={onOpenClient ? () => onOpenClient(open.customer) : undefined}
+          agentName={agentOf(open)?.name ?? null}
+          client={clientForJob(clients, open.customer)}
         />
       )}
     </div>
@@ -418,7 +431,7 @@ const DOC_KEY: Record<Doc['key'], Key> = {
   originalBl: 'originalBl', packing: 'packing', arrival: 'arrival', loi: 'loi', do: 'do', warehouse: 'warehouse',
 };
 
-function JobDrawer({ job, lang, now, tariffs, T, onClose, onDraftQuote, onOpenClient }: { job: Job; lang: Lang; now: number; tariffs: Tariffs; T: (k: Key) => ReactNode; onClose: () => void; onDraftQuote: () => void; onOpenClient?: () => void }) {
+function JobDrawer({ job, lang, now, tariffs, T, onClose, onDraftQuote, onOpenClient, agentName, client }: { job: Job; lang: Lang; now: number; tariffs: Tariffs; T: (k: Key) => ReactNode; onClose: () => void; onDraftQuote: () => void; onOpenClient?: () => void; agentName?: string | null; client?: Client | null }) {
   const L = (k: Key) => tr(lang, k);
   const steps = stepsFor(job.dir);
   const cur = stepIndex(job.step);
@@ -441,6 +454,7 @@ function JobDrawer({ job, lang, now, tariffs, T, onClose, onDraftQuote, onOpenCl
             </h2>
             <p className="j-sub">
               {job.customer} · {job.commodity} · {job.line}
+              {agentName && <> · {L('agent')} ({job.dir === 'import' ? job.pol : job.pod}): <strong data-testid="job-agent">{agentName}</strong></>}
               {job.vessel && (
                 <>
                   {' '}· {L('vessel')} <bdi>{job.vessel.name}</bdi> · {job.vessel.sailed ? `${L('sailed')} ${fmtDay(lang, job.vessel.sailed)}` : `${L('eta')} ${fmtWhen(lang, job.vessel.eta)}`}
@@ -567,6 +581,19 @@ function JobDrawer({ job, lang, now, tariffs, T, onClose, onDraftQuote, onOpenCl
             ) : (
               <p className="j-sub">—</p>
             )}
+            {(() => {
+              const m = jobMsds(client?.lanes, job);
+              return (
+                <div className="j-msds" data-testid="job-msds">
+                  <span className="j-doc-name">MSDS{m.hs ? <> · HS <bdi dir="ltr" className="mono">{m.hs}</bdi>{m.guessed ? ' ~' : ''}</> : ''}</span>
+                  {m.lane && client ? (
+                    <MsdsSlot hs={m.hs} dg={m.lane.dg ? 'yes' : null} meta={m.meta} lang={lang} testid="job-msds-slot" onChange={(meta) => clientStore.setLanes(client.id, client.lanes.map((l) => (l.id === m.lane!.id ? { ...l, msds: meta } : l)))} />
+                  ) : (
+                    <MsdsChip hs={m.hs} meta={m.meta} lang={lang} />
+                  )}
+                </div>
+              );
+            })()}
           </section>
           <section className="j-d-sec">
             <h3>{L('charges')}</h3>

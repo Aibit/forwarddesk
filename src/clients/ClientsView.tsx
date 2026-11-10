@@ -6,6 +6,10 @@ import { stepDef } from '../jobs/steps';
 import { ct, type CKey } from './i18n';
 import { clientKpi, type ClientKpi } from './kpi';
 import { EMPTY_COMPANY, newClient, store, useStore, type CLang, type Client, type Company, type QuoteStatus } from './store';
+import { AgentsEditor } from './Agents';
+import { LanesEditor } from './Lanes';
+import { MsdsRulesEditor } from './Msds';
+import { demoLogin } from './portal';
 import './clients.css';
 
 const INCOTERMS = ['EXW', 'FCA', 'FAS', 'FOB', 'CFR', 'CIF', 'CPT', 'CIP', 'DAP', 'DPU', 'DDP'];
@@ -13,7 +17,7 @@ const INCOTERMS = ['EXW', 'FCA', 'FAS', 'FOB', 'CFR', 'CIF', 'CPT', 'CIP', 'DAP'
 interface Props {
   openRequest?: { id: string; n: number } | null;
   onOpenJob: (jobId: string) => void;
-  onNewQuote: (clientId: string) => void;
+  onNewQuote: (clientId: string, laneId?: string) => void;
 }
 
 export function ClientsView({ openRequest, onOpenJob, onNewQuote }: Props) {
@@ -25,6 +29,7 @@ export function ClientsView({ openRequest, onOpenJob, onNewQuote }: Props) {
   const [openId, setOpenId] = useState<string | null>(openRequest?.id ?? null);
   const [editing, setEditing] = useState<Client | null>(null);
   const [editCompany, setEditCompany] = useState(false);
+  const [editRules, setEditRules] = useState(false);
 
   useEffect(() => {
     if (openRequest) setOpenId(openRequest.id);
@@ -60,6 +65,7 @@ export function ClientsView({ openRequest, onOpenJob, onNewQuote }: Props) {
         <div className="c-top-actions">
           <button type="button" className="btn sm primary" onClick={() => setEditing(newClient())} data-testid="add-client">{L('addClient')}</button>
           <button type="button" className="btn sm ghost" onClick={() => setEditCompany(true)} data-testid="edit-company">{L('yourCompany')}</button>
+          <button type="button" className="btn sm ghost" onClick={() => setEditRules((v) => !v)} data-testid="edit-msds-rules">{lang === 'fa' ? 'قواعد MSDS' : lang === 'es' ? 'Reglas MSDS' : 'MSDS rules'}</button>
           <div className="q-lang j-lang" role="group" aria-label="Language">
             {(['en', 'es', 'fa'] as CLang[]).map((l) => (
               <button key={l} type="button" className={lang === l ? 'active' : ''} onClick={() => setLang(l)} data-testid={`clients-lang-${l}`}>
@@ -141,13 +147,14 @@ export function ClientsView({ openRequest, onOpenJob, onNewQuote }: Props) {
           onBack={() => setOpenId(null)}
           onEdit={() => setEditing(open)}
           onOpenJob={onOpenJob}
-          onNewQuote={() => onNewQuote(open.id)}
+          onNewQuote={(laneId) => onNewQuote(open.id, laneId)}
           now={now}
           D={D}
         />
       )}
 
       {editing && <ClientForm c={editing} L={L} lang={lang} onClose={() => setEditing(null)} onSaved={(id) => { setEditing(null); setOpenId(id); }} />}
+      {editRules && <MsdsRulesEditor lang={lang} onClose={() => setEditRules(false)} />}
       {editCompany && <CompanyForm co={company} L={L} lang={lang} onClose={() => setEditCompany(false)} />}
     </div>
   );
@@ -164,7 +171,7 @@ function Tile({ label, value, sub, tone }: { label: string; value: string; sub?:
 }
 
 function ClientDashboard({ c, k, lang, L, deadline, onBack, onEdit, onOpenJob, onNewQuote, now, D }: {
-  c: Client; k: ClientKpi; lang: CLang; L: (k: CKey) => string; deadline: (k: ClientKpi) => ReactNode; onBack: () => void; onEdit: () => void; onOpenJob: (id: string) => void; onNewQuote: () => void; now: number; D: string;
+  c: Client; k: ClientKpi; lang: CLang; L: (k: CKey) => string; deadline: (k: ClientKpi) => ReactNode; onBack: () => void; onEdit: () => void; onOpenJob: (id: string) => void; onNewQuote: (laneId?: string) => void; now: number; D: string;
 }) {
   const winRate = k.won + k.lost ? Math.round((100 * k.won) / (k.won + k.lost)) : null;
   const statusL: Record<QuoteStatus, CKey> = { sent: 'sent', won: 'won', lost: 'lost' };
@@ -174,10 +181,10 @@ function ClientDashboard({ c, k, lang, L, deadline, onBack, onEdit, onOpenJob, o
         <button type="button" className="btn sm ghost" onClick={onBack} data-testid="clients-back">{L('back')}</button>
         <div className="c-dash-title">
           <h2>{c.name} {c.sample && <span className="j-sample sm">{L('sampleTag')}</span>}</h2>
-          <span className="c-muted">{L('dashboard')}</span>
+          <span className="c-muted">{L('dashboard')} · portal: <bdi className="mono" dir="ltr">{demoLogin(c) || '—'}</bdi> / demo</span>
         </div>
         <button type="button" className="btn sm ghost" onClick={onEdit} data-testid="edit-client">{L('edit')}</button>
-        <button type="button" className="btn sm primary" onClick={onNewQuote} data-testid="client-new-quote">{L('newQuote')}</button>
+        <button type="button" className="btn sm primary" onClick={() => onNewQuote()} data-testid="client-new-quote">{L('newQuote')}</button>
       </div>
 
       <div className="j-summary">
@@ -191,6 +198,11 @@ function ClientDashboard({ c, k, lang, L, deadline, onBack, onEdit, onOpenJob, o
 
       <div className="c-dash-main">
         <div className="c-dash-left">
+          <section className="q-panel" aria-label={L('lanesH')} data-testid="client-lanes">
+            <div className="q-head"><h2>{L('lanesH')} · {num(lang, c.lanes.length)}</h2><span className="c-muted c-small">{L('best')}: sample rates · {c.marginPct}%</span></div>
+            <p className="c-muted c-small">{L('lanesNote')}</p>
+            <LanesEditor lanes={c.lanes} onChange={(l) => store.setLanes(c.id, l)} lang={lang} client={c} onQuote={(l) => onNewQuote(l.id)} testid="dash-lanes" />
+          </section>
           <section className="q-panel" aria-label={L('jobs')}>
             <div className="q-head"><h2>{L('jobs')} · {num(lang, k.jobs.length)}</h2><span>{deadline(k)}</span></div>
             {k.jobs.length === 0 && <p className="c-muted">{L('noJobs')}</p>}
@@ -218,7 +230,7 @@ function ClientDashboard({ c, k, lang, L, deadline, onBack, onEdit, onOpenJob, o
                     <div key={q.id} className="c-quote" data-testid={`quote-row-${q.id}`}>
                       <span className="c-q-id">
                         <bdi className="mono">{q.id}</bdi>
-                        <span className="c-sub">{fmtDay(lang, q.at)} · {L('via')} {q.via.join(' + ')}{q.sample ? ` · ${L('sampleTag')}` : ''}</span>
+                        <span className="c-sub">{fmtDay(lang, q.at)} · {L('via')} {q.via.join(' + ')}{q.sample ? ` · ${L('sampleTag')}` : ''}{q.status === 'won' && q.acceptedVia === 'portal' ? ` · ✓ portal${q.acceptedOption ? `: ${q.acceptedOption.replace(/^Sample /, '')}` : ''}` : ''}</span>
                       </span>
                       <span>
                         <bdi>{q.route}</bdi>
@@ -241,6 +253,11 @@ function ClientDashboard({ c, k, lang, L, deadline, onBack, onEdit, onOpenJob, o
               </div>
             )}
           </section>
+          <section className="q-panel" aria-label={L('agents')} data-testid="client-agents">
+            <div className="q-head"><h2>{L('agents')} · {num(lang, c.agents.length)}</h2></div>
+            <p className="c-muted c-small">{L('agentsNote')}</p>
+            <AgentsEditor agents={c.agents} onChange={(a) => store.setAgents(c.id, a)} lang={lang} testid="dash-agents" />
+          </section>
         </div>
 
         <aside className="q-panel c-info" aria-label={L('contact')}>
@@ -257,7 +274,7 @@ function ClientDashboard({ c, k, lang, L, deadline, onBack, onEdit, onOpenJob, o
             <dt>{L('language')}</dt><dd>{c.lang.toUpperCase()}</dd>
             <dt>{L('incoterm')}</dt><dd>{c.incoterm}</dd>
             <dt>{L('margin')}</dt><dd>{num(lang, c.marginPct)}%</dd>
-            <dt>{L('lines')}</dt><dd>{c.lines.length ? c.lines.join(', ') : L('anyLine')}</dd>
+            <dt>{L('lines')}</dt><dd>{c.agents.filter((a) => a.type === 'line').map((a) => `${a.name} (${L(`r_${a.rank}` as CKey)})`).join(', ') || L('anyLine')}</dd>
             <dt>{L('freeTimeReq')}</dt><dd>{c.freeTimeRequest ? `${num(lang, c.freeTimeRequest)} ${D}` : '—'}</dd>
             <dt>{L('payment')}</dt><dd>{c.paymentTerms || '—'}</dd>
           </dl>
@@ -295,7 +312,6 @@ function Field({ label, children, wide }: { label: string; children: ReactNode; 
 
 function ClientForm({ c, L, lang, onClose, onSaved }: { c: Client; L: (k: CKey) => string; lang: CLang; onClose: () => void; onSaved: (id: string) => void }) {
   const [d, setD] = useState<Client>(c);
-  const [linesText, setLinesText] = useState(c.lines.join(', '));
   const [err, setErr] = useState<string | null>(null);
   const up = <K extends keyof Client>(k: K, v: Client[K]) => setD((x) => ({ ...x, [k]: v }));
   const txt = (k: 'name' | 'contactName' | 'phone' | 'email' | 'address' | 'paymentTerms', testid?: string) => (
@@ -303,7 +319,7 @@ function ClientForm({ c, L, lang, onClose, onSaved }: { c: Client; L: (k: CKey) 
   );
   const save = () => {
     if (!d.name.trim()) return setErr(L('required'));
-    const rec: Client = { ...d, name: d.name.trim(), lines: linesText.split(',').map((s) => s.trim()).filter(Boolean) };
+    const rec: Client = { ...d, name: d.name.trim(), lines: d.agents.filter((a) => a.type === 'line' && a.rank !== 'avoid').map((a) => a.name) };
     if (!rec.jobName && c.name) rec.jobName = c.name; // keep the link to existing jobs when renamed
     store.upsertClient(rec);
     onSaved(rec.id);
@@ -338,10 +354,15 @@ function ClientForm({ c, L, lang, onClose, onSaved }: { c: Client; L: (k: CKey) 
               <option value="">—</option><option value="10">10</option><option value="14">14</option><option value="21">21</option>
             </select>
           </Field>
-          <Field label={`${L('lines')} — ${L('linesHint')}`} wide><input className="c-in" value={linesText} onChange={(e) => setLinesText(e.target.value)} data-testid="cf-lines" /></Field>
           <Field label={L('payment')} wide>{txt('paymentTerms')}</Field>
           <Field label={L('notes')} wide><textarea className="c-in" rows={2} value={d.notes} onChange={(e) => up('notes', e.target.value)} /></Field>
         </div>
+        <h3 className="c-form-h">{L('lanesH')}</h3>
+        <p className="c-muted c-small">{L('lanesNote')}</p>
+        <LanesEditor lanes={d.lanes} onChange={(l) => up('lanes', l)} lang={lang} testid="cf-lanes" />
+        <h3 className="c-form-h">{L('agents')}</h3>
+        <p className="c-muted c-small">{L('agentsNote')}</p>
+        <AgentsEditor agents={d.agents} onChange={(a) => up('agents', a)} lang={lang} testid="cf-agents" />
         {err && <div className="q-amber">{err}</div>}
         <div className="c-form-actions">
           {c.name && !c.sample && <button type="button" className="btn sm ghost" onClick={() => { if (window.confirm(`Delete ${c.name} from this browser?`)) { store.removeClient(c.id); onClose(); } }}>{L('remove')}</button>}

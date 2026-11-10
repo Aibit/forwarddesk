@@ -13,8 +13,17 @@ import {
 import { CSV_COLUMNS, buildOptions, buildQuote, loadRateCsv, optionBadges, sampleRates, type Badge, type Quote, type RateRow, type Side } from './rates';
 import { BADGE_L, MODE_L, ol, type QLang } from './optlabels';
 import { quoteNumber } from './quoteno';
-import { lineMatches, store, useStore } from '../clients/store';
+import { agentForPort, lineRank, store, useStore } from '../clients/store';
 import { SAMPLE_REQUESTS } from './samples';
+import { quoteForText, type QuoteFor } from './quotefor';
+import { HOME_PORT, autoDir, tl3, tradeBlock, tradeText, type TradeBlock, type TradeDir } from './trade';
+import { loadTariffs } from '../jobs/tariffs';
+import { isListed, sanctionsLevel, useAgentsDb } from '../agents/db';
+import { hsCheck, laneToRequest, sameLane, targetUnits, type LaneProfile } from '../clients/lanes';
+import { TargetDelta, fmtTarget, fmtVolume } from '../clients/Lanes';
+import { ct } from '../clients/i18n';
+import { hsFromCommodity, hsFromText, msdsNeed, useMsdsRules, type MsdsMeta } from '../clients/msds';
+import { MsdsChip, MsdsSlot } from '../clients/Msds';
 import './quote.css';
 
 type Lang = 'en' | 'es';
@@ -143,7 +152,7 @@ function optionFacts(q: Quote, lang: QLang): string {
   ].filter(Boolean).join(' · ');
 }
 
-function quoteText(f: QuoteFields, opts: Quote[], badges: Badge[][], issues: Issue[], lang: QLang): string {
+function quoteText(f: QuoteFields, opts: Quote[], badges: Badge[][], issues: Issue[], lang: QLang, qf?: QuoteFor | null, sign?: string[], tb?: TradeBlock | null): string {
   if (!opts.length) return '';
   const W = TXT[lang];
   const tl: Lang = lang === 'fa' ? 'en' : lang;
@@ -163,12 +172,14 @@ function quoteText(f: QuoteFields, opts: Quote[], badges: Badge[][], issues: Iss
   const excluded = [...new Set(opts.flatMap((o) => o.excluded.map((l) => l.charge)))];
   const validMin = opts.map((o) => o.validUntil).filter((v): v is string => !!v).sort()[0] ?? null;
   const head = [
+    ...(tb ? [tb.title, ''] : []),
     `${W.subject} — ${units} ${route} (${mode}, ${incotermLine})${multi ? ` — ${opts.length} ${W.options}` : ''}`,
     '',
     W.hi,
     '',
     multi ? W.thanksMulti : W.thanks,
     '',
+    ...(qf && quoteForText(qf, lang).length ? [...quoteForText(qf, lang), ''] : []),
     `${W.route}: ${route}`,
     `${W.mode}: ${mode} · ${units}`,
     cargoBits || weightBits ? `${W.cargo}: ${[cargoBits, weightBits].filter(Boolean).join(' · ')}` : null,
@@ -201,12 +212,14 @@ function quoteText(f: QuoteFields, opts: Quote[], badges: Badge[][], issues: Iss
   return [
     ...head,
     ...body,
+    ...(tb ? ['', ...tradeText(tb, lang)] : []),
     '',
     W.validity(fmtDate(validMin, lang)),
     W.notIncl(excluded.length ? `, ${excluded.join(', ')}` : ''),
     pending.length ? W.pending(pending.join('; ')) : null,
     '',
     W.bye,
+    ...(sign ?? []),
   ].filter((x) => x !== null).join('\n');
 }
 
@@ -236,11 +249,17 @@ function Chip({ label, value, status, evidence, editing, onEdit, editor }: ChipP
   );
 }
 
-export function QuoteView({ seed, onOpenClient }: { seed?: { text: string; n: number; clientId?: string | null } | null; onOpenClient?: (id: string) => void } = {}) {
+export function QuoteView({ seed, onOpenClient }: { seed?: { text: string; n: number; clientId?: string | null; laneId?: string | null } | null; onOpenClient?: (id: string) => void } = {}) {
   const { clients, company } = useStore();
   const [clientId, setClientId] = useState<string | null>(null);
   const client = clients.find((c) => c.id === clientId) ?? null;
   const [savedTo, setSavedTo] = useState<string | null>(null);
+  const [laneId, setLaneId] = useState<string | null>(null);
+  const [quoteMsds, setQuoteMsds] = useState<MsdsMeta | null>(null);
+  const [dirOverride, setDirOverride] = useState<TradeDir | null>(null);
+  const [tariffs] = useState(() => loadTariffs());
+  const { list: agentDb } = useAgentsDb();
+  const msdsRules = useMsdsRules();
   const [text, setText] = useState('');
   const [startedAt, setStartedAt] = useState<number | null>(null);
   const [doneMs, setDoneMs] = useState<number | null>(null);
@@ -257,6 +276,7 @@ export function QuoteView({ seed, onOpenClient }: { seed?: { text: string; n: nu
   const [copied, setCopied] = useState<'quote' | 'questions' | null>(null);
   const [showFormat, setShowFormat] = useState(false);
   const [pdfInternal, setPdfInternal] = useState(false);
+  const [showTarget, setShowTarget] = useState(false);
   const [pdfState, setPdfState] = useState<'idle' | 'busy' | 'done' | 'error'>('idle');
   const fileRef = useRef<HTMLInputElement>(null);
   const quoteRef = useRef<HTMLDivElement>(null);
@@ -280,12 +300,28 @@ export function QuoteView({ seed, onOpenClient }: { seed?: { text: string; n: nu
     const p = parseRequest(t, extraLocs);
     setLang(client ? client.lang : p.language);
     setSavedTo(null);
+    setShowAvoid(false);
     setActiveCarrier(null);
     setOffCarriers([]);
+    setLaneId(null);
+    setQuoteMsds(null);
+    setDirOverride(null);
+  };
+
+  /** Prefill POL/POD/commodity/HS/volume from one of the client's lane profiles. */
+  const applyLane = (cid: string, l: LaneProfile) => {
+    const c = clients.find((x) => x.id === cid);
+    if (!c) return;
+    const r = laneToRequest(l, c.name, c.incoterm);
+    startFresh(r.text);
+    setOverrides(r.fields);
+    setLaneId(l.id);
+    setLang(c.lang);
   };
 
   const applyClient = (id: string | null) => {
     setClientId(id);
+    setLaneId(null);
     setSavedTo(null);
     const c = clients.find((x) => x.id === id);
     if (c) {
@@ -298,6 +334,10 @@ export function QuoteView({ seed, onOpenClient }: { seed?: { text: string; n: nu
     if (!seed) return;
     if (seed.text) startFresh(seed.text);
     if (seed.clientId !== undefined) applyClient(seed.clientId ?? null);
+    if (seed.clientId && seed.laneId) {
+      const l = clients.find((x) => x.id === seed.clientId)?.lanes.find((x) => x.id === seed.laneId);
+      if (l) applyLane(seed.clientId, l);
+    }
   }, [seed?.n]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const mode = overrides.mode !== undefined ? overrides.mode : parsed.fields.mode;
@@ -318,7 +358,7 @@ export function QuoteView({ seed, onOpenClient }: { seed?: { text: string; n: nu
   const originOptions = overrides.origin === undefined ? originRes?.options : undefined;
   const destOptions = overrides.destination === undefined ? destRes?.options : undefined;
 
-  const issues: Issue[] = useMemo(() => {
+  const baseIssues: Issue[] = useMemo(() => {
     if (!text.trim()) return [];
     const out: Issue[] = [];
     if (originOptions)
@@ -352,23 +392,78 @@ export function QuoteView({ seed, onOpenClient }: { seed?: { text: string; n: nu
 
   const rawQuote = useMemo(() => (text.trim() ? buildQuote(fields, rates, margin) : null), [text, JSON.stringify(fields), rates, margin]); // eslint-disable-line react-hooks/exhaustive-deps
   const allOptions = useMemo(() => (text.trim() ? buildOptions(fields, rates, margin) : []), [text, JSON.stringify(fields), rates, margin]); // eslint-disable-line react-hooks/exhaustive-deps
-  const clientLines = client?.lines ?? [];
-  const lineFiltered = clientLines.length ? allOptions.filter((o) => lineMatches(o.carrier, clientLines)) : allOptions;
-  const options = lineFiltered.length ? lineFiltered : allOptions;
-  const linesNote = client && clientLines.length && allOptions.length
-    ? lineFiltered.length
-      ? allOptions.length > lineFiltered.length ? `${client.name}'s lines only (${clientLines.join(', ')}): ${allOptions.length - lineFiltered.length} other option${allOptions.length - lineFiltered.length > 1 ? 's' : ''} hidden.` : null
-      : `None of ${client.name}'s lines (${clientLines.join(', ')}) has a rate on this lane — showing all lines.`
-    : null;
+  const [showAvoid, setShowAvoid] = useState(false);
+  const rankOf = (carrier: string | null) => lineRank(client, carrier);
+  const avoided = allOptions.filter((o) => rankOf(o.carrier) === 'avoid');
+  const visible = showAvoid || avoided.length === allOptions.length ? allOptions : allOptions.filter((o) => rankOf(o.carrier) !== 'avoid');
+  // client-preferred lines first, then by price (buildOptions already sorts by price)
+  const options = [...visible].sort((a, b) => Number(rankOf(b.carrier) === 'preferred') - Number(rankOf(a.carrier) === 'preferred'));
+  const prefCount = options.filter((o) => rankOf(o.carrier) === 'preferred').length;
+  const linesNote = client && allOptions.length > 1 && (prefCount || avoided.length) ? (
+    <>
+      {prefCount ? `${client.name}'s preferred line${prefCount > 1 ? 's' : ''} shown first. ` : ''}
+      {avoided.length > 0 && (
+        <>
+          {showAvoid ? `Showing ${avoided.length} line${avoided.length > 1 ? 's' : ''} ${client.name} avoids. ` : `${avoided.length} option${avoided.length > 1 ? 's' : ''} from line${avoided.length > 1 ? 's' : ''} ${client.name} avoids hidden (${avoided.map((o) => o.carrier).join(', ')}). `}
+          <button type="button" className="q-linklike" onClick={() => setShowAvoid((v) => !v)} data-testid="toggle-avoid">{showAvoid ? 'hide' : 'show'}</button>
+        </>
+      )}
+    </>
+  ) : null;
+  const clientAgent = client ? agentForPort(client, fields.destination) ?? agentForPort(client, fields.origin) : null;
   const badges = useMemo(() => optionBadges(options), [options]);
   const recIdx = Math.max(0, badges.findIndex((b) => b.includes('recommended')));
   const activeIdx = options.findIndex((o) => o.carrier === activeCarrier) >= 0 ? options.findIndex((o) => o.carrier === activeCarrier) : recIdx;
   const quote: Quote | null = options.length ? options[activeIdx] : rawQuote;
+  // the client's lane profile for this request: the one picked, else one matching POL/POD
+  const laneProfile = client ? client.lanes.find((l) => l.id === laneId) ?? client.lanes.find((l) => sameLane(l, fields.origin, fields.destination)) ?? null : null;
+  // MSDS: needed by HS code (sample rule list) or DG; attached to the lane profile when there is one
+  const hsText = hsFromText(text);
+  const hsQ = laneProfile?.hs || hsText || (fields.cargo ? hsFromCommodity(fields.cargo) : null);
+  const hsGuessed = !laneProfile?.hs && !hsText && !!hsQ;
+  const msdsInfo = msdsNeed(hsQ, laneProfile?.dg ? 'yes' : fields.dg);
+  const msdsMeta = laneProfile ? laneProfile.msds ?? null : quoteMsds;
+  const setMsds = (m: MsdsMeta | null) => {
+    if (client && laneProfile) store.setLanes(client.id, client.lanes.map((l) => (l.id === laneProfile.id ? { ...l, msds: m } : l)));
+    else setQuoteMsds(m);
+  };
+  const issues: Issue[] = useMemo(() => {
+    if (!text.trim()) return baseIssues;
+    let out = baseIssues;
+    if (msdsInfo.need === 'required' && !msdsMeta) {
+      const why = msdsInfo.rule ? `HS ${hsQ}${hsGuessed ? ` (guessed from “${fields.cargo}”)` : ''} → ${msdsInfo.rule.label}` : 'cargo marked DG';
+      out = out.filter((i) => !(i.field === 'dg' && i.kind === 'confirm'));
+      out = [...out, {
+        field: 'dg', kind: 'confirm',
+        message: `MSDS required (${why} — sample rule, confirm with line) and not attached yet.`,
+        question: fields.dg === 'yes' || laneProfile?.dg
+          ? { en: 'Please send the MSDS (material safety data sheet), UN number and IMO class so we can confirm DG acceptance with the line.', es: 'Por favor enviad la MSDS (ficha de datos de seguridad), número UN y clase IMO para confirmar la aceptación DG con la naviera.' }
+          : { en: 'Please send the MSDS (material safety data sheet) for this cargo, and the UN number if it is classified as dangerous goods — the line asks for it on this HS code.', es: 'Por favor enviad la MSDS (ficha de datos de seguridad) de la mercancía y el número UN si está clasificada como peligrosa — la naviera la pide para este código HS.' },
+      } as Issue];
+    } else if (msdsMeta) {
+      out = out.map((i) => (i.field === 'dg' && i.question && /MSDS/.test(i.question.en) ? { ...i, message: `${i.message} MSDS received (${msdsMeta.name}).`, question: { en: 'MSDS received, thank you. Please confirm the UN number and IMO class.', es: 'MSDS recibida, gracias. Por favor confirmad número UN y clase IMO.' } } : i));
+    }
+    const rank = { missing: 0, ambiguous: 1, confirm: 1, assumed: 2 };
+    return [...out].sort((a, b) => rank[a.kind] - rank[b.kind]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [baseIssues, msdsInfo.need, msdsInfo.rule?.prefix, msdsMeta?.id, hsQ, fields.dg, laneProfile?.dg, msdsRules]);
+  const targetDiff = (q: Quote | null): { perUnit: number; diff: number } | null => {
+    if (!q || !laneProfile || laneProfile.target.amount == null || laneProfile.target.currency !== 'USD' || !q.currencies.every((c) => c === 'USD')) return null;
+    const u = targetUnits(laneProfile.target.per, fields);
+    if (!u) return null;
+    const perUnit = q.sellTotal / u;
+    return { perUnit, diff: Math.round(perUnit - laneProfile.target.amount) };
+  };
   // customer options: recommended first, then by price
   const custIdx = options
     .map((_, i) => i)
     .filter((i) => !offCarriers.includes(options[i].carrier ?? ''))
-    .sort((a, b) => (a === recIdx ? -1 : b === recIdx ? 1 : options[a].sellTotal - options[b].sellTotal));
+    .sort((a, b) => {
+      const pa = Number(rankOf(options[a].carrier) === 'preferred');
+      const pb = Number(rankOf(options[b].carrier) === 'preferred');
+      if (pa !== pb) return pb - pa;
+      return a === recIdx ? -1 : b === recIdx ? 1 : options[a].sellTotal - options[b].sellTotal;
+    });
   const custOpts = custIdx.map((i) => options[i]);
   const custBadges = custIdx.map((i) => badges[i] ?? []);
   const tl: Lang = lang === 'fa' ? 'en' : lang;
@@ -417,7 +512,26 @@ export function QuoteView({ seed, onOpenClient }: { seed?: { text: string; n: nu
     setExtraLocs([]);
   };
 
-  const qText = custOpts.length ? quoteText(fields, custOpts, custBadges, issues, lang) : '';
+  const autoD = autoDir(fields);
+  const dir: TradeDir = dirOverride ?? autoD ?? 'export';
+  const tradeFor = (l: QLang) => (custOpts.length && fields.mode === 'fcl' ? tradeBlock(dir, fields, custOpts[0], tariffs, l, laneProfile?.payment ?? client?.paymentTerms ?? null) : null);
+  const tb = tradeFor(lang);
+  // import: candidate overseas agents at the POL — client's own list first, then the Agents DB (sanctions-listed excluded)
+  const polBase = (fields.origin ?? '').toLowerCase().replace(/\s*\(.*\)$/, '');
+  const originAgents = dir === 'import' && polBase ? [
+    ...(client?.agents ?? []).filter((a) => a.type === 'overseas' && a.rank !== 'avoid' && a.ports.toLowerCase().includes(polBase)).map((a) => ({ name: a.name, tag: a.rank === 'preferred' ? 'Client preferred' : 'Client allowed', note: a.contactName || a.email, sanc: '' })),
+    ...agentDb.filter((d) => (d.type === 'overseas' || d.type === 'forwarder') && !isListed(d) && `${d.ports} ${d.city}`.toLowerCase().includes(polBase) && !(client?.agents ?? []).some((a) => a.name.toLowerCase() === d.name.toLowerCase())).slice(0, 6).map((d) => ({ name: d.name, tag: d.sample ? 'Agents DB · sample' : 'Agents DB · public info, verify', note: d.services, sanc: sanctionsLevel(d.sanctions) ?? '' })),
+  ] : [];
+  const quoteFor = (forInternal: boolean): QuoteFor | null => {
+    if (!client && !laneProfile && !text.trim()) return null;
+    return {
+      client: client ? { name: client.name, contactName: client.contactName, email: client.email, phone: client.phone, address: client.address } : null,
+      lane: laneProfile ? { pol: laneProfile.pol, pod: laneProfile.pod, commodity: laneProfile.commodity, hs: laneProfile.hs, volume: fmtVolume(laneProfile, 'en'), payment: laneProfile.payment } : null,
+      target: laneProfile && laneProfile.target.amount != null && (forInternal || showTarget) ? fmtTarget(laneProfile, 'en') : null,
+      msds: msdsMeta ? { status: 'received', file: msdsMeta.name } : hsQ || fields.dg === 'yes' ? { status: msdsInfo.need } : null,
+    };
+  };
+  const qText = custOpts.length ? quoteText(fields, custOpts, custBadges, issues, lang, quoteFor(false), [company.contactName, company.name, [company.email, company.phone].filter(Boolean).join(' · ')].filter(Boolean), tb) : '';
   const askText = questionsText(issues, tl);
   const elapsed = startedAt == null ? null : (doneMs ?? now - startedAt);
   const usingSample = !sheet || sheet.rows === 0;
@@ -428,8 +542,8 @@ export function QuoteView({ seed, onOpenClient }: { seed?: { text: string; n: nu
     try {
       const { generateQuotePdf } = await import('./pdf');
       const { blob, filename } = await generateQuotePdf({
-        fields, quote: custOpts[0], options: custOpts, badges: custBadges, issues: issues.filter((i) => i.kind !== 'assumed'), lang: tl, internal: pdfInternal, sampleRates: usingSample, sourceText: text, marginTarget: margin,
-        company, clientName: client?.name ?? null,
+        fields, quote: custOpts[0], options: custOpts, badges: custBadges, issues: issues.filter((i) => i.kind !== 'assumed'), lang: tl, internal: pdfInternal, msds: msdsMeta ? { name: msdsMeta.name, at: msdsMeta.at } : null, sampleRates: usingSample, sourceText: text, marginTarget: margin,
+        company, clientName: client?.name ?? null, quoteFor: quoteFor(pdfInternal), trade: tradeFor(tl),
       });
       if (!pdfInternal) record('pdf');
       const url = URL.createObjectURL(blob);
@@ -544,6 +658,16 @@ export function QuoteView({ seed, onOpenClient }: { seed?: { text: string; n: nu
               <span className="q-client-defs">pick one to apply their margin, Incoterm, language and lines</span>
             )}
           </div>
+          {client && client.lanes.length > 0 && (
+            <div className="q-client q-lanes" data-testid="quote-lanes">
+              <span className="q-muted">Lanes</span>
+              {client.lanes.map((l, i) => (
+                <button key={l.id} type="button" className={`btn ghost sm ${laneProfile?.id === l.id ? 'active' : ''}`} onClick={() => applyLane(client.id, l)} data-testid={`quote-lane-${i}`} title={`${l.commodity} · ${fmtVolume(l, 'en')} · target ${fmtTarget(l, 'en')}`}>
+                  {l.pol.replace(/ \(.*\)$/, '')} → {l.pod.replace(/ \(.*\)$/, '')} · {l.commodity.split(/[,(]/)[0].trim()}
+                </button>
+              ))}
+            </div>
+          )}
           <textarea
             className="q-paste"
             placeholder="e.g. hi need price 2x40HC Shanghai to Barcelona, ready 20 Nov, FOB…"
@@ -656,8 +780,13 @@ export function QuoteView({ seed, onOpenClient }: { seed?: { text: string; n: nu
                 value={fields.cargo ?? '—'}
                 editor={inp('cargo', fields.cargo ?? '', (v) => setField('cargo', v.trim() || null))} />
               <Chip label="DG" status={statusOf('dg')} evidence={parsed.evidence.dg} editing={editing === 'dg'} onEdit={() => setEditing('dg')}
-                value={fields.dg === 'yes' ? 'Yes — DG' : fields.dg === 'no' ? 'No' : 'Unknown'}
+                value={<>{fields.dg === 'yes' || laneProfile?.dg ? 'Yes — DG' : fields.dg === 'no' ? 'No' : 'Unknown'} <MsdsChip hs={hsQ} dg={laneProfile?.dg ? 'yes' : fields.dg} meta={msdsMeta} lang="en" /></>}
                 editor={sel('dg', fields.dg, [{ v: 'no', l: 'No' }, { v: 'yes', l: 'Yes — DG' }, { v: 'unknown', l: 'Unknown' }], (v) => setField('dg', (v || 'unknown') as DgState))} />
+            </div>
+            <div className="q-msds" data-testid="quote-msds">
+              <span className="q-muted">MSDS{hsQ ? <> · HS <bdi dir="ltr" className="mono">{hsQ}</bdi>{hsGuessed ? ' (guessed from commodity)' : laneProfile?.hs ? ' (lane profile)' : ''}</> : ' · no HS code'}</span>
+              <MsdsSlot hs={hsQ} dg={laneProfile?.dg ? 'yes' : fields.dg} meta={msdsMeta} onChange={setMsds} lang="en" testid="quote-msds-slot" />
+              {msdsMeta && laneProfile && <span className="q-muted">saved on {client!.name}'s lane profile</span>}
             </div>
           </div>
         )}
@@ -788,7 +917,49 @@ export function QuoteView({ seed, onOpenClient }: { seed?: { text: string; n: nu
                 <span className="q-muted">{quote.units}</span>
               </div>
               <div className="q-scope">{quote.scopeNote}</div>
-              {linesNote && <div className="q-scope q-amber" data-testid="lines-note">{linesNote}</div>}
+              {linesNote && <div className="q-scope" data-testid="lines-note">{linesNote}</div>}
+              {laneProfile && (
+                <div className="q-scope" data-testid="lane-note">
+                  {client!.name} lane profile: {laneProfile.commodity}{laneProfile.hs ? <> · HS <bdi dir="ltr" className="mono">{laneProfile.hs}</bdi> ({hsCheck(laneProfile.hs, 'en').text})</> : null} · {fmtVolume(laneProfile, 'en')} · {laneProfile.payment} · target <strong><bdi dir="ltr">{fmtTarget(laneProfile, 'en')}</bdi></strong>
+                  {targetDiff(quote) && <> · this option <bdi dir="ltr" className="mono">${money(Math.round(targetDiff(quote)!.perUnit))}</bdi>/{laneProfile.target.per} <TargetDelta diff={targetDiff(quote)!.diff} lang="en" /></>}
+                </div>
+              )}
+              {fields.mode === 'fcl' && tb && (
+                <div className="q-trade" data-testid="quote-trade" dir={lang === 'fa' ? 'rtl' : 'ltr'} lang={lang}>
+                  <div className="q-trade-head">
+                    <span className="q-lang" role="group" aria-label="Export / import">
+                      {(['export', 'import'] as TradeDir[]).map((d) => (
+                        <button key={d} type="button" className={dir === d ? 'active' : ''} onClick={() => setDirOverride(d === autoD ? null : d)} data-testid={`dir-${d}`}>{d === 'export' ? (lang === 'fa' ? 'صادرات' : lang === 'es' ? 'Exportación' : 'Export') : lang === 'fa' ? 'واردات' : lang === 'es' ? 'Importación' : 'Import'}</button>
+                      ))}
+                    </span>
+                    <strong data-testid="trade-title">{tb.title}</strong>
+                    <span className="q-muted">{dirOverride ? 'set by hand' : autoD ? `auto: ${autoD === 'import' ? 'POD' : 'POL'} is ${HOME_PORT} (client home port)` : `no ${HOME_PORT} leg — pick one`} · {dir === 'export' ? tl3(lang, 'lineCompare') : tl3(lang, 'agentCompare')}</span>
+                  </div>
+                  <div className="q-trade-sub q-muted">{tb.localTitle}</div>
+                  <table className="q-trade-table">
+                    <tbody>
+                      {tb.lines.map((l) => (
+                        <tr key={l.label}><td>{l.label}</td><td className="mono"><bdi dir="ltr">{l.amount != null ? `${tb.currency} ${money(l.amount)}` : '—'}</bdi></td><td className="q-muted">{l.note}</td><td className={l.included ? 'q-ok' : 'q-muted'}>{l.included ? `✓ ${tl3(lang, 'included')}` : l.amount != null ? tl3(lang, 'local') : ''}</td></tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  <ul className="q-trade-notes">{tb.notes.map((x) => <li key={x}>{x}</li>)}</ul>
+                  {dir === 'import' && (
+                    <div className="q-trade-agents" data-testid="import-agents">
+                      <strong>{tl3(lang, 'agentAt')} · {fields.origin}</strong>
+                      {originAgents.length ? (
+                        <ul>{originAgents.map((a) => <li key={a.name}><span className={`q-badge ${a.tag.startsWith('Client preferred') ? 'pref' : ''}`}>{a.tag}</span> {a.name}{a.note ? <span className="q-muted"> · {a.note.length > 70 ? `${a.note.slice(0, 68)}…` : a.note}</span> : null}{a.sanc === 'note' ? <span className="q-muted"> · screened, see Agents tab</span> : null}</li>)}</ul>
+                      ) : <span className="q-muted"> — none on file for this port (add in Agents tab or client setup)</span>}
+                      <div className="q-muted">Agent buy rates are not in the sample rate sheet: option prices above are line-based; request the agent's rate and add the margin.</div>
+                    </div>
+                  )}
+                </div>
+              )}
+              {clientAgent && (
+                <div className="q-scope" data-testid="client-agent">
+                  {client!.name}'s agent at {clientAgent.ports.split(',')[0]}: <strong>{clientAgent.name}</strong> ({clientAgent.rank}){clientAgent.contactName ? ` · ${clientAgent.contactName}` : ''}{clientAgent.whatsapp ? ` · WhatsApp ${clientAgent.whatsapp}` : ''}
+                </div>
+              )}
               {options.length > 1 && (
                 <div className="q-opts-wrap" dir={lang === 'fa' ? 'rtl' : 'ltr'} lang={lang} data-testid="quote-options">
                   <div className="q-opts-head">
@@ -817,6 +988,8 @@ export function QuoteView({ seed, onOpenClient }: { seed?: { text: string; n: nu
                             </label>
                           </div>
                           <div className="q-opt-badges">
+                            {rankOf(o.carrier) === 'preferred' && <span className="q-badge pref">{lang === 'es' ? 'Preferida del cliente' : lang === 'fa' ? 'ترجیح مشتری' : 'Client preferred'}</span>}
+                            {rankOf(o.carrier) === 'avoid' && <span className="q-badge">{lang === 'es' ? 'El cliente la evita' : lang === 'fa' ? 'مشتری پرهیز می‌کند' : 'Client avoids'}</span>}
                             {(badges[i] ?? []).map((b) => (
                               <span key={b} className={`q-badge ${b}`}>{BADGE_L[lang][b]}</span>
                             ))}
@@ -827,6 +1000,7 @@ export function QuoteView({ seed, onOpenClient }: { seed?: { text: string; n: nu
                             <bdi dir="ltr" className="mono">${money(o.sellTotal)}</bdi>
                             <span className={`q-delta ${dSell === 0 ? 'best' : ''}`}>{dSell === 0 ? ol(lang, 'cheapest') : <bdi dir="ltr">+${money(dSell)}</bdi>}</span>
                           </div>
+                          {targetDiff(o) && <div className="q-opt-target" data-testid={`option-target-${i}`}><TargetDelta diff={targetDiff(o)!.diff} lang={lang} /> <span className="q-muted"><bdi dir="ltr">${money(Math.round(targetDiff(o)!.perUnit))}</bdi> / {laneProfile!.target.per} · {ct(lang, 'target').toLowerCase()} <bdi dir="ltr">{laneProfile!.target.amount}</bdi></span></div>}
                           <div className="q-opt-bm mono">
                             {ol(lang, 'buy')} <bdi dir="ltr">${money(o.buyTotal)}</bdi> · {ol(lang, 'margin')} <bdi dir="ltr">${money(o.marginUsd)} ({o.marginPct}%)</bdi>
                           </div>
@@ -936,6 +1110,11 @@ export function QuoteView({ seed, onOpenClient }: { seed?: { text: string; n: nu
                 <label className="q-pdf-internal" title="Adds buy and margin columns. Never send this version to the customer.">
                   <input type="checkbox" data-testid="pdf-internal" checked={pdfInternal} onChange={(e) => setPdfInternal(e.target.checked)} /> Internal (with buy/margin)
                 </label>
+                {laneProfile?.target.amount != null && (
+                  <label className="q-pdf-internal" title="The client's target rate is internal by default. Tick to show it on the customer PDF and copied quote.">
+                    <input type="checkbox" data-testid="show-target" checked={showTarget} onChange={(e) => setShowTarget(e.target.checked)} /> Show target on customer copy
+                  </label>
+                )}
               </div>
               <div className="q-muted q-send-note">
                 Human sends it. Nothing is booked or emailed from here.

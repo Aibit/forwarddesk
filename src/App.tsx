@@ -9,6 +9,8 @@ import { SalesSim } from './components/SalesSim';
 import { QuoteView } from './quote/QuoteView';
 import { JobsView } from './jobs/JobsView';
 import { ClientsView } from './clients/ClientsView';
+import { PortalView } from './clients/PortalView';
+import { AgentsDbView } from './agents/AgentsDbView';
 import { clientForJob, getStore } from './clients/store';
 import { AGENT_META, initialCapacity, initialRfqs } from './data';
 import { buildProposals } from './matching';
@@ -56,11 +58,11 @@ function App() {
   const [busy, setBusy] = useState(false);
   const [showRfqForm, setShowRfqForm] = useState(false);
   const [showCapForm, setShowCapForm] = useState(false);
-  const [viewMode, setViewMode] = useState<'jobs' | 'clients' | 'quote' | 'desk' | 'pitch'>('jobs');
-  const [quoteSeed, setQuoteSeed] = useState<{ text: string; n: number; clientId?: string | null } | null>(null);
+  const [viewMode, setViewMode] = useState<'jobs' | 'clients' | 'agents' | 'portal' | 'quote' | 'desk' | 'pitch'>('jobs');
+  const [quoteSeed, setQuoteSeed] = useState<{ text: string; n: number; clientId?: string | null; laneId?: string | null } | null>(null);
   const [clientReq, setClientReq] = useState<{ id: string; n: number } | null>(null);
   const [jobReq, setJobReq] = useState<{ id: string; n: number } | null>(null);
-  const lite = viewMode === 'quote' || viewMode === 'jobs' || viewMode === 'clients';
+  const lite = viewMode === 'quote' || viewMode === 'jobs' || viewMode === 'clients' || viewMode === 'agents' || viewMode === 'portal';
   const openClient = (id: string | null | undefined) => {
     if (!id) return;
     setClientReq((r) => ({ id, n: (r?.n ?? 0) + 1 }));
@@ -589,7 +591,7 @@ function App() {
           <div className="logo">FD</div>
           <div>
             <h1>FORWARDDESK</h1>
-            <p className="corridor">{viewMode === 'jobs' ? 'JOBS · DEADLINES · MONEY AT RISK' : viewMode === 'clients' ? 'CLIENTS · SETUP · DASHBOARD' : viewMode === 'quote' ? 'REQUEST → QUOTE IN MINUTES' : 'SALES + QUOTING DESK'}</p>
+            <p className="corridor">{viewMode === 'jobs' ? 'JOBS · DEADLINES · MONEY AT RISK' : viewMode === 'clients' ? 'CLIENTS · SETUP · DASHBOARD' : viewMode === 'agents' ? 'AGENTS · LINES · NETWORK DATABASE' : viewMode === 'portal' ? 'CLIENT PORTAL · DEMO LOGIN' : viewMode === 'quote' ? 'REQUEST → QUOTE IN MINUTES' : 'SALES + QUOTING DESK'}</p>
           </div>
         </div>
         {!lite && (
@@ -640,6 +642,21 @@ function App() {
               onClick={() => { setClientReq(null); setViewMode('clients'); }}
             >
               Clients
+            </button>
+            <button
+              type="button"
+              className={viewMode === 'agents' ? 'active' : ''}
+              onClick={() => setViewMode('agents')}
+              data-testid="tab-agents"
+            >
+              Agents
+            </button>
+            <button
+              type="button"
+              className={viewMode === 'portal' ? 'active' : ''}
+              onClick={() => setViewMode('portal')}
+            >
+              Client portal
             </button>
             <button
               type="button"
@@ -710,9 +727,11 @@ function App() {
         <ClientsView
           openRequest={clientReq}
           onOpenJob={(id) => { setJobReq((r) => ({ id, n: (r?.n ?? 0) + 1 })); setViewMode('jobs'); }}
-          onNewQuote={(clientId) => { setQuoteSeed((q) => ({ text: '', n: (q?.n ?? 0) + 1, clientId })); setViewMode('quote'); }}
+          onNewQuote={(clientId, laneId) => { setQuoteSeed((q) => ({ text: '', n: (q?.n ?? 0) + 1, clientId, laneId: laneId ?? null })); setViewMode('quote'); }}
         />
       )}
+      {viewMode === 'portal' && <PortalView />}
+      {viewMode === 'agents' && <AgentsDbView />}
       {viewMode === 'quote' && <QuoteView seed={quoteSeed} onOpenClient={openClient} />}
 
       {!lite && selected && (
@@ -797,7 +816,7 @@ function App() {
 
       <footer className="ops-footer">
         <span>
-          {viewMode === 'jobs' ? 'Dashboard + deadline tracker · read-only, alerts only · people act' : viewMode === 'clients' ? 'Client setup + dashboard · saved in this browser only · sample clients A–G' : viewMode === 'quote' ? 'Paste → read → ask → price → copy' : <><kbd>R</kbd> build quotes on selected RFQ</>}
+          {viewMode === 'jobs' ? 'Dashboard + deadline tracker · read-only, alerts only · people act' : viewMode === 'clients' ? 'Client setup + dashboard · saved in this browser only · sample clients A–G' : viewMode === 'agents' ? 'Agents database · saved in this browser only · CSV import / export' : viewMode === 'portal' ? 'Customer-facing view · demo login, not secure · sell prices only' : viewMode === 'quote' ? 'Paste → read → ask → price → copy' : <><kbd>R</kbd> build quotes on selected RFQ</>}
         </span>
         <span>ForwardDesk · sales + quoting · pitch lane then lock buy/sell · human confirm</span>
         <span>Schedules ≠ soft leftover</span>

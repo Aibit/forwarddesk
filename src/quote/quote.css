@@ -188,3 +188,17 @@
 .q-opt-foot { font-family: var(--mono); font-size: 0.58rem; color: var(--amber); letter-spacing: 0.05em; margin-top: auto; }
 .q-opts-note { margin-top: 0.35rem; }
 .q-amber { color: var(--amber); }
+.q-lanes { flex-wrap: wrap; }
+.q-lanes .btn.active { border-color: var(--accent, #5ab0ff); color: var(--text); }
+.q-opt-target { font-size: 0.72rem; margin: 0.15rem 0; display: flex; flex-wrap: wrap; gap: 0.25rem; align-items: center; }
+.q-msds { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem 0.6rem; margin-top: 0.5rem; }
+.q-trade { border: 1px solid var(--border); border-radius: 3px; padding: 0.55rem 0.7rem; margin: 0.5rem 0; background: var(--panel-2); font-size: 0.8rem; }
+.q-trade-head { display: flex; flex-wrap: wrap; gap: 0.4rem 0.7rem; align-items: center; }
+.q-trade-head strong { font-family: var(--mono); letter-spacing: 0.05em; }
+.q-trade-sub { margin: 0.3rem 0; font-size: 0.74rem; }
+.q-trade-table { border-collapse: collapse; width: 100%; }
+.q-trade-table td { padding: 0.2rem 0.4rem; border-bottom: 1px solid var(--border); }
+.q-trade-notes { margin: 0.4rem 0 0; padding-inline-start: 1.1rem; }
+.q-trade-agents { margin-top: 0.5rem; }
+.q-trade-agents ul { margin: 0.25rem 0; padding-inline-start: 1.1rem; }
+.q-ok { color: #8fd6a6; }

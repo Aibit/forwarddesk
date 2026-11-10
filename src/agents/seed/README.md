@@ -1,0 +1,1 @@
+Drop the researched agents CSV here as agents.csv (columns: name,type,country,city,ports,lanes,services,portal,website,email,phone,whatsapp,sanctions_note,source,notes) and rebuild; it replaces the generic sample seed.

@@ -6,6 +6,8 @@ import type { Badge, Quote, Side } from './rates';
 import { BADGE_L } from './optlabels';
 import { isoToday, quoteNumber } from './quoteno';
 import type { Company } from '../clients/store';
+import { msdsText, qfl, type QuoteFor } from './quotefor';
+import type { TradeBlock } from './trade';
 
 export interface PdfInput {
   fields: QuoteFields;
@@ -21,6 +23,10 @@ export interface PdfInput {
   badges?: Badge[][];
   company?: Company | null;
   clientName?: string | null;
+  /** MSDS attached (name + upload time) — noted on the PDF. */
+  msds?: { name: string; at: number } | null;
+  quoteFor?: QuoteFor | null;
+  trade?: TradeBlock | null;
 }
 
 type RGB = [number, number, number];
@@ -356,7 +362,7 @@ export async function generateQuotePdf(inp: PdfInput): Promise<{ blob: Blob; fil
         doc.text(dlt === 0 ? L.cheapest : `+${money(dlt)}`, x + colW - 3, ry + 6.2, { align: 'right' });
         const bw = colW - 6;
         fillC(C.line); doc.roundedRect(x + 3, ry + 9, bw, 1.6, 0.8, 0.8, 'F');
-        fillC(i === 0 ? C.amber : C.ink); doc.roundedRect(x + 3, ry + 9, Math.max(2, (bw * o.sellTotal) / maxSell), 1.6, 0.8, 0.8, 'F');
+        fillC(i === 0 ? C.amber : C.ink); doc.roundedRect(x + 3, ry + 9, maxSell > 0 ? Math.max(2, (bw * o.sellTotal) / maxSell) : 2, 1.6, 0.8, 0.8, 'F');
       });
       yy = ry + totH;
       if (os.some((o) => o.staleCount > 0)) {
@@ -419,7 +425,7 @@ export async function generateQuotePdf(inp: PdfInput): Promise<{ blob: Blob; fil
     font('PlexR', 7.4, C.muted);
     const forWhom = inp.clientName ? (lang === 'es' ? `Cotización para ${inp.clientName}` : `Quotation for ${inp.clientName}`) : lang === 'es' ? 'Transitario · Cotización de flete' : 'Freight forwarding · Quotation';
     doc.text(fit(forWhom, 92 - (hx - M)), hx, 21.6);
-    caps(L.title, W - M, 13.6, C.amberDeep, 8.2, 'right');
+    caps(inp.trade ? inp.trade.title : L.title, W - M, 13.6, C.amberDeep, 8.2, 'right');
     font('MonoM', 10.5, C.ink);
     doc.text(qn, W - M, 19.2, { align: 'right' });
     font('PlexR', 7.4, C.muted);
@@ -681,6 +687,64 @@ export async function generateQuotePdf(inp: PdfInput): Promise<{ blob: Blob; fil
 
     y = ly + 17.5;
     } else y -= 1;
+    // ── Quotation for: client + lane profile ──
+    const qf = inp.quoteFor;
+    if (qf && (qf.client || qf.lane)) {
+      const ql = (k: Parameters<typeof qfl>[1]) => qfl(lang, k);
+      const left: [string, string][] = qf.client ? [
+        [ql('for'), qf.client.name],
+        [ql('contact'), qf.client.contactName || '—'],
+        ...([qf.client.email, qf.client.phone].some(Boolean) ? [['Email · Tel', [qf.client.email, qf.client.phone].filter(Boolean).join(' · ')] as [string, string]] : []),
+        ...(qf.client.address ? [[ql('address'), qf.client.address] as [string, string]] : []),
+      ] : [];
+      const right: [string, string][] = qf.lane ? [
+        [`${ql('pol')} → ${ql('pod')}`, `${qf.lane.pol} → ${qf.lane.pod}`],
+        [ql('commodity') + (qf.lane.hs ? ` · ${ql('hs')}` : ''), `${qf.lane.commodity}${qf.lane.hs ? ` · ${qf.lane.hs}` : ''}`],
+        [`${ql('volume')} · ${ql('payment')}`, `${qf.lane.volume} · ${qf.lane.payment || '—'}`],
+        ...(qf.target ? [[ql('target') + (inp.internal ? ' (internal)' : ''), qf.target] as [string, string]] : []),
+        ...(qf.msds ? [['MSDS', msdsText(qf, lang)] as [string, string]] : []),
+      ] : qf.msds ? [['MSDS', msdsText(qf, lang)]] : [];
+      const rows = Math.max(left.length, right.length);
+      const h = rows * 7.6 + 5;
+      y = ensure(y, h + 8);
+      caps(qf.client ? ql('for') : ql('lane'), M, y);
+      if (qf.client && qf.lane) caps(ql('lane'), M + CW / 2 + 2, y);
+      fillC(C.panel);
+      doc.roundedRect(M, y + 2.5, CW, h, 1.8, 1.8, 'F');
+      const col = (items: [string, string][], x0: number, w: number) => items.forEach(([k, v], i) => {
+        const cy = y + 7.4 + i * 7.6;
+        font('PlexR', 6.2, C.muted);
+        doc.text(fit(k, w - 6), x0, cy);
+        const amberV = k === 'MSDS' && qf.msds?.status === 'required';
+        font(i === 0 && items === left ? 'PlexB' : 'PlexSB', 8, amberV ? C.amberDeep : C.ink);
+        doc.text(fit(v, w - 6), x0, cy + 3.6);
+      });
+      if (left.length && right.length) {
+        col(left, M + 4, CW / 2);
+        col(right, M + CW / 2 + 2, CW / 2);
+      } else col(left.length ? left : right, M + 4, CW);
+      y += h + 9;
+    }
+    // ── Local charges at the home port (export / import) ──
+    if (inp.trade) {
+      const tb = inp.trade;
+      const rowsH = tb.lines.length * 5.2 + 5;
+      y = ensure(y, rowsH + 8);
+      caps(fit(tb.localTitle, CW), M, y);
+      fillC(C.panel);
+      doc.roundedRect(M, y + 2.5, CW, rowsH, 1.8, 1.8, 'F');
+      tb.lines.forEach((l, i) => {
+        const cy = y + 7.6 + i * 5.2;
+        font('PlexSB', 7.6, C.ink);
+        doc.text(fit(l.label, CW * 0.36), M + 4, cy);
+        font('MonoM', 7.6, C.ink);
+        doc.text(l.amount != null ? `${tb.currency} ${money(l.amount)}` : '—', M + CW * 0.52, cy, { align: 'right' });
+        font('PlexR', 6.6, C.muted);
+        const st = l.included ? (lang === 'es' ? 'incluido en el total' : 'included in total') : l.amount != null ? (lang === 'es' ? 'pagadero en Bandar Abbas, no incluido' : 'payable at Bandar Abbas, not in total') : '';
+        doc.text(fit([l.note, st].filter(Boolean).join(' · '), CW * 0.44), M + CW * 0.55, cy);
+      });
+      y += rowsH + 9;
+    }
     // ── Shipment details ──
     caps(L.details, M, y);
     const det: [string, string][] = [
@@ -785,7 +849,11 @@ export async function generateQuotePdf(inp: PdfInput): Promise<{ blob: Blob; fil
 
     // ── Please confirm + terms ──
     const qs = [...new Set(inp.issues.filter((i) => i.question).map((i) => i.question![lang]))];
-    const terms = L.termsList(fmtDate(validMin, lang), f.incoterm ?? 'FOB', q.excluded.map((l) => l.charge));
+    const terms = [
+      ...(inp.trade ? inp.trade.notes : []),
+      ...(inp.msds ? [lang === 'es' ? `MSDS recibida (${inp.msds.name}, ${fmtDate(new Date(inp.msds.at).toISOString().slice(0, 10), lang)}); aceptación final sujeta a la naviera.` : `MSDS received (${inp.msds.name}, ${fmtDate(new Date(inp.msds.at).toISOString().slice(0, 10), lang)}); final acceptance subject to the line.`] : []),
+      ...L.termsList(fmtDate(validMin, lang), f.incoterm ?? 'FOB', q.excluded.map((l) => l.charge)),
+    ];
     const drawTerms = (x0: number, y0: number, colW: number, cols: number): number => {
       font('PlexR', 6.3, C.muted);
       const wrapped = terms.map((t) => doc.splitTextToSize(t, colW - 4) as string[]);

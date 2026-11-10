@@ -80,6 +80,7 @@ const S = {
   close: ['Close', 'Cerrar', 'بستن'],
   draftQuote: ['Draft quote', 'Borrador de oferta', 'پیش‌نویس قیمت'],
   clientDash: ['Client dashboard', 'Panel del cliente', 'داشبورد مشتری'],
+  agent: ['Client\'s agent', 'Agente del cliente', 'نماینده مشتری'],
   tariffs: ['Tariffs', 'Tarifas', 'تعرفه‌ها'],
   tariffsNote: [
     'SAMPLE · set yearly by the Shipping Association (انجمن کشتیرانی) and Ports Organization (سازمان بنادر). Edit here; every clock and total updates. Saved in this browser only.',
