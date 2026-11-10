@@ -1,3 +1,5 @@
+import { useSyncExternalStore } from 'react';
+import { bridge } from '../backend/bridge';
 /**
  * SAMPLE tariffs. Per the brief, the Shipping Association (انجمن کشتیرانی) sets demurrage, B/L fee, DO fee and
  * guarantee-cheque amounts each year, and the Ports Organization (سازمان بنادر) sets THC. Kept as editable data,
@@ -61,7 +63,7 @@ export const TARIFF_ROWS: { key: TariffKey; setBy: 'sa' | 'po' | 'line'; unit: s
 ];
 
 const KEY = 'fd-tariffs-v1';
-export function loadTariffs(): Tariffs {
+function readLocal(): Tariffs {
   try {
     const raw = localStorage.getItem(KEY);
     if (raw) return { ...DEFAULT_TARIFFS, ...(JSON.parse(raw) as Partial<Tariffs>) };
@@ -70,10 +72,30 @@ export function loadTariffs(): Tariffs {
   }
   return { ...DEFAULT_TARIFFS };
 }
+let current: Tariffs = typeof localStorage === 'undefined' ? { ...DEFAULT_TARIFFS } : readLocal();
+const subs = new Set<() => void>();
+const emit = () => subs.forEach((f) => f());
+/** Current tariff table (this browser in demo mode, Firestore in live mode). */
+export const loadTariffs = (): Tariffs => current;
 export function saveTariffs(t: Tariffs) {
-  try {
-    localStorage.setItem(KEY, JSON.stringify(t));
-  } catch {
-    /* ignore */
+  if (t === current) return;
+  current = t;
+  if (bridge.w) bridge.w.setTariffs(t);
+  else {
+    try {
+      localStorage.setItem(KEY, JSON.stringify(t));
+    } catch {
+      /* ignore */
+    }
   }
+  emit();
 }
+export function hydrateTariffs(t: Partial<Tariffs> | null) {
+  current = { ...DEFAULT_TARIFFS, ...(t ?? {}) };
+  emit();
+}
+export function reloadTariffs() {
+  current = readLocal();
+  emit();
+}
+export const useTariffs = () => useSyncExternalStore((f) => (subs.add(f), () => subs.delete(f)), () => current);

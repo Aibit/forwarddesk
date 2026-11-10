@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { sampleJobs, type Doc, type Job } from './data';
+import { type Doc, type Job } from './data';
+import { jobsStore, useJobs } from './store';
+import { isLive } from '../backend/bridge';
 import { FA_TERM, GLOSSARY, dur, fmtDay, fmtWhen, num, tr, usd, type Key } from './i18n';
 import { CHARGE_LABEL, DAY, chargeAmount, chequeAmount, clock, cutoff, jobAlerts, nextDeadline, summarize, unpaidBeforeBl } from './logic';
 import { PHASES, stepDef, stepIndex, stepsFor, type Lang } from './steps';
-import { DEFAULT_TARIFFS, TARIFF_ROWS, loadTariffs, saveTariffs, type TariffKey, type Tariffs } from './tariffs';
+import { DEFAULT_TARIFFS, TARIFF_ROWS, loadTariffs, saveTariffs, useTariffs, type TariffKey, type Tariffs } from './tariffs';
 import { agentForPort, clientForJob, useStore } from '../clients/store';
 import { jobMsds } from '../clients/lanes';
 import { MsdsChip, MsdsSlot } from '../clients/Msds';
@@ -18,16 +20,17 @@ export function JobsView({ onDraftQuote, onOpenClient, openRequest }: { onDraftQ
   /** E: agent at the port of discharge; I: agent at the port of loading (I2, I4–I8). */
   const agentOf = (j: Job) => agentForPort(clientForJob(clients, j.customer), j.dir === 'import' ? j.pol : j.pod);
   const [now, setNow] = useState(() => Date.now());
-  const [jobs] = useState<Job[]>(() => sampleJobs());
-  const [tariffs, setTariffs] = useState<Tariffs>(() => loadTariffs());
+  const jobs = useJobs();
+  const tariffs = useTariffs();
+  const setTariffs = (u: Tariffs | ((t: Tariffs) => Tariffs)) => saveTariffs(typeof u === 'function' ? u(loadTariffs()) : u);
   const [openId, setOpenId] = useState<string | null>(openRequest?.id ?? null);
   const [filter, setFilter] = useState<'all' | 'export' | 'import'>('all');
+  const [newJob, setNewJob] = useState(false);
 
   useEffect(() => {
     const t = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(t);
   }, []);
-  useEffect(() => saveTariffs(tariffs), [tariffs]);
   useEffect(() => {
     if (openRequest) setOpenId(openRequest.id);
   }, [openRequest?.n]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -104,6 +107,7 @@ export function JobsView({ onDraftQuote, onOpenClient, openRequest }: { onDraftQ
           <span className="j-sample">{L('sampleData')}</span>
           <span className="j-note">{L('sampleNote')}</span>
         </div>
+        <button type="button" className="btn sm primary" onClick={() => setNewJob(true)} data-testid="job-new">{L('newJob')}</button>
         <div className="q-lang j-lang" role="group" aria-label="Language">
           {(['en', 'es', 'fa'] as Lang[]).map((l) => (
             <button key={l} type="button" className={lang === l ? 'active' : ''} onClick={() => setLang(l)} data-testid={`jobs-lang-${l}`}>
@@ -113,6 +117,7 @@ export function JobsView({ onDraftQuote, onOpenClient, openRequest }: { onDraftQ
         </div>
       </div>
 
+      {newJob && <NewJobForm lang={lang} clients={clients} onClose={() => setNewJob(false)} onCreated={(id) => { setNewJob(false); setOpenId(id); }} />}
       <div className="j-summary" data-testid="jobs-summary">
         <Tile label={L('jobsLive')} value={num(lang, sum.jobsLive)} />
         <Tile label={T('inFreeTime')} value={num(lang, sum.inFreeTime)} />
@@ -162,6 +167,7 @@ export function JobsView({ onDraftQuote, onOpenClient, openRequest }: { onDraftQ
                     </strong>
                     <span className="j-sub">
                       {custLink(j.customer)} · {j.commodity}
+                      {j.portal?.draftBlApprovedAt && <span className="j-portal-ok" data-testid={`job-portal-ok-${j.id}`}> · ✓ {L('draftBl')}</span>}
                     </span>
                     <span className="j-sub">
                       {j.line}
@@ -453,6 +459,7 @@ function JobDrawer({ job, lang, now, tariffs, T, onClose, onDraftQuote, onOpenCl
               <bdi>{job.pol} → {job.pod}</bdi>
             </h2>
             <p className="j-sub">
+              {job.portal?.draftBlApprovedAt && <span className="j-portal-ok" data-testid="job-portal-approved">✓ {L('portalApproved')} · {fmtWhen(lang, job.portal.draftBlApprovedAt)}<br /></span>}
               {job.customer} · {job.commodity} · {job.line}
               {agentName && <> · {L('agent')} ({job.dir === 'import' ? job.pol : job.pod}): <strong data-testid="job-agent">{agentName}</strong></>}
               {job.vessel && (
@@ -587,7 +594,7 @@ function JobDrawer({ job, lang, now, tariffs, T, onClose, onDraftQuote, onOpenCl
                 <div className="j-msds" data-testid="job-msds">
                   <span className="j-doc-name">MSDS{m.hs ? <> · HS <bdi dir="ltr" className="mono">{m.hs}</bdi>{m.guessed ? ' ~' : ''}</> : ''}</span>
                   {m.lane && client ? (
-                    <MsdsSlot hs={m.hs} dg={m.lane.dg ? 'yes' : null} meta={m.meta} lang={lang} testid="job-msds-slot" onChange={(meta) => clientStore.setLanes(client.id, client.lanes.map((l) => (l.id === m.lane!.id ? { ...l, msds: meta } : l)))} />
+                    <MsdsSlot hs={m.hs} dg={m.lane.dg ? 'yes' : null} meta={m.meta} lang={lang} testid="job-msds-slot" clientId={client.id} onChange={(meta) => clientStore.setLanes(client.id, client.lanes.map((l) => (l.id === m.lane!.id ? { ...l, msds: meta } : l)))} />
                   ) : (
                     <MsdsChip hs={m.hs} meta={m.meta} lang={lang} />
                   )}
@@ -638,5 +645,73 @@ function JobDrawer({ job, lang, now, tariffs, T, onClose, onDraftQuote, onOpenCl
         </section>
       </aside>
     </div>
+  );
+}
+
+function NewJobForm({ lang, clients, onClose, onCreated }: { lang: Lang; clients: Client[]; onClose: () => void; onCreated: (id: string) => void }) {
+  const L = (k: Key) => tr(lang, k);
+  const [dir, setDir] = useState<'export' | 'import'>('export');
+  const [cid, setCid] = useState(clients[0]?.id ?? '');
+  const [pol, setPol] = useState('Bandar Abbas');
+  const [pod, setPod] = useState('');
+  const [commodity, setCommodity] = useState('');
+  const [line, setLine] = useState('');
+  const [equip, setEquip] = useState('1×20');
+  const steps = stepsFor(dir);
+  const [step, setStep] = useState('E5');
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const flip = (d: 'export' | 'import') => {
+    setDir(d);
+    setStep(d === 'export' ? 'E5' : 'I3');
+    if (d === 'import') { setPod('Bandar Abbas'); if (pol === 'Bandar Abbas') setPol(''); } else { setPol('Bandar Abbas'); if (pod === 'Bandar Abbas') setPod(''); }
+  };
+  const c = clients.find((x) => x.id === cid);
+  const ok = c && pol.trim() && pod.trim() && commodity.trim();
+  const create = async () => {
+    if (!c) return;
+    const id = `FD-${dir === 'export' ? 'E' : 'I'}-${String(Date.now()).slice(-5)}`;
+    const now = Date.now();
+    const j: Job = {
+      id, dir, customer: c.jobName ?? c.name, clientId: c.id, commodity: commodity.trim(), pol: pol.trim(), pod: pod.trim(), line: line.trim() || '—', step,
+      containers: [], plannedEquipment: equip.trim() || undefined, charges: [], cheques: [], docs: [{ key: 'booking', status: 'pending' }],
+      log: [{ at: now, text: `${step} Job created on the desk` }], sample: true,
+    };
+    setBusy(true);
+    try {
+      await jobsStore.create(j);
+      onCreated(id);
+    } catch (e) {
+      setErr(String((e as Error).message ?? e));
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <section className="q-panel" data-testid="job-new-form">
+      <div className="q-head">
+        <h2>{L('newJob').replace('+ ', '')}</h2>
+        <div className="q-lang" role="group">
+          {(['export', 'import'] as const).map((d) => (
+            <button key={d} type="button" className={dir === d ? 'active' : ''} onClick={() => flip(d)} data-testid={`nj-dir-${d}`}>{L(d)}</button>
+          ))}
+        </div>
+      </div>
+      <div className="j-newjob">
+        <label>{L('customer')}<select value={cid} onChange={(e) => setCid(e.target.value)} data-testid="nj-client">{clients.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}</select></label>
+        <label>{L('pol')}<input value={pol} onChange={(e) => setPol(e.target.value)} data-testid="nj-pol" /></label>
+        <label>{L('pod')}<input value={pod} onChange={(e) => setPod(e.target.value)} data-testid="nj-pod" /></label>
+        <label>{L('commodityJ')}<input value={commodity} onChange={(e) => setCommodity(e.target.value)} data-testid="nj-commodity" /></label>
+        <label>{L('lineJ')}<input value={line} onChange={(e) => setLine(e.target.value)} placeholder="Line A (sample)" data-testid="nj-line" /></label>
+        <label>{L('equipment')}<input value={equip} onChange={(e) => setEquip(e.target.value)} data-testid="nj-equip" /></label>
+        <label>{L('startStep')}<select value={step} onChange={(e) => setStep(e.target.value)} data-testid="nj-step">{steps.map((st) => <option key={st.code} value={st.code}>{st.code} · {st[lang]}</option>)}</select></label>
+      </div>
+      <p className="j-foot">{L('newJobNote')} {isLive() ? L('savedLive') : L('savedLocal')}.</p>
+      {err && <p className="q-amber">{err}</p>}
+      <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+        <button type="button" className="btn ghost sm" onClick={onClose}>{L('cancelJ')}</button>
+        <button type="button" className="btn primary sm" disabled={!ok || busy} onClick={() => void create()} data-testid="nj-create">{L('createJob')}</button>
+      </div>
+    </section>
   );
 }

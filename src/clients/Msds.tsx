@@ -1,5 +1,6 @@
 import { useRef, useState, type ChangeEvent } from 'react';
-import { MSDS_MAX, deleteMsds, fmtSize, loadMsds, ml, msdsNeed, saveMsds, setMsdsRules, useMsdsRules, DEFAULT_MSDS_RULES, type MsdsMeta, type MsdsRule } from './msds';
+import { isLive } from '../backend/bridge';
+import { deleteMsds, msdsMax, fmtSize, loadMsds, ml, msdsNeed, saveMsds, setMsdsRules, useMsdsRules, DEFAULT_MSDS_RULES, type MsdsMeta, type MsdsRule } from './msds';
 import type { CLang } from './store';
 
 /** Status chip: required (amber, "to confirm" style) / optional (muted) / received (green). */
@@ -12,13 +13,13 @@ export function MsdsChip({ hs, dg, meta, lang }: { hs?: string | null; dg?: stri
 export async function viewMsds(meta: MsdsMeta) {
   const w = window.open('', '_blank');
   const b = await loadMsds(meta.id);
-  if (!b) { w?.close(); window.alert('File not found in this browser.'); return; }
+  if (!b) { w?.close(); window.alert(isLive() ? 'File not found.' : 'File not found in this browser.'); return; }
   const url = URL.createObjectURL(b);
   if (w) w.location.href = url; else window.location.href = url;
   window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }
 
-export function MsdsSlot({ hs, dg, meta, onChange, lang, testid = 'msds' }: { hs?: string | null; dg?: string | null; meta?: MsdsMeta | null; onChange: (m: MsdsMeta | null) => void; lang: CLang; testid?: string }) {
+export function MsdsSlot({ hs, dg, meta, onChange, lang, testid = 'msds', clientId = null }: { hs?: string | null; dg?: string | null; meta?: MsdsMeta | null; onChange: (m: MsdsMeta | null) => void; lang: CLang; testid?: string; clientId?: string | null }) {
   useMsdsRules();
   const ref = useRef<HTMLInputElement>(null);
   const [err, setErr] = useState<string | null>(null);
@@ -28,10 +29,10 @@ export function MsdsSlot({ hs, dg, meta, onChange, lang, testid = 'msds' }: { hs
     e.target.value = '';
     if (!f) return;
     if (!/^(application\/pdf|image\/)/.test(f.type) && !/\.(pdf|png|jpe?g|webp|gif)$/i.test(f.name)) return setErr(ml(lang, 'badType'));
-    if (f.size > MSDS_MAX) return setErr(ml(lang, 'tooBig'));
+    if (f.size > msdsMax()) return setErr(ml(lang, isLive() ? 'tooBigLive' : 'tooBig'));
     setErr(null);
     try {
-      const m = await saveMsds(f);
+      const m = await saveMsds(f, clientId);
       if (meta) void deleteMsds(meta.id);
       onChange(m);
     } catch (x) {
@@ -54,7 +55,7 @@ export function MsdsSlot({ hs, dg, meta, onChange, lang, testid = 'msds' }: { hs
       ) : (
         <button type="button" className="btn sm ghost" onClick={() => ref.current?.click()} data-testid={`${testid}-upload`}>{ml(lang, 'upload')}</button>
       )}
-      <span className="c-sub">{ml(lang, 'browserOnly')}</span>
+      <span className="c-sub">{ml(lang, isLive() ? 'online' : 'browserOnly')}</span>
       <input ref={ref} type="file" accept="application/pdf,image/*" hidden onChange={pick} data-testid={`${testid}-input`} />
       {err && <span className="q-amber">{err}</span>}
     </div>

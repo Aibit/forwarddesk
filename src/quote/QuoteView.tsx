@@ -17,7 +17,7 @@ import { agentForPort, lineRank, store, useStore } from '../clients/store';
 import { SAMPLE_REQUESTS } from './samples';
 import { quoteForText, type QuoteFor } from './quotefor';
 import { HOME_PORT, autoDir, tl3, tradeBlock, tradeText, type TradeBlock, type TradeDir } from './trade';
-import { loadTariffs } from '../jobs/tariffs';
+import { useTariffs } from '../jobs/tariffs';
 import { isListed, sanctionsLevel, useAgentsDb } from '../agents/db';
 import { hsCheck, laneToRequest, sameLane, targetUnits, type LaneProfile } from '../clients/lanes';
 import { TargetDelta, fmtTarget, fmtVolume } from '../clients/Lanes';
@@ -257,7 +257,7 @@ export function QuoteView({ seed, onOpenClient }: { seed?: { text: string; n: nu
   const [laneId, setLaneId] = useState<string | null>(null);
   const [quoteMsds, setQuoteMsds] = useState<MsdsMeta | null>(null);
   const [dirOverride, setDirOverride] = useState<TradeDir | null>(null);
-  const [tariffs] = useState(() => loadTariffs());
+  const tariffs = useTariffs();
   const { list: agentDb } = useAgentsDb();
   const msdsRules = useMsdsRules();
   const [text, setText] = useState('');
@@ -569,7 +569,7 @@ export function QuoteView({ seed, onOpenClient }: { seed?: { text: string; n: nu
     store.recordQuote({
       id: quoteNumber(text), clientId, at: Date.now(), route: `${fields.origin} → ${fields.destination}`, mode: fields.mode ? MODE_L.en[fields.mode] : '', units,
       options: custOpts.map((o) => ({ carrier: o.carrier ?? '—', sell: o.sellTotal, transit: o.transitDays })), currency: custOpts[0].currencies.join('/') || 'USD', via, sample: usingSample,
-    });
+    }, { options: custOpts.map((o) => ({ carrier: o.carrier ?? '—', buy: o.buyTotal, margin: o.marginUsd, marginPct: o.marginPct })), marginPct: margin ?? null, sample: usingSample });
     setSavedTo(client ? client.name : 'unassigned');
   }
 
@@ -785,7 +785,7 @@ export function QuoteView({ seed, onOpenClient }: { seed?: { text: string; n: nu
             </div>
             <div className="q-msds" data-testid="quote-msds">
               <span className="q-muted">MSDS{hsQ ? <> · HS <bdi dir="ltr" className="mono">{hsQ}</bdi>{hsGuessed ? ' (guessed from commodity)' : laneProfile?.hs ? ' (lane profile)' : ''}</> : ' · no HS code'}</span>
-              <MsdsSlot hs={hsQ} dg={laneProfile?.dg ? 'yes' : fields.dg} meta={msdsMeta} onChange={setMsds} lang="en" testid="quote-msds-slot" />
+              <MsdsSlot hs={hsQ} dg={laneProfile?.dg ? 'yes' : fields.dg} meta={msdsMeta} onChange={setMsds} lang="en" testid="quote-msds-slot" clientId={client?.id ?? null} />
               {msdsMeta && laneProfile && <span className="q-muted">saved on {client!.name}'s lane profile</span>}
             </div>
           </div>

@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from 'react';
 import { sampleLanes, type LaneProfile } from './lanes';
 import { listedNames } from '../agents/db';
+import { bridge, type QuoteCosts } from '../backend/bridge';
 
 export type CLang = 'en' | 'es' | 'fa';
 export interface Person { name: string; phone: string }
@@ -74,6 +75,8 @@ export interface QuoteRecord {
   /** Option the customer accepted (portal), if any. */
   acceptedOption?: string;
   acceptedVia?: 'portal' | 'desk';
+  /** When the option was accepted (ms). */
+  acceptedAt?: number;
   sample?: boolean;
 }
 
@@ -119,7 +122,7 @@ export function sampleAgents(clientId: string): Agent[] {
     default: return [];
   }
 }
-function sampleQuotes(now = Date.now()): QuoteRecord[] {
+export function sampleQuotes(now = Date.now()): QuoteRecord[] {
   return [
     { id: 'FD-Q-SAMPLE-101', clientId: 'c-c', at: now - 2 * DAY, route: 'Bandar Abbas → Nhava Sheva', mode: 'Ocean FCL', units: '2×20GP', options: [{ carrier: 'Sample Line B', sell: 2047, transit: 8 }, { carrier: 'Sample Line A', sell: 2388, transit: 5 }, { carrier: 'Sample Line C', sell: 2399, transit: 4 }], currency: 'USD', status: 'sent', via: ['pdf'], sample: true },
     { id: 'FD-Q-SAMPLE-094', clientId: 'c-a', at: now - 12 * DAY, route: 'Bandar Abbas → Jebel Ali', mode: 'Ocean FCL', units: '2×20GP', options: [{ carrier: 'Sample Line A', sell: 1180, transit: 2 }], currency: 'USD', status: 'won', via: ['copy'], sample: true },
@@ -154,6 +157,7 @@ let state: State = {
 const subs = new Set<() => void>();
 function set(next: Partial<State>) {
   state = { ...state, ...next };
+  if (bridge.w) { subs.forEach((f) => f()); return; }
   if (next.clients) save(K.clients, state.clients);
   if (next.company) save(K.company, state.company);
   if (next.quotes) save(K.quotes, state.quotes);
@@ -169,31 +173,52 @@ export function useStore(): State {
 export const getStore = () => state;
 
 export const store = {
+  /** Live mode: replace state from Firestore snapshots (never written to localStorage). */
+  hydrate(next: Partial<State>) {
+    set(next);
+  },
+  /** Back to this browser's own demo copy (after sign-out). */
+  reload() {
+    state = {
+      clients: migrate(load(K.clients, sampleClients)),
+      company: { ...EMPTY_COMPANY, ...load<Partial<Company>>(K.company, () => ({})) },
+      quotes: load(K.quotes, () => sampleQuotes()),
+    };
+    subs.forEach((f) => f());
+  },
   upsertClient(c: Client) {
+    bridge.w?.upsertClient(c);
     const exists = state.clients.some((x) => x.id === c.id);
     set({ clients: exists ? state.clients.map((x) => (x.id === c.id ? c : x)) : [...state.clients, c] });
   },
   removeClient(id: string) {
+    bridge.w?.removeClient(id);
     set({ clients: state.clients.filter((c) => c.id !== id) });
   },
   setAgents(clientId: string, agents: Agent[]) {
+    bridge.w?.setAgents(clientId, agents);
     set({ clients: state.clients.map((c) => (c.id === clientId ? { ...c, agents } : c)) });
   },
   setLanes(clientId: string, lanes: LaneProfile[]) {
+    bridge.w?.setLanes(clientId, lanes, state.clients.find((c) => c.id === clientId)?.lanes ?? []);
     set({ clients: state.clients.map((c) => (c.id === clientId ? { ...c, lanes } : c)) });
   },
   setCompany(c: Company) {
+    bridge.w?.setCompany(c);
     set({ company: c });
   },
-  recordQuote(q: Omit<QuoteRecord, 'status' | 'via'> & { via: 'copy' | 'pdf' }) {
+  recordQuote(q: Omit<QuoteRecord, 'status' | 'via'> & { via: 'copy' | 'pdf' }, costs?: QuoteCosts) {
     const prev = state.quotes.find((x) => x.id === q.id);
     const rec: QuoteRecord = { ...q, status: prev?.status ?? 'sent', via: [...new Set([...(prev?.via ?? []), q.via])] };
+    bridge.w?.recordQuote(rec, costs);
     set({ quotes: prev ? state.quotes.map((x) => (x.id === q.id ? rec : x)) : [rec, ...state.quotes] });
   },
   setQuoteStatus(id: string, status: QuoteStatus, acceptedOption?: string, acceptedVia: 'portal' | 'desk' = 'desk') {
+    bridge.w?.setQuoteStatus(id, status, acceptedOption, acceptedVia);
     set({ quotes: state.quotes.map((q) => (q.id === id ? { ...q, status, acceptedOption: status === 'won' ? acceptedOption ?? q.acceptedOption : undefined, acceptedVia: status === 'won' ? acceptedVia : undefined } : q)) });
   },
   resetSample() {
+    if (bridge.w) return;
     set({ clients: sampleClients(), quotes: sampleQuotes() });
   },
 };

@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
-import { sampleJobs, type Job } from '../jobs/data';
+import { type Job } from '../jobs/data';
+import { useJobs } from '../jobs/store';
 import { dur, fmtDay, fmtWhen, num, usd } from '../jobs/i18n';
 import { CHARGE_LABEL, chargeAmount, chequeAmount, clock } from '../jobs/logic';
 import { stepIndex } from '../jobs/steps';
-import { loadTariffs } from '../jobs/tariffs';
+import { useTariffs } from '../jobs/tariffs';
 import { AgentsEditor } from './Agents';
 import { LanesEditor } from './Lanes';
 import { jobMsds } from './lanes';
@@ -11,6 +12,10 @@ import { MsdsSlot } from './Msds';
 import { ct } from './i18n';
 import { DEMO_PASSWORD, MILESTONES, demoLogin, pt, type PKey } from './portal';
 import { store, useStore, type CLang, type Client } from './store';
+import { jobsStore } from '../jobs/store';
+import { backendAvailable } from '../backend/config';
+import { signIn, signOut, useSession, getSession } from '../backend/session';
+import { errText } from '../backend/AuthBar';
 import './clients.css';
 
 const SESSION = 'fd.portal.session';
@@ -39,8 +44,14 @@ export function PortalView() {
     setSessionId(c.id);
     setLang(c.lang);
   };
+  const sess = useSession();
+  if (sess.mode === 'live' && sess.role === 'client') {
+    const mine = clients.find((x) => x.id === sess.clientId) ?? null;
+    if (!mine) return <div className="portal-view jobs-view" data-testid="portal-loading"><p className="c-muted">{pt(lang, 'loading')}</p></div>;
+    return <Portal c={mine} lang={lang} setLang={setLang} onLogout={() => void signOut()} quotes={quotes} company={company} live />;
+  }
   if (!client) return <Login clients={clients} lang={lang} setLang={setLang} onLogin={login} companyName={company.name} />;
-  return <Portal c={client} lang={lang} setLang={setLang} onLogout={logout} quotes={quotes} company={company} />;
+  return <Portal c={client} lang={lang} setLang={setLang} onLogout={logout} quotes={quotes} company={company} live={sess.mode === 'live'} />;
 }
 
 function LangToggle({ lang, setLang }: { lang: CLang; setLang: (l: CLang) => void }) {
@@ -60,11 +71,21 @@ function Login({ clients, lang, setLang, onLogin, companyName }: { clients: Clie
   const [email, setEmail] = useState('');
   const [pw, setPw] = useState('');
   const [err, setErr] = useState(false);
-  const submit = (e: FormEvent) => {
+  const [liveErr, setLiveErr] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const submit = async (e: FormEvent) => {
     e.preventDefault();
     const c = clients.find((x) => demoLogin(x) && demoLogin(x) === email.trim().toLowerCase());
-    if (c && pw === DEMO_PASSWORD) onLogin(c);
-    else setErr(true);
+    if (c && pw === DEMO_PASSWORD) return onLogin(c);
+    if (!backendAvailable) return setErr(true);
+    setBusy(true);
+    try {
+      await signIn(email, pw);
+    } catch {
+      setLiveErr(getSession().error ?? 'bad-login');
+    } finally {
+      setBusy(false);
+    }
   };
   return (
     <div className="portal-view jobs-view" dir={lang === 'fa' ? 'rtl' : 'ltr'} lang={lang} data-testid="portal-login">
@@ -81,10 +102,12 @@ function Login({ clients, lang, setLang, onLogin, companyName }: { clients: Clie
             <LangToggle lang={lang} setLang={setLang} />
           </div>
           <h2>{L('signIn')}</h2>
-          <label className="c-field"><span>{L('email')}</span><input className="c-in" type="email" autoComplete="off" value={email} onChange={(e) => { setEmail(e.target.value); setErr(false); }} data-testid="portal-email" dir="ltr" /></label>
-          <label className="c-field"><span>{L('password')}</span><input className="c-in" type="password" autoComplete="off" value={pw} onChange={(e) => { setPw(e.target.value); setErr(false); }} data-testid="portal-password" dir="ltr" /></label>
+          <label className="c-field"><span>{L('email')}</span><input className="c-in" type="email" autoComplete="off" value={email} onChange={(e) => { setEmail(e.target.value); setErr(false); setLiveErr(null); }} data-testid="portal-email" dir="ltr" /></label>
+          <label className="c-field"><span>{L('password')}</span><input className="c-in" type="password" autoComplete="off" value={pw} onChange={(e) => { setPw(e.target.value); setErr(false); setLiveErr(null); }} data-testid="portal-password" dir="ltr" /></label>
           {err && <div className="q-amber c-small" data-testid="portal-error">{L('bad')}</div>}
-          <button type="submit" className="btn primary" data-testid="portal-submit">{L('login')}</button>
+          {liveErr && <div className="q-amber c-small" data-testid="portal-error">{liveErr === 'bad-login' ? L('bad') : errText(lang, liveErr)}</div>}
+          <button type="submit" className="btn primary" disabled={busy} data-testid="portal-submit">{L('login')}</button>
+          {backendAvailable && <p className="c-muted c-small">{L('realAcct')}</p>}
         </form>
         <div className="q-panel p-creds" data-testid="portal-creds">
           <div className="q-head"><h2>{L('demoCreds')}</h2><span className="j-sample sm">{L('sample')}</span></div>
@@ -106,11 +129,11 @@ function Login({ clients, lang, setLang, onLogin, companyName }: { clients: Clie
   );
 }
 
-function Portal({ c, lang, setLang, onLogout, quotes, company }: { c: Client; lang: CLang; setLang: (l: CLang) => void; onLogout: () => void; quotes: ReturnType<typeof useStore>['quotes']; company: ReturnType<typeof useStore>['company'] }) {
+function Portal({ c, lang, setLang, onLogout, quotes, company, live = false }: { c: Client; lang: CLang; setLang: (l: CLang) => void; onLogout: () => void; quotes: ReturnType<typeof useStore>['quotes']; company: ReturnType<typeof useStore>['company']; live?: boolean }) {
   const L = (k: PKey) => pt(lang, k);
   const [now, setNow] = useState(() => Date.now());
-  const [jobsAll] = useState<Job[]>(() => sampleJobs());
-  const [tariffs] = useState(() => loadTariffs());
+  const jobsAll: Job[] = useJobs();
+  const tariffs = useTariffs();
   const [approvals, setApprovals] = useState<Record<string, number>>(loadApprovals);
   useEffect(() => {
     const t = window.setInterval(() => setNow(Date.now()), 1000);
@@ -119,6 +142,7 @@ function Portal({ c, lang, setLang, onLogout, quotes, company }: { c: Client; la
   const jobs = useMemo(() => jobsAll.filter((j) => j.customer === (c.jobName ?? c.name)), [jobsAll, c]);
   const mine = quotes.filter((q) => q.clientId === c.id).sort((a, b) => b.at - a.at);
   const approve = (id: string) => {
+    if (live) return jobsStore.approveDraftBl(id);
     const next = { ...approvals, [id]: Date.now() };
     setApprovals(next);
     localStorage.setItem(APPROVALS, JSON.stringify(next));
@@ -133,7 +157,7 @@ function Portal({ c, lang, setLang, onLogout, quotes, company }: { c: Client; la
 
   return (
     <div className="portal-view jobs-view" dir={lang === 'fa' ? 'rtl' : 'ltr'} lang={lang} data-testid="portal">
-      <div className="p-demo">⚠ {L('demoWarn')}</div>
+      {live ? <div className="p-live" data-testid="portal-live-note">{L('liveNote')}</div> : <div className="p-demo">⚠ {L('demoWarn')}</div>}
       <div className="q-panel p-top">
         {company.logo ? <img src={company.logo} alt="" className="c-logo" /> : <span className="c-logo-ph">FD</span>}
         <div className="p-top-txt">
@@ -161,7 +185,8 @@ function Portal({ c, lang, setLang, onLogout, quotes, company }: { c: Client; la
               const orig = j.docs.find((d) => d.key === 'originalBl');
               const arrival = j.docs.find((d) => d.key === 'arrival');
               const doDoc = j.docs.find((d) => d.key === 'do');
-              const draftApproved = draft?.status === 'done' || approvals[j.id];
+              const liveApproved = live ? j.portal?.draftBlApprovedAt : undefined;
+              const draftApproved = draft?.status === 'done' || (live ? !!liveApproved : approvals[j.id]);
               return (
                 <article key={j.id} className="p-ship" data-testid={`portal-job-${j.id}`}>
                   <header>
@@ -204,7 +229,7 @@ function Portal({ c, lang, setLang, onLogout, quotes, company }: { c: Client; la
                     <strong>{L('docs')}</strong>
                     {draft && (
                       <span className={`p-doc ${draftApproved ? 'ok' : draft.status === 'waiting' ? 'act' : ''}`}>
-                        {L('draftBl')}: {draftApproved ? (approvals[j.id] && draft.status !== 'done' ? L('approvedDemo') : L('approved')) : draft.status === 'waiting' ? L('toApprove') : L('notYet')}
+                        {L('draftBl')}: {draftApproved ? (draft.status === 'done' ? L('approved') : live ? L('approvedLive') : approvals[j.id] ? L('approvedDemo') : L('approved')) : draft.status === 'waiting' ? L('toApprove') : L('notYet')}
                         {!draftApproved && draft.status === 'waiting' && (
                           <button type="button" className="btn sm primary" onClick={() => approve(j.id)} data-testid={`portal-approve-${j.id}`}>{L('approve')}</button>
                         )}
@@ -222,7 +247,7 @@ function Portal({ c, lang, setLang, onLogout, quotes, company }: { c: Client; la
                     const m = jobMsds(c.lanes, j);
                     if (m.need !== 'required' && !m.meta && !m.lane) return null;
                     return m.lane ? (
-                      <MsdsSlot hs={m.hs} dg={m.lane.dg ? 'yes' : null} meta={m.meta} lang={lang} testid={`portal-msds-${j.id}`} onChange={(meta) => store.setLanes(c.id, c.lanes.map((l) => (l.id === m.lane!.id ? { ...l, msds: meta } : l)))} />
+                      <MsdsSlot hs={m.hs} dg={m.lane.dg ? 'yes' : null} meta={m.meta} lang={lang} testid={`portal-msds-${j.id}`} clientId={c.id} onChange={(meta) => store.setLanes(c.id, c.lanes.map((l) => (l.id === m.lane!.id ? { ...l, msds: meta } : l)))} />
                     ) : null;
                   })()}
                 </article>
@@ -257,7 +282,7 @@ function Portal({ c, lang, setLang, onLogout, quotes, company }: { c: Client; la
                 </div>
               </div>
             ))}
-            {mine.some((q) => q.status === 'sent') && <p className="c-muted c-small">{L('acceptNote')}</p>}
+            {mine.some((q) => q.status === 'sent') && <p className="c-muted c-small">{L(live ? 'acceptNoteLive' : 'acceptNote')}</p>}
           </section>
         </div>
 
@@ -296,11 +321,11 @@ function Portal({ c, lang, setLang, onLogout, quotes, company }: { c: Client; la
           <section className="q-panel" data-testid="portal-lanes">
             <div className="q-head"><h2>{ct(lang, 'lanesH')}</h2></div>
             <p className="c-muted c-small">{ct(lang, 'lanesNote')}</p>
-            <LanesEditor lanes={c.lanes} onChange={(l) => store.setLanes(c.id, l)} lang={lang} portal testid="portal-lanes-ed" />
+            <LanesEditor lanes={c.lanes} onChange={(l) => store.setLanes(c.id, l)} lang={lang} portal testid="portal-lanes-ed" clientId={c.id} />
           </section>
           <section className="q-panel" data-testid="portal-agents">
             <div className="q-head"><h2>{(lang === 'fa' ? 'نمایندگان و همکاران ترجیحی شما' : lang === 'es' ? 'Tus agentes y socios preferidos' : 'Your preferred agents & partners')}</h2></div>
-            <p className="c-muted c-small">{lang === 'fa' ? 'خودتان اضافه، ویرایش و رتبه‌بندی کنید. فورواردر در قیمت‌دهی از این فهرست استفاده می‌کند (فقط در همین مرورگر).' : lang === 'es' ? 'Añádelos, edítalos y ordénalos tú. Tu transitario los usa al cotizar (solo en este navegador).' : 'Add, edit and rank them yourself. Your forwarder uses this list when quoting (saved in this browser only).'}</p>
+            <p className="c-muted c-small">{lang === 'fa' ? 'خودتان اضافه، ویرایش و رتبه‌بندی کنید. فورواردر در قیمت‌دهی از این فهرست استفاده می‌کند' + (live ? '.' : ' (فقط در همین مرورگر).') : lang === 'es' ? 'Añádelos, edítalos y ordénalos tú. Tu transitario los usa al cotizar' + (live ? '.' : ' (solo en este navegador).') : 'Add, edit and rank them yourself. Your forwarder uses this list when quoting' + (live ? '.' : ' (saved in this browser only).')}</p>
             <AgentsEditor agents={c.agents} onChange={(a) => store.setAgents(c.id, a)} lang={lang} testid="portal-agents" />
           </section>
           <p className="c-muted c-small">{L('contactUs')} {company.contactName || company.name || L('yourForwarder')}{company.email ? ` · ${company.email}` : ''}{company.phone ? ` · ${company.phone}` : ''}</p>

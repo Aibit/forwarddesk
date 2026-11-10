@@ -11,6 +11,8 @@ import { JobsView } from './jobs/JobsView';
 import { ClientsView } from './clients/ClientsView';
 import { PortalView } from './clients/PortalView';
 import { AgentsDbView } from './agents/AgentsDbView';
+import { AuthBar, ComplianceNote } from './backend/AuthBar';
+import { useSession } from './backend/session';
 import { clientForJob, getStore } from './clients/store';
 import { AGENT_META, initialCapacity, initialRfqs } from './data';
 import { buildProposals } from './matching';
@@ -62,6 +64,11 @@ function App() {
   const [quoteSeed, setQuoteSeed] = useState<{ text: string; n: number; clientId?: string | null; laneId?: string | null } | null>(null);
   const [clientReq, setClientReq] = useState<{ id: string; n: number } | null>(null);
   const [jobReq, setJobReq] = useState<{ id: string; n: number } | null>(null);
+  const sess = useSession();
+  const clientOnly = sess.mode === 'live' && sess.role === 'client';
+  useEffect(() => {
+    if (clientOnly) setViewMode('portal');
+  }, [clientOnly]);
   const lite = viewMode === 'quote' || viewMode === 'jobs' || viewMode === 'clients' || viewMode === 'agents' || viewMode === 'portal';
   const openClient = (id: string | null | undefined) => {
     if (!id) return;
@@ -591,7 +598,7 @@ function App() {
           <div className="logo">FD</div>
           <div>
             <h1>FORWARDDESK</h1>
-            <p className="corridor">{viewMode === 'jobs' ? 'JOBS · DEADLINES · MONEY AT RISK' : viewMode === 'clients' ? 'CLIENTS · SETUP · DASHBOARD' : viewMode === 'agents' ? 'AGENTS · LINES · NETWORK DATABASE' : viewMode === 'portal' ? 'CLIENT PORTAL · DEMO LOGIN' : viewMode === 'quote' ? 'REQUEST → QUOTE IN MINUTES' : 'SALES + QUOTING DESK'}</p>
+            <p className="corridor">{viewMode === 'jobs' ? 'JOBS · DEADLINES · MONEY AT RISK' : viewMode === 'clients' ? 'CLIENTS · SETUP · DASHBOARD' : viewMode === 'agents' ? 'AGENTS · LINES · NETWORK DATABASE' : viewMode === 'portal' ? (sess.mode === 'live' ? 'CLIENT PORTAL' : 'CLIENT PORTAL · DEMO LOGIN') : viewMode === 'quote' ? 'REQUEST → QUOTE IN MINUTES' : 'SALES + QUOTING DESK'}</p>
           </div>
         </div>
         {!lite && (
@@ -628,6 +635,8 @@ function App() {
         </div>
         )}
         <div className="top-actions">
+          <AuthBar />
+          {!clientOnly && (
           <div className="view-toggle" role="group" aria-label="Jobs, Clients, Quote, Desk or Pitch view">
             <button
               type="button"
@@ -680,6 +689,7 @@ function App() {
               Pitch
             </button>
           </div>
+          )}
           {!lite && (<>
           <button
             type="button"
@@ -715,24 +725,30 @@ function App() {
           </>)}
         </div>
       </header>
+      {sess.mode === 'live' && sess.role === 'staff' && (
+        <div className="fd-livebar" data-testid="live-bar">
+          <strong>Live backend · org “{sess.orgId}”</strong>
+          <ComplianceNote />
+        </div>
+      )}
 
-      {viewMode === 'jobs' && (
+      {!clientOnly && viewMode === 'jobs' && (
         <JobsView
           openRequest={jobReq}
           onDraftQuote={(text, customer) => { setQuoteSeed((q) => ({ text, n: (q?.n ?? 0) + 1, clientId: customer ? clientForJob(getStore().clients, customer)?.id ?? null : null })); setViewMode('quote'); }}
           onOpenClient={(customer) => openClient(clientForJob(getStore().clients, customer)?.id)}
         />
       )}
-      {viewMode === 'clients' && (
+      {!clientOnly && viewMode === 'clients' && (
         <ClientsView
           openRequest={clientReq}
           onOpenJob={(id) => { setJobReq((r) => ({ id, n: (r?.n ?? 0) + 1 })); setViewMode('jobs'); }}
           onNewQuote={(clientId, laneId) => { setQuoteSeed((q) => ({ text: '', n: (q?.n ?? 0) + 1, clientId, laneId: laneId ?? null })); setViewMode('quote'); }}
         />
       )}
-      {viewMode === 'portal' && <PortalView />}
-      {viewMode === 'agents' && <AgentsDbView />}
-      {viewMode === 'quote' && <QuoteView seed={quoteSeed} onOpenClient={openClient} />}
+      {(viewMode === 'portal' || clientOnly) && <PortalView />}
+      {!clientOnly && viewMode === 'agents' && <AgentsDbView />}
+      {!clientOnly && viewMode === 'quote' && <QuoteView seed={quoteSeed} onOpenClient={openClient} />}
 
       {!lite && selected && (
         <div className="sticky-bar">
@@ -816,7 +832,7 @@ function App() {
 
       <footer className="ops-footer">
         <span>
-          {viewMode === 'jobs' ? 'Dashboard + deadline tracker · read-only, alerts only · people act' : viewMode === 'clients' ? 'Client setup + dashboard · saved in this browser only · sample clients A–G' : viewMode === 'agents' ? 'Agents database · saved in this browser only · CSV import / export' : viewMode === 'portal' ? 'Customer-facing view · demo login, not secure · sell prices only' : viewMode === 'quote' ? 'Paste → read → ask → price → copy' : <><kbd>R</kbd> build quotes on selected RFQ</>}
+          {viewMode === 'jobs' ? 'Dashboard + deadline tracker · read-only, alerts only · people act' : viewMode === 'clients' ? (sess.mode === 'live' ? 'Client setup + dashboard · live backend (sample data) · sample clients A–G' : 'Client setup + dashboard · saved in this browser only · sample clients A–G') : viewMode === 'agents' ? (sess.mode === 'live' ? 'Agents database · live backend · CSV import / export' : 'Agents database · saved in this browser only · CSV import / export') : viewMode === 'portal' ? (sess.mode === 'live' ? 'Customer-facing view · real account, scoped by security rules · sell prices only' : 'Customer-facing view · demo login, not secure · sell prices only') : viewMode === 'quote' ? 'Paste → read → ask → price → copy' : <><kbd>R</kbd> build quotes on selected RFQ</>}
         </span>
         <span>ForwardDesk · sales + quoting · pitch lane then lock buy/sell · human confirm</span>
         <span>Schedules ≠ soft leftover</span>

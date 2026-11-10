@@ -7,19 +7,28 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "emulators": "firebase emulators:start --only firestore,auth --project demo-forwarddesk",
+    "rules:test": "firebase emulators:exec --only firestore --project demo-forwarddesk \"node scripts/rules-test.mjs\"",
+    "seed:emulator": "FIREBASE_EMULATOR=1 tsx scripts/seed.ts",
+    "seed": "tsx scripts/seed.ts",
+    "check:denials": "tsx scripts/denial-check.ts",
+    "dev:emulator": "VITE_FB_EMULATOR=1 vite"
   },
   "dependencies": {
+    "firebase": "^13.2.0",
     "jspdf": "^4.2.1",
     "react": "^19.2.8",
     "react-dom": "^19.2.8"
   },
   "devDependencies": {
+    "@firebase/rules-unit-testing": "^6.0.0",
     "@types/node": "^24.13.3",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.7",
     "@vitejs/plugin-react": "^6.1.1",
     "oxlint": "^1.81.0",
+    "tsx": "^4.23.15",
     "typescript": "~6.0.2",
     "vite": "^8.3.0"
   }

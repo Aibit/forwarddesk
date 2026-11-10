@@ -59,6 +59,11 @@ export interface Job {
   log: LogEntry[];
   docDelay?: boolean;
   quoteText?: string;
+  /** Client id (live mode — used by the security rules to scope portal reads). */
+  clientId?: string;
+  /** Portal actions by the client (live mode). */
+  portal?: { draftBlApprovedAt?: number; by?: string };
+  sample?: boolean;
 }
 
 const H = 3600_000;

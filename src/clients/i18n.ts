@@ -3,6 +3,7 @@ import type { CLang } from './store';
 const S = {
   clients: ['Clients', 'Clientes', 'مشتریان'],
   sample: ['SAMPLE DATA', 'DATOS DE EJEMPLO', 'داده نمونه'],
+  savedLive: ['Live backend (Firebase) · sample clients A–G only — no real client data until sanctions questions are cleared.', 'Backend en línea (Firebase) · solo clientes de ejemplo A–G — sin datos reales hasta resolver las cuestiones de sanciones.', 'سرور آنلاین (Firebase) · فقط مشتریان نمونه A تا G — تا روشن شدن مسائل تحریم داده واقعی وارد نکنید.'],
   savedLocal: ['Sample clients A–G. Edits are saved in this browser only — nothing is uploaded.', 'Clientes de ejemplo A–G. Los cambios se guardan solo en este navegador; no se sube nada.', 'مشتریان نمونه A تا G. تغییرات فقط در همین مرورگر ذخیره می‌شود و جایی ارسال نمی‌شود.'],
   addClient: ['+ Add client', '+ Añadir cliente', '+ مشتری جدید'],
   yourCompany: ['Your company', 'Tu empresa', 'شرکت شما'],
@@ -118,6 +119,7 @@ const S = {
   fromPortal: ['RFQ from portal', 'RFQ desde el portal', 'درخواست از پورتال'],
   submitRfq: ['Submit as RFQ', 'Enviar como RFQ', 'ارسال درخواست نرخ'],
   submitted: ['RFQ submitted', 'RFQ enviada', 'درخواست ارسال شد'],
+  rfqNoteLive: ['Your forwarder sees it on their dashboard straight away and sends you a quote.', 'Tu transitario lo ve al momento en su panel y te envía oferta.', 'فورواردر فوراً آن را در داشبورد می‌بیند و قیمت می‌دهد.'],
   rfqNote: ['Your forwarder sees it on their dashboard and sends you a quote (demo: saved in this browser only, nobody is notified).', 'Tu transitario lo ve en su panel y te envía oferta (demo: solo en este navegador).', 'فورواردر آن را در داشبورد می‌بیند و قیمت می‌دهد (نمایشی: فقط در همین مرورگر).'],
 } as const;
 export type CKey = keyof typeof S;

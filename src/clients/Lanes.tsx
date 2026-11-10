@@ -1,3 +1,4 @@
+import { isLive } from '../backend/bridge';
 import { useMemo, useState } from 'react';
 import { buildOptions, sampleRates } from '../quote/rates';
 import type { QuoteFields } from '../quote/parser';
@@ -34,8 +35,8 @@ export const fmtVolume = (l: LaneProfile, lang: CLang) =>
 export const fmtTarget = (l: LaneProfile, lang: CLang) =>
   l.target.amount != null ? `${l.target.currency} ${l.target.amount.toLocaleString('en-US')} ${ct(lang, 'per')} ${l.target.per}` : '—';
 
-export function LanesEditor({ lanes, onChange, lang, client, portal, onQuote, testid = 'lanes' }: {
-  lanes: LaneProfile[]; onChange: (l: LaneProfile[]) => void; lang: CLang; client?: Client | null; portal?: boolean; onQuote?: (l: LaneProfile) => void; testid?: string;
+export function LanesEditor({ lanes, onChange, lang, client, portal, onQuote, testid = 'lanes', clientId = null }: {
+  lanes: LaneProfile[]; onChange: (l: LaneProfile[]) => void; lang: CLang; client?: Client | null; portal?: boolean; onQuote?: (l: LaneProfile) => void; testid?: string; clientId?: string | null;
 }) {
   const L = (k: CKey) => ct(lang, k);
   const [editId, setEditId] = useState<string | null>(null);
@@ -83,7 +84,7 @@ export function LanesEditor({ lanes, onChange, lang, client, portal, onQuote, te
                   </span>
                 </label>
                 <label className="c-field"><span>{L('dgLane')}</span><input type="checkbox" checked={!!l.dg} onChange={(e) => up(l.id, { dg: e.target.checked })} data-testid={`${testid}-dg`} /></label>
-                <div className="c-field wide"><span>MSDS</span><MsdsSlot hs={l.hs} dg={l.dg ? 'yes' : 'no'} meta={l.msds} onChange={(m) => up(l.id, { msds: m })} lang={lang} testid={`${testid}-msds-edit`} /></div>
+                <div className="c-field wide"><span>MSDS</span><MsdsSlot hs={l.hs} dg={l.dg ? 'yes' : 'no'} meta={l.msds} onChange={(m) => up(l.id, { msds: m })} lang={lang} testid={`${testid}-msds-edit`} clientId={clientId ?? client?.id ?? null} /></div>
                 <label className="c-field wide"><span>{L('notes')}</span><input className="c-in" value={l.notes} onChange={(e) => up(l.id, { notes: e.target.value })} /></label>
               </div>
               <div className="c-form-actions">
@@ -121,14 +122,14 @@ export function LanesEditor({ lanes, onChange, lang, client, portal, onQuote, te
               {onQuote && <button type="button" className="btn sm primary" onClick={() => onQuote(l)} data-testid={`${testid}-quote`}>{L('quoteLane')}</button>}
               <button type="button" className="btn sm ghost" onClick={() => setEditId(l.id)} data-testid={`${testid}-editbtn`}>{L('edit')}</button>
             </div>
-            <div className="c-lane-msds"><MsdsSlot hs={l.hs} dg={l.dg ? 'yes' : 'no'} meta={l.msds} onChange={(m) => up(l.id, { msds: m })} lang={lang} testid={`${testid}-msds`} /></div>
+            <div className="c-lane-msds"><MsdsSlot hs={l.hs} dg={l.dg ? 'yes' : 'no'} meta={l.msds} onChange={(m) => up(l.id, { msds: m })} lang={lang} testid={`${testid}-msds`} clientId={clientId ?? client?.id ?? null} /></div>
           </div>
         );
       })}
       <div>
         <button type="button" className="btn sm ghost" onClick={() => { const l = newLane(); onChange([...lanes, l]); setEditId(l.id); }} data-testid={`${testid}-add`}>{L('addLane')}</button>
       </div>
-      {portal && <p className="c-muted c-small">{L('rfqNote')}</p>}
+      {portal && <p className="c-muted c-small">{L(isLive() ? 'rfqNoteLive' : 'rfqNote')}</p>}
     </div>
   );
 }

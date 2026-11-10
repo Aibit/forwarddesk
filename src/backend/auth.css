@@ -1,0 +1,23 @@
+.fd-auth { display: flex; align-items: center; gap: 6px; position: relative; white-space: nowrap; }
+.fd-pill { font-size: 0.72rem; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--border); color: var(--muted); max-width: 300px; overflow: hidden; text-overflow: ellipsis; font-family: var(--mono); }
+.fd-pill.demo { background: var(--panel-2); }
+.fd-pill.live { color: var(--pass); border-color: var(--pass); background: var(--pass-dim); }
+.fd-toast { position: absolute; top: 115%; right: 0; z-index: 50; background: var(--panel); border: 1px solid var(--amber); color: var(--text); padding: 6px 10px; border-radius: var(--radius); font-size: 0.78rem; white-space: normal; width: 320px; box-shadow: 0 4px 14px rgba(0,0,0,.4); }
+.fd-modal-bg { position: fixed; inset: 0; background: rgba(0, 0, 0, .55); z-index: 100; display: flex; align-items: flex-start; justify-content: center; padding-top: 10vh; }
+.fd-modal { background: var(--panel); color: var(--text); border: 1px solid var(--border-strong); border-radius: 6px; padding: 18px 20px; width: 460px; max-width: 92vw; box-shadow: 0 12px 40px rgba(0,0,0,.5); display: flex; flex-direction: column; gap: 10px; }
+.fd-modal-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.fd-modal h2 { margin: 0; font-size: 1rem; }
+.fd-field { display: flex; flex-direction: column; gap: 4px; font-size: 0.8rem; color: var(--muted); }
+.fd-field input { padding: 7px 9px; border: 1px solid var(--border-strong); border-radius: var(--radius); font-size: 0.9rem; background: var(--bg); color: var(--text); }
+.fd-muted { color: var(--muted); margin: 0; font-size: 0.8rem; }
+.fd-small { font-size: 0.74rem; }
+.fd-amber, .fd-compliance { background: var(--amber-dim); border: 1px solid var(--amber); color: var(--text); padding: 6px 9px; border-radius: var(--radius); font-size: 0.78rem; margin: 0; line-height: 1.4; }
+.fd-modal-actions { display: flex; justify-content: flex-end; gap: 8px; }
+.fd-livebar { display: flex; gap: 12px; align-items: center; padding: 5px 16px; background: var(--panel-2); border-bottom: 1px solid var(--border); font-size: 0.78rem; }
+.fd-livebar strong { color: var(--pass); white-space: nowrap; }
+.fd-livebar .fd-compliance { padding: 3px 8px; }
+.p-live { border: 1px solid var(--pass); background: var(--pass-dim); color: var(--text); padding: 0.4rem 0.7rem; border-radius: 3px; font-size: 0.8rem; }
+.j-newjob { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px 12px; }
+.j-newjob label { display: flex; flex-direction: column; gap: 3px; font-size: 0.75rem; color: var(--muted); }
+.j-newjob input, .j-newjob select { padding: 5px 7px; background: var(--bg); color: var(--text); border: 1px solid var(--border-strong); border-radius: var(--radius); font-size: 0.85rem; }
+.j-portal-ok { color: var(--pass); font-size: 0.8rem; }

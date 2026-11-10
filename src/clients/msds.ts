@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from 'react';
+import { LIVE_MSDS_MAX, bridge } from '../backend/bridge';
 import type { CLang } from './store';
 
 /** Editable MSDS rule list (sample — confirm with the line). A rule matches when the HS code starts with `prefix`. */
@@ -32,6 +33,7 @@ let rules: MsdsRule[] = (() => {
 const subs = new Set<() => void>();
 export function setMsdsRules(r: MsdsRule[] | null) {
   rules = r ?? DEFAULT_MSDS_RULES;
+  if (bridge.w) { bridge.w.setMsdsRules(rules); subs.forEach((f) => f()); return; }
   try {
     if (r) localStorage.setItem(RULES_KEY, JSON.stringify(r));
     else localStorage.removeItem(RULES_KEY);
@@ -39,6 +41,18 @@ export function setMsdsRules(r: MsdsRule[] | null) {
   subs.forEach((f) => f());
 }
 export const getMsdsRules = () => rules;
+/** Live mode: rules from Firestore (not persisted locally). */
+export function hydrateMsdsRules(r: MsdsRule[] | null) {
+  rules = r && r.length ? r : DEFAULT_MSDS_RULES;
+  subs.forEach((f) => f());
+}
+export function reloadMsdsRules() {
+  try {
+    const r = JSON.parse(localStorage.getItem(RULES_KEY) || 'null');
+    rules = Array.isArray(r) ? r : DEFAULT_MSDS_RULES;
+  } catch { rules = DEFAULT_MSDS_RULES; }
+  subs.forEach((f) => f());
+}
 export const useMsdsRules = () => useSyncExternalStore((f) => (subs.add(f), () => subs.delete(f)), () => rules);
 
 export function msdsNeed(hs: string | null | undefined, dg?: string | null): { need: MsdsNeed; rule: MsdsRule | null; dg: boolean } {
@@ -79,13 +93,15 @@ async function tx<T>(mode: IDBTransactionMode, fn: (s: IDBObjectStore) => IDBReq
   });
 }
 export const MSDS_MAX = 8 * 1024 * 1024;
-export async function saveMsds(file: File): Promise<MsdsMeta> {
+export async function saveMsds(file: File, clientId: string | null = null): Promise<MsdsMeta> {
+  if (bridge.w) return bridge.w.saveMsds(file, clientId);
   const id = `msds-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
   await tx('readwrite', (s) => s.put(file, id));
   return { id, name: file.name, size: file.size, type: file.type || 'application/octet-stream', at: Date.now() };
 }
-export const loadMsds = (id: string) => tx<Blob | undefined>('readonly', (s) => s.get(id) as IDBRequest<Blob | undefined>);
-export const deleteMsds = (id: string) => tx('readwrite', (s) => s.delete(id)).catch(() => undefined);
+export const loadMsds = (id: string) => (bridge.w ? bridge.w.loadMsds(id) : tx<Blob | undefined>('readonly', (s) => s.get(id) as IDBRequest<Blob | undefined>));
+export const deleteMsds = (id: string) => (bridge.w ? bridge.w.deleteMsds(id).catch(() => undefined) : tx('readwrite', (s) => s.delete(id)).catch(() => undefined));
+export const msdsMax = () => (bridge.w ? LIVE_MSDS_MAX : MSDS_MAX);
 export const fmtSize = (n: number) => (n >= 1024 * 1024 ? `${(n / 1024 / 1024).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1024))} KB`);
 
 const ML: Record<string, [string, string, string]> = {
@@ -98,6 +114,8 @@ const ML: Record<string, [string, string, string]> = {
   view: ['View', 'Ver', 'مشاهده'],
   remove: ['Remove', 'Quitar', 'حذف'],
   browserOnly: ['stored in this browser only', 'guardada solo en este navegador', 'فقط در همین مرورگر ذخیره می‌شود'],
+  online: ['stored online (sample/demo data only)', 'guardada en línea (solo datos de ejemplo)', 'ذخیرهٔ آنلاین (فقط داده نمونه)'],
+  tooBigLive: ['File too large for online storage (max 640 KB)', 'Archivo demasiado grande para guardar en línea (máx. 640 KB)', 'فایل برای ذخیرهٔ آنلاین بزرگ است (حداکثر ۶۴۰ کیلوبایت)'],
   sampleRule: ['sample rule — confirm with line', 'regla de ejemplo — confirmar con la naviera', 'قاعده نمونه — با خط کشتیرانی تأیید شود'],
   dgRule: ['dangerous goods', 'mercancía peligrosa', 'کالای خطرناک'],
   tooBig: ['File too large (max 8 MB)', 'Archivo demasiado grande (máx. 8 MB)', 'فایل خیلی بزرگ است (حداکثر ۸ مگابایت)'],

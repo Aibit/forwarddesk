@@ -1,7 +1,10 @@
+import { ComplianceNote } from '../backend/AuthBar';
+import { isLive } from '../backend/bridge';
 import { useEffect, useMemo, useState, type ChangeEvent, type ReactNode } from 'react';
-import { sampleJobs, type Job } from '../jobs/data';
+import { type Job } from '../jobs/data';
+import { useJobs } from '../jobs/store';
 import { dur, fmtDay, num, usd } from '../jobs/i18n';
-import { loadTariffs } from '../jobs/tariffs';
+import { loadTariffs, useTariffs } from '../jobs/tariffs';
 import { stepDef } from '../jobs/steps';
 import { ct, type CKey } from './i18n';
 import { clientKpi, type ClientKpi } from './kpi';
@@ -24,8 +27,8 @@ export function ClientsView({ openRequest, onOpenJob, onNewQuote }: Props) {
   const { clients, company, quotes } = useStore();
   const [lang, setLang] = useState<CLang>('en');
   const [now, setNow] = useState(() => Date.now());
-  const [jobs] = useState<Job[]>(() => sampleJobs());
-  const [tariffs] = useState(() => loadTariffs());
+  const jobs: Job[] = useJobs();
+  const tariffs = useTariffs();
   const [openId, setOpenId] = useState<string | null>(openRequest?.id ?? null);
   const [editing, setEditing] = useState<Client | null>(null);
   const [editCompany, setEditCompany] = useState(false);
@@ -60,7 +63,7 @@ export function ClientsView({ openRequest, onOpenJob, onNewQuote }: Props) {
       <div className="j-top">
         <div className="j-title">
           <span className="j-sample">{L('sample')}</span>
-          <span className="j-note">{L('savedLocal')}</span>
+          <span className="j-note">{L(isLive() ? 'savedLive' : 'savedLocal')}</span>
         </div>
         <div className="c-top-actions">
           <button type="button" className="btn sm primary" onClick={() => setEditing(newClient())} data-testid="add-client">{L('addClient')}</button>
@@ -327,7 +330,7 @@ function ClientForm({ c, L, lang, onClose, onSaved }: { c: Client; L: (k: CKey) 
   return (
     <div className="c-modal-bg" onClick={onClose}>
       <div className="q-panel c-modal" role="dialog" aria-label={L('client')} onClick={(e) => e.stopPropagation()} dir={lang === 'fa' ? 'rtl' : 'ltr'} data-testid="client-form">
-        <div className="q-head"><h2>{c.name ? `${L('edit')} · ${c.name}` : L('addClient')}</h2><span className="c-muted">{L('savedLocal')}</span></div>
+        <div className="q-head"><h2>{c.name ? `${L('edit')} · ${c.name}` : L('addClient')}</h2><span className="c-muted">{L(isLive() ? 'savedLive' : 'savedLocal')}</span></div>
         <div className="c-form">
           <Field label={L('company')}>{txt('name', 'cf-name')}</Field>
           <Field label={L('contactName')}>{txt('contactName')}</Field>
@@ -359,7 +362,7 @@ function ClientForm({ c, L, lang, onClose, onSaved }: { c: Client; L: (k: CKey) 
         </div>
         <h3 className="c-form-h">{L('lanesH')}</h3>
         <p className="c-muted c-small">{L('lanesNote')}</p>
-        <LanesEditor lanes={d.lanes} onChange={(l) => up('lanes', l)} lang={lang} testid="cf-lanes" />
+        <LanesEditor lanes={d.lanes} onChange={(l) => up('lanes', l)} lang={lang} testid="cf-lanes" clientId={d.id} />
         <h3 className="c-form-h">{L('agents')}</h3>
         <p className="c-muted c-small">{L('agentsNote')}</p>
         <AgentsEditor agents={d.agents} onChange={(a) => up('agents', a)} lang={lang} testid="cf-agents" />
@@ -404,6 +407,7 @@ function CompanyForm({ co, L, lang, onClose }: { co: Company; L: (k: CKey) => st
     <div className="c-modal-bg" onClick={onClose}>
       <div className="q-panel c-modal" role="dialog" aria-label={L('yourCompany')} onClick={(e) => e.stopPropagation()} dir={lang === 'fa' ? 'rtl' : 'ltr'} data-testid="company-form">
         <div className="q-head"><h2>{L('yourCompany')}</h2><span className="c-muted">{L('companyHint')}</span></div>
+        <ComplianceNote lang={lang} />
         <div className="c-form">
           <Field label={L('company')}><input className="c-in" value={d.name} onChange={(e) => up('name', e.target.value)} data-testid="co-name" /></Field>
           <Field label={`${L('preparedBy')} · ${L('contactName')}`}><input className="c-in" value={d.contactName} onChange={(e) => up('contactName', e.target.value)} data-testid="co-contact" /></Field>

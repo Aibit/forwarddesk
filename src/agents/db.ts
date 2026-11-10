@@ -1,3 +1,4 @@
+import { bridge } from '../backend/bridge';
 import { useSyncExternalStore } from 'react';
 
 export type DbType = 'overseas' | 'forwarder' | 'line' | 'clearance' | 'network' | 'other';
@@ -103,7 +104,10 @@ export function agentsToCsv(list: DbAgent[]): string {
 }
 
 /** Researched public list: drop a CSV at src/agents/seed/agents.csv and rebuild — it becomes the seed (marked "public info, verify before use"). */
-const SEED_CSV = Object.values(import.meta.glob('./seed/*.csv', { query: '?raw', import: 'default', eager: true }) as Record<string, string>)[0] ?? null;
+let SEED_CSV: string | null = null;
+try {
+  SEED_CSV = Object.values(import.meta.glob('./seed/*.csv', { query: '?raw', import: 'default', eager: true }) as Record<string, string>)[0] ?? null;
+} catch { /* not running under Vite (seed script reads the CSV itself) */ }
 export const hasCsvSeed = !!SEED_CSV;
 function seedList(): { list: DbAgent[]; seed: 'sample' | 'csv' } {
   if (SEED_CSV) {
@@ -124,19 +128,27 @@ let state = load();
 const subs = new Set<() => void>();
 function set(next: typeof state, persist = true) {
   state = next;
-  if (persist) try { localStorage.setItem(KEY, JSON.stringify(state)); } catch { /* full */ }
+  if (persist && !bridge.w) try { localStorage.setItem(KEY, JSON.stringify(state)); } catch { /* full */ }
   subs.forEach((f) => f());
 }
 export const useAgentsDb = () => useSyncExternalStore((f) => (subs.add(f), () => subs.delete(f)), () => state);
 export const agentsDb = {
   get: () => state,
   upsert(a: DbAgent) {
+    bridge.w?.agentUpsert(a);
     const i = state.list.findIndex((x) => x.id === a.id);
     set({ list: i >= 0 ? state.list.map((x) => (x.id === a.id ? a : x)) : [...state.list, a], seed: 'user' });
   },
-  remove(id: string) { set({ list: state.list.filter((x) => x.id !== id), seed: 'user' }); },
-  replace(list: DbAgent[], seed: 'sample' | 'csv' | 'user') { set({ list, seed }); },
-  reset() { localStorage.removeItem(KEY); set(seedList(), false); },
+  remove(id: string) { bridge.w?.agentRemove(id); set({ list: state.list.filter((x) => x.id !== id), seed: 'user' }); },
+  replace(list: DbAgent[], seed: 'sample' | 'csv' | 'user') { bridge.w?.agentReplace(list); set({ list, seed }); },
+  reset() {
+    if (bridge.w) { const s = seedList(); bridge.w.agentReplace(s.list); set(s, false); return; }
+    localStorage.removeItem(KEY); set(seedList(), false);
+  },
+  /** Live mode: replace from a Firestore snapshot (not persisted locally). */
+  hydrate(list: DbAgent[]) { set({ list, seed: 'user' }, false); },
+  /** Back to this browser's own copy (after sign-out). */
+  reload() { set(load(), false); },
 };
 
 /** Sanctions screening note → 'listed' (OFAC SDN / EU listed / high risk: do not use), 'note' (screen first) or none. */
