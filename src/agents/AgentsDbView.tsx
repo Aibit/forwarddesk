@@ -1,3 +1,5 @@
+import { useUiLang } from '../ui/lang';
+import { Art } from '../ui/Art';
 import { useMemo, useRef, useState, type ChangeEvent, type ReactNode } from 'react';
 import { DB_TYPES, agentsDb, agentsToCsv, csvToAgents, hasCsvSeed, newDbAgent, portalYn, sanctionsLevel, useAgentsDb, type DbAgent, type DbType } from './db';
 import { useStore } from '../clients/store';
@@ -32,7 +34,7 @@ const split = (s: string) => s.split(/[,;/]/).map((x) => x.trim()).filter(Boolea
 export function AgentsDbView() {
   const { list, seed } = useAgentsDb();
   const { clients } = useStore();
-  const [lang, setLang] = useState<Lang>('en');
+  const [lang, setLang] = useUiLang<Lang>();
   const L = (k: string) => T[k]?.[I[lang]] ?? k;
   const [q, setQ] = useState('');
   const [fType, setFType] = useState<DbType | ''>('');
@@ -146,7 +148,7 @@ export function AgentsDbView() {
                   <td className="c-sub"><div className="ad-clip" title={a.source}>{a.source || '—'}</div></td>
                 </tr>
               ))}
-              {shown.length === 0 && <tr><td colSpan={10} className="c-muted">—</td></tr>}
+              {shown.length === 0 && <tr><td colSpan={10} className="c-muted fd-empty-cell"><Art name="map" className="fd-empty-art" /><div>—</div></td></tr>}
             </tbody>
           </table>
         </div>

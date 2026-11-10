@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type ReactNode } from 'react';
+import { Art } from '../ui/Art';
 import { LOCATIONS, type QMode } from './locations';
 import {
   INCOTERMS,
@@ -882,6 +883,7 @@ export function QuoteView({ seed, onOpenClient }: { seed?: { text: string; n: nu
 
         {!text.trim() && (
           <div className="q-panel q-empty">
+            <Art name="truck" className="fd-empty-art" />
             <strong>Paste a request or pick a sample.</strong>
             <p>ForwardDesk reads the request, flags what's missing or ambiguous, prices it from the rate sheet, and writes the customer quote.</p>
           </div>
@@ -889,6 +891,7 @@ export function QuoteView({ seed, onOpenClient }: { seed?: { text: string; n: nu
 
         {text.trim() && !quote && (
           <div className="q-panel q-empty">
+            <Art name="map" className="fd-empty-art" />
             <strong>Need a mode, origin and destination to price.</strong>
             <p>Fix the flagged fields on the left.</p>
           </div>
@@ -896,6 +899,7 @@ export function QuoteView({ seed, onOpenClient }: { seed?: { text: string; n: nu
 
         {quote && !quote.hasFreight && (
           <div className="q-panel q-empty">
+            <Art name="containers" className="fd-empty-art" />
             <strong>No {fields.mode ? MODE_LABEL[fields.mode] : ''} freight rate for {fields.origin} → {fields.destination}{fields.mode === 'fcl' ? ` (${Object.keys(fields.equipment).join(', ') || 'no equipment'})` : ''} in this rate sheet.</strong>
             <p>Add a <code>freight</code> row for this lane to the CSV, or change the lane on the left.</p>
           </div>

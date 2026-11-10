@@ -1,3 +1,4 @@
+import { useUiLang } from '../ui/lang';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { type Doc, type Job } from './data';
 import { jobsStore, useJobs } from './store';
@@ -15,7 +16,7 @@ import './jobs.css';
 const LIDX: Record<Lang, 0 | 1 | 2> = { en: 0, es: 1, fa: 2 };
 
 export function JobsView({ onDraftQuote, onOpenClient, openRequest }: { onDraftQuote: (text: string, customer?: string) => void; onOpenClient?: (customer: string) => void; openRequest?: { id: string; n: number } | null }) {
-  const [lang, setLang] = useState<Lang>('en');
+  const [lang, setLang] = useUiLang<Lang>();
   const { clients } = useStore();
   /** E: agent at the port of discharge; I: agent at the port of loading (I2, I4–I8). */
   const agentOf = (j: Job) => agentForPort(clientForJob(clients, j.customer), j.dir === 'import' ? j.pol : j.pod);

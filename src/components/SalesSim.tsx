@@ -1,4 +1,5 @@
 import type { MatchProposal, Mode, ShipperRfq } from '../types';
+import { Art } from '../ui/Art';
 
 /** Approximate city → [lat, lon] for seed lanes + a few generics. */
 const CITY_COORDS: Record<string, [number, number]> = {
@@ -87,6 +88,7 @@ export function SalesSim({ rfq, proposal }: Props) {
     return (
       <div className="sales-sim">
         <div className="sales-sim-empty">
+          <Art name="map" className="fd-empty-art" />
           <strong>Select a customer RFQ</strong>
           <p>Pitch view needs a lane — pick an RFQ on the desk, then flip to Pitch.</p>
         </div>

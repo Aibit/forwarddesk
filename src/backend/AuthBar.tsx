@@ -1,3 +1,5 @@
+import { useUiLang } from '../ui/lang';
+import { Art } from '../ui/Art';
 import { useState, type FormEvent } from 'react';
 import { backendAvailable } from './config';
 import { getSession, signIn, signOut, setSession, useSession } from './session';
@@ -64,6 +66,7 @@ export function SignInDialog({ onClose, initialLang = 'en' }: { onClose: () => v
   return (
     <div className="fd-modal-bg" onClick={onClose}>
       <form className="fd-modal" onClick={(e) => e.stopPropagation()} onSubmit={submit} dir={lang === 'fa' ? 'rtl' : 'ltr'} lang={lang} data-testid="signin-dialog">
+        <Art name="crane" className="fd-modal-art" />
         <div className="fd-modal-head">
           <h2>{at(lang, 'title')}</h2>
           <div className="q-lang" role="group" aria-label="Language">
@@ -95,7 +98,7 @@ export function SignInDialog({ onClose, initialLang = 'en' }: { onClose: () => v
 export function AuthBar() {
   const s = useSession();
   const [open, setOpen] = useState(false);
-  const lang: L3 = 'en';
+  const [lang] = useUiLang<L3>();
   return (
     <div className="fd-auth" data-testid="auth-bar">
       {s.mode === 'live' ? (
@@ -114,7 +117,7 @@ export function AuthBar() {
       {s.error && s.mode !== 'connecting' && !open && (
         <span className="fd-toast" data-testid="auth-error">{errText(lang, s.error)} <button type="button" className="q-linklike" onClick={() => setSession({ error: null })}>{at(lang, 'dismiss')}</button></span>
       )}
-      {open && <SignInDialog onClose={() => setOpen(false)} />}
+      {open && <SignInDialog onClose={() => setOpen(false)} initialLang={lang} />}
     </div>
   );
 }

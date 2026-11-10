@@ -1,4 +1,6 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import { getUiLang, setUiLang, useUiLang } from '../ui/lang';
+import { Art } from '../ui/Art';
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { type Job } from '../jobs/data';
 import { useJobs } from '../jobs/store';
 import { dur, fmtDay, fmtWhen, num, usd } from '../jobs/i18n';
@@ -34,7 +36,14 @@ export function PortalView() {
   const { clients, company, quotes } = useStore();
   const [sessionId, setSessionId] = useState<string | null>(() => sessionStorage.getItem(SESSION));
   const client = clients.find((c) => c.id === sessionId) ?? null;
-  const [lang, setLang] = useState<CLang>(client?.lang ?? 'en');
+  const [lang, setLangLocal] = useState<CLang>(client?.lang ?? getUiLang());
+  const setLang = (l: CLang) => { setLangLocal(l); setUiLang(l); };
+  const [uiLang] = useUiLang<CLang>();
+  const prevUi = useRef(uiLang);
+  useEffect(() => {
+    // Follow the sidebar language switch (but keep the client's own language on first open).
+    if (prevUi.current !== uiLang) { prevUi.current = uiLang; setLangLocal(uiLang); }
+  }, [uiLang]);
   const logout = () => {
     sessionStorage.removeItem(SESSION);
     setSessionId(null);
@@ -42,7 +51,7 @@ export function PortalView() {
   const login = (c: Client) => {
     sessionStorage.setItem(SESSION, c.id);
     setSessionId(c.id);
-    setLang(c.lang);
+    setLangLocal(c.lang);
   };
   const sess = useSession();
   if (sess.mode === 'live' && sess.role === 'client') {
@@ -92,6 +101,7 @@ function Login({ clients, lang, setLang, onLogin, companyName }: { clients: Clie
       <div className="p-demo" data-testid="portal-demo-warning">⚠ {L('demoWarn')}</div>
       <div className="p-login-wrap">
         <form className="q-panel p-login" onSubmit={submit}>
+          <Art name="ship" className="fd-login-art" />
           <div className="p-brand">
             <span className="c-logo-ph">FD</span>
             <div>
@@ -172,7 +182,7 @@ function Portal({ c, lang, setLang, onLogout, quotes, company, live = false }: {
         <div className="p-col">
           <section className="q-panel" data-testid="portal-shipments">
             <div className="q-head"><h2>{L('shipments')} · {num(lang, jobs.length)}</h2></div>
-            {jobs.length === 0 && <p className="c-muted">{L('noShip')}</p>}
+            {jobs.length === 0 && <div className="fd-empty"><Art name="ship" className="fd-empty-art" /><p className="c-muted">{L('noShip')}</p></div>}
             {jobs.map((j) => {
               const ms = MILESTONES[j.dir];
               const idx = stepIndex(j.step);
@@ -257,7 +267,7 @@ function Portal({ c, lang, setLang, onLogout, quotes, company, live = false }: {
 
           <section className="q-panel" data-testid="portal-quotes">
             <div className="q-head"><h2>{L('quotes')} · {num(lang, mine.length)}</h2></div>
-            {mine.length === 0 && <p className="c-muted">{L('noQuotes')}</p>}
+            {mine.length === 0 && <div className="fd-empty"><Art name="truck" className="fd-empty-art" /><p className="c-muted">{L('noQuotes')}</p></div>}
             {mine.map((q) => (
               <div key={q.id} className="p-quote" data-testid={`portal-quote-${q.id}`}>
                 <div className="p-quote-head">

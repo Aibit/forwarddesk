@@ -1,3 +1,5 @@
+import { useUiLang } from '../ui/lang';
+import { Art } from '../ui/Art';
 import { ComplianceNote } from '../backend/AuthBar';
 import { isLive } from '../backend/bridge';
 import { useEffect, useMemo, useState, type ChangeEvent, type ReactNode } from 'react';
@@ -25,7 +27,7 @@ interface Props {
 
 export function ClientsView({ openRequest, onOpenJob, onNewQuote }: Props) {
   const { clients, company, quotes } = useStore();
-  const [lang, setLang] = useState<CLang>('en');
+  const [lang, setLang] = useUiLang<CLang>();
   const [now, setNow] = useState(() => Date.now());
   const jobs: Job[] = useJobs();
   const tariffs = useTariffs();
@@ -208,7 +210,7 @@ function ClientDashboard({ c, k, lang, L, deadline, onBack, onEdit, onOpenJob, o
           </section>
           <section className="q-panel" aria-label={L('jobs')}>
             <div className="q-head"><h2>{L('jobs')} · {num(lang, k.jobs.length)}</h2><span>{deadline(k)}</span></div>
-            {k.jobs.length === 0 && <p className="c-muted">{L('noJobs')}</p>}
+            {k.jobs.length === 0 && <div className="fd-empty"><Art name="containers" className="fd-empty-art" /><p className="c-muted">{L('noJobs')}</p></div>}
             <div className="c-jobs">
               {k.jobs.map((j) => (
                 <button key={j.id} type="button" className="c-job" onClick={() => onOpenJob(j.id)} data-testid={`client-job-${j.id}`}>
@@ -224,7 +226,7 @@ function ClientDashboard({ c, k, lang, L, deadline, onBack, onEdit, onOpenJob, o
 
           <section className="q-panel" aria-label={L('quotes')} data-testid="client-quotes">
             <div className="q-head"><h2>{L('quotes')} · {num(lang, k.sent)}</h2></div>
-            {k.quotes.length === 0 && <p className="c-muted">{L('noQuotes')}</p>}
+            {k.quotes.length === 0 && <div className="fd-empty"><Art name="truck" className="fd-empty-art" /><p className="c-muted">{L('noQuotes')}</p></div>}
             {k.quotes.length > 0 && (
               <div className="c-quotes">
                 {k.quotes.map((q) => {

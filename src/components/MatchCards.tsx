@@ -1,4 +1,5 @@
 import type { CapacityOffer, MatchProposal, ShipperRfq } from '../types';
+import { Art } from '../ui/Art';
 
 interface Props {
   proposals: MatchProposal[];
@@ -53,6 +54,7 @@ export function MatchCards({
       <div className="col-scroll">
         {visible.length === 0 && (
           <div className="empty-state">
+            <Art name="containers" className="fd-empty-art" />
             <strong>No quote options.</strong>
             <p style={{ margin: '0.4rem 0 0' }}>
               Select a customer RFQ on the left, then build quotes.

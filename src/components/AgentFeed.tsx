@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { Art } from '../ui/Art';
 import type { AgentMessage } from '../types';
 
 interface Props {
@@ -21,7 +22,9 @@ export function AgentFeed({ messages }: Props) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    // Scroll only the log column, never the whole page.
+    const box = bottomRef.current?.closest('.col-scroll');
+    if (box) box.scrollTo({ top: box.scrollHeight, behavior: 'smooth' });
   }, [messages.length]);
 
   return (
@@ -33,7 +36,7 @@ export function AgentFeed({ messages }: Props) {
       <div className="col-scroll">
         <div className="event-log">
           {messages.length === 0 && (
-            <div className="empty-state">Idle — build quotes or add a customer RFQ.</div>
+            <div className="empty-state"><Art name="crane" className="fd-empty-art" />Idle — build quotes or add a customer RFQ.</div>
           )}
           {messages.map((m) => (
             <div

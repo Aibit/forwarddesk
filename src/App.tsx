@@ -25,6 +25,10 @@ import type {
 } from './types';
 import { nowLabel, sleep, uid } from './utils';
 import './App.css';
+import './ui/notion.css';
+import { Sidebar, PageHeader, navLabel, ui, type ViewKey } from './ui/Layout';
+import { Icon } from './ui/Art';
+import { useUiLang } from './ui/lang';
 
 function resolveRole(
   agent: string,
@@ -65,6 +69,8 @@ function App() {
   const [clientReq, setClientReq] = useState<{ id: string; n: number } | null>(null);
   const [jobReq, setJobReq] = useState<{ id: string; n: number } | null>(null);
   const sess = useSession();
+  const [uiLang] = useUiLang();
+  const [navOpen, setNavOpen] = useState(false);
   const clientOnly = sess.mode === 'live' && sess.role === 'client';
   useEffect(() => {
     if (clientOnly) setViewMode('portal');
@@ -591,138 +597,62 @@ function App() {
         ? 'TMS-STUB'
         : 'SEED';
 
+  const pick = (v: ViewKey) => {
+    if (v === 'jobs') setJobReq(null);
+    if (v === 'clients') setClientReq(null);
+    setViewMode(v);
+    setNavOpen(false);
+  };
+  const deskActions = (
+    <div className="nd-desk-actions">
+      <div className="top-meta">
+        <span
+          className="corridor-chip"
+          title={
+            selected
+              ? `Selected RFQ lane: ${selected.pickupCity} → ${selected.dropCity}`
+              : 'No RFQ selected — showing all corridors'
+          }
+        >
+          {selected ? `${selected.pickupCity} → ${selected.dropCity}` : 'All corridors'}
+        </span>
+        <span
+          className={`src-chip ${dataSource === 'seed' ? 'seed' : 'live'}`}
+          title={dataSource === 'ingest' ? 'Capacity ingest (live/public + publish)' : dataSource === 'tms-stub' ? 'TMS stub CSV' : 'Offline seed'}
+        >
+          <span className="dot" aria-hidden />
+          {srcLabel}
+        </span>
+        {bookings.length > 0 && <span className="mono">{bookings.length} CFM</span>}
+        {dataSource !== 'seed' && <a href="/capacity">/capacity</a>}
+      </div>
+      <div className="top-actions">
+        <button type="button" className="btn ghost sm" disabled={loadingData || busy} onClick={() => void refreshFromTms()} title="Try live /api/capacity and /api/rfqs; static Pages uses seed data">
+          {loadingData ? '…' : 'Refresh'}
+        </button>
+        <button type="button" className="btn ghost sm" onClick={() => setShowRfqForm(true)}>+ Customer RFQ</button>
+        <button type="button" className="btn ghost sm" onClick={() => setShowCapForm(true)}>+ Buy-side</button>
+        <button type="button" className="btn primary sm" disabled={busy || !selectedRfqId} onClick={() => void runMatch()}>
+          {busy ? 'Working…' : 'Build quotes'}
+        </button>
+      </div>
+    </div>
+  );
+  const shownView: ViewKey = clientOnly ? 'portal' : viewMode;
+
   return (
-    <div className="app">
-      <header className="topbar">
-        <div className="brand">
-          <div className="logo">FD</div>
-          <div>
-            <h1>FORWARDDESK</h1>
-            <p className="corridor">{viewMode === 'jobs' ? 'JOBS · DEADLINES · MONEY AT RISK' : viewMode === 'clients' ? 'CLIENTS · SETUP · DASHBOARD' : viewMode === 'agents' ? 'AGENTS · LINES · NETWORK DATABASE' : viewMode === 'portal' ? (sess.mode === 'live' ? 'CLIENT PORTAL' : 'CLIENT PORTAL · DEMO LOGIN') : viewMode === 'quote' ? 'REQUEST → QUOTE IN MINUTES' : 'SALES + QUOTING DESK'}</p>
-          </div>
+    <div className={`app nd ${navOpen ? 'nav-open' : ''}`} dir={uiLang === 'fa' ? 'rtl' : 'ltr'} lang={uiLang} data-view={shownView}>
+      <Sidebar view={shownView} onPick={pick} open={navOpen} onClose={() => setNavOpen(false)} clientOnly={clientOnly} />
+      <div className="nd-main">
+      <header className="topbar nd-top">
+        <button type="button" className="nd-iconbtn nd-burger" onClick={() => setNavOpen(true)} aria-label={ui('menu', uiLang)} data-testid="nav-open"><Icon name="menu" /></button>
+        <div className="nd-crumb">
+          <span className="nd-crumb-root">ForwardDesk</span>
+          <span className="nd-crumb-sep" aria-hidden="true">/</span>
+          <span className="nd-crumb-page">{navLabel(shownView, uiLang)}</span>
         </div>
-        {!lite && (
-        <div className="top-meta">
-          <span
-            className="corridor-chip"
-            title={
-              selected
-                ? `Selected RFQ lane: ${selected.pickupCity} → ${selected.dropCity}`
-                : 'No RFQ selected — showing all corridors'
-            }
-          >
-            {selected
-              ? `${selected.pickupCity} → ${selected.dropCity}`
-              : 'All corridors'}
-          </span>
-          <span
-            className={`src-chip ${dataSource === 'seed' ? 'seed' : 'live'}`}
-            title={
-              dataSource === 'ingest'
-                ? 'Capacity ingest (live/public + publish)'
-                : dataSource === 'tms-stub'
-                  ? 'TMS stub CSV'
-                  : 'Offline seed'
-            }
-          >
-            <span className="dot" aria-hidden />
-            {srcLabel}
-          </span>
-          {bookings.length > 0 && (
-            <span className="mono">{bookings.length} CFM</span>
-          )}
-          {dataSource !== 'seed' && <a href="/capacity">/capacity</a>}
-        </div>
-        )}
-        <div className="top-actions">
+        <div className="nd-top-right" dir="ltr">
           <AuthBar />
-          {!clientOnly && (
-          <div className="view-toggle" role="group" aria-label="Jobs, Clients, Quote, Desk or Pitch view">
-            <button
-              type="button"
-              className={viewMode === 'jobs' ? 'active' : ''}
-              onClick={() => { setJobReq(null); setViewMode('jobs'); }}
-            >
-              Jobs
-            </button>
-            <button
-              type="button"
-              className={viewMode === 'clients' ? 'active' : ''}
-              onClick={() => { setClientReq(null); setViewMode('clients'); }}
-            >
-              Clients
-            </button>
-            <button
-              type="button"
-              className={viewMode === 'agents' ? 'active' : ''}
-              onClick={() => setViewMode('agents')}
-              data-testid="tab-agents"
-            >
-              Agents
-            </button>
-            <button
-              type="button"
-              className={viewMode === 'portal' ? 'active' : ''}
-              onClick={() => setViewMode('portal')}
-            >
-              Client portal
-            </button>
-            <button
-              type="button"
-              className={viewMode === 'quote' ? 'active' : ''}
-              onClick={() => setViewMode('quote')}
-            >
-              Quote
-            </button>
-            <button
-              type="button"
-              className={viewMode === 'desk' ? 'active' : ''}
-              onClick={() => setViewMode('desk')}
-            >
-              Desk
-            </button>
-            <button
-              type="button"
-              className={viewMode === 'pitch' ? 'active' : ''}
-              onClick={() => setViewMode('pitch')}
-            >
-              Pitch
-            </button>
-          </div>
-          )}
-          {!lite && (<>
-          <button
-            type="button"
-            className="btn ghost sm"
-            disabled={loadingData || busy}
-            onClick={() => void refreshFromTms()}
-            title="Try live /api/capacity and /api/rfqs; static Pages uses seed data"
-          >
-            {loadingData ? '…' : 'Refresh'}
-          </button>
-          <button
-            type="button"
-            className="btn ghost sm"
-            onClick={() => setShowRfqForm(true)}
-          >
-            + Customer RFQ
-          </button>
-          <button
-            type="button"
-            className="btn ghost sm"
-            onClick={() => setShowCapForm(true)}
-          >
-            + Buy-side
-          </button>
-          <button
-            type="button"
-            className="btn primary sm"
-            disabled={busy || !selectedRfqId}
-            onClick={() => void runMatch()}
-          >
-            {busy ? 'Working…' : 'Build quotes'}
-          </button>
-          </>)}
         </div>
       </header>
       {sess.mode === 'live' && sess.role === 'staff' && (
@@ -731,6 +661,9 @@ function App() {
           <ComplianceNote />
         </div>
       )}
+      <div className="nd-scroll" data-testid="page-scroll">
+      <div className="nd-page">
+      <PageHeader view={shownView} compact={!lite}>{!lite ? deskActions : null}</PageHeader>
 
       {!clientOnly && viewMode === 'jobs' && (
         <JobsView
@@ -748,10 +681,10 @@ function App() {
       )}
       {(viewMode === 'portal' || clientOnly) && <PortalView />}
       {!clientOnly && viewMode === 'agents' && <AgentsDbView />}
-      {!clientOnly && viewMode === 'quote' && <QuoteView seed={quoteSeed} onOpenClient={openClient} />}
+      {!clientOnly && viewMode === 'quote' && <div className="nd-ltr" dir="ltr" lang="en"><QuoteView seed={quoteSeed} onOpenClient={openClient} /></div>}
 
       {!lite && selected && (
-        <div className="sticky-bar">
+        <div className="sticky-bar" dir="ltr" lang="en">
           <span className="mono">{selected.id}</span>
           <span className="route-label">
             {selected.shipper} · {selected.pickupCity} → {selected.dropCity}
@@ -794,7 +727,7 @@ function App() {
       )}
 
       {!lite && (
-      <main className={`ops-grid ${viewMode === 'pitch' ? 'pitch-mode' : ''}`}>
+      <main className={`ops-grid ${viewMode === 'pitch' ? 'pitch-mode' : ''}`} dir="ltr" lang="en">
         <section className="ops-col" aria-label="Customer RFQs and buy-side capacity">
           <LiveBoard
             rfqs={rfqs}
@@ -830,6 +763,7 @@ function App() {
       </main>
       )}
 
+      </div>
       <footer className="ops-footer">
         <span>
           {viewMode === 'jobs' ? 'Dashboard + deadline tracker · read-only, alerts only · people act' : viewMode === 'clients' ? (sess.mode === 'live' ? 'Client setup + dashboard · live backend (sample data) · sample clients A–G' : 'Client setup + dashboard · saved in this browser only · sample clients A–G') : viewMode === 'agents' ? (sess.mode === 'live' ? 'Agents database · live backend · CSV import / export' : 'Agents database · saved in this browser only · CSV import / export') : viewMode === 'portal' ? (sess.mode === 'live' ? 'Customer-facing view · real account, scoped by security rules · sell prices only' : 'Customer-facing view · demo login, not secure · sell prices only') : viewMode === 'quote' ? 'Paste → read → ask → price → copy' : <><kbd>R</kbd> build quotes on selected RFQ</>}
@@ -837,6 +771,8 @@ function App() {
         <span>ForwardDesk · sales + quoting · pitch lane then lock buy/sell · human confirm</span>
         <span>Schedules ≠ soft leftover</span>
       </footer>
+      </div>
+      </div>
 
       {showRfqForm && (
         <RfqForm onSubmit={addRfq} onClose={() => setShowRfqForm(false)} />

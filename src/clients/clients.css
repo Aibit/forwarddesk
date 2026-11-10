@@ -25,12 +25,12 @@
 .c-sub .j-sample.sm { margin-inline-start: 0.4rem; }
 .c-num { font-size: 0.8rem; white-space: nowrap; }
 .c-amber, .q-amber { color: var(--amber); }
-.c-red { color: #ff8a8a; }
+.c-red { color: var(--red-ink); }
 .c-amber-sub { color: var(--amber); font-size: 0.74rem; }
 .c-dl { font-size: 0.76rem; white-space: nowrap; }
 .c-dl.amber { color: var(--amber); }
-.c-dl.red { color: #ff8a8a; }
-.c-dl.ok { color: #8fd6a6; }
+.c-dl.red { color: var(--red-ink); }
+.c-dl.ok { color: var(--ok-ink); }
 
 .c-dash { display: flex; flex-direction: column; gap: 0.75rem; }
 .c-dash-head { display: flex; align-items: center; gap: 0.6rem; }
@@ -62,7 +62,7 @@
 .c-defs dt { margin-top: 0.15rem !important; }
 .c-notes { font-size: 0.82rem; margin: 0.2rem 0 0; line-height: 1.4; }
 
-.c-modal-bg { position: fixed; inset: 0; background: rgba(8, 7, 6, 0.65); z-index: 60; display: grid; place-items: center; padding: 1rem; }
+.c-modal-bg { position: fixed; inset: 0; background: var(--overlay); z-index: 60; display: grid; place-items: center; padding: 1rem; }
 .c-modal { width: min(760px, 100%); max-height: calc(100vh - 2rem); overflow: auto; }
 .c-form { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem 0.75rem; }
 .c-field { display: flex; flex-direction: column; gap: 0.2rem; font-size: 0.7rem; color: var(--muted); }
@@ -76,7 +76,7 @@
 .q-client select { background: var(--bg); color: var(--text); border: 1px solid var(--border-strong); border-radius: 2px; padding: 0.25rem 0.4rem; font: inherit; font-size: 0.8rem; }
 .q-client-defs { color: var(--muted); font-size: 0.72rem; font-family: var(--mono); }
 .q-client a, .q-linklike { color: var(--amber); cursor: pointer; background: none; border: none; font: inherit; font-size: 0.74rem; padding: 0; text-decoration: underline dotted; }
-.q-saved { color: #8fd6a6; font-size: 0.72rem; }
+.q-saved { color: var(--ok-ink); font-size: 0.72rem; }
 .j-custlink { color: inherit; text-decoration: underline dotted; cursor: pointer; }
 .j-custlink:hover { color: var(--amber); }
 
@@ -96,9 +96,9 @@
 .c-rank button.rk-preferred.active { background: var(--pass); border-color: var(--pass); color: #fff; }
 .c-rank button.rk-avoid.active { background: var(--border-strong); border-color: var(--border-strong); color: var(--text); }
 .c-rank-chip { font-family: var(--mono); font-size: 0.58rem; padding: 0.05rem 0.35rem; border-radius: 999px; border: 1px solid var(--border-strong); white-space: nowrap; }
-.c-rank-chip.rk-preferred { border-color: var(--pass); color: #8fd6a6; }
+.c-rank-chip.rk-preferred { border-color: var(--pass); color: var(--ok-ink); }
 .c-rank-chip.rk-avoid { color: var(--muted); }
-.q-badge.pref { border-color: var(--pass); background: var(--pass-dim); color: #8fd6a6; }
+.q-badge.pref { border-color: var(--pass); background: var(--pass-dim); color: var(--ok-ink); }
 .j-agent { color: var(--muted); font-size: 0.74rem; }
 
 .c-form-h { margin: 0.9rem 0 0.1rem; font-size: 0.74rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--amber); }
@@ -128,17 +128,17 @@
 .p-facts dt { color: var(--muted); font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.05em; }
 [dir='rtl'] .p-facts dt { text-transform: none; letter-spacing: 0; font-size: 0.74rem; }
 .p-facts dd { margin: 0; }
-.p-warn { font-size: 0.76rem; color: #ff9b9b; border-inline-start: 3px solid var(--veto); padding-inline-start: 0.45rem; }
+.p-warn { font-size: 0.76rem; color: var(--red-ink); border-inline-start: 3px solid var(--veto); padding-inline-start: 0.45rem; }
 .p-docs { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; font-size: 0.76rem; }
 .p-doc { border: 1px solid var(--border-strong); border-radius: 3px; padding: 0.15rem 0.4rem; display: inline-flex; gap: 0.4rem; align-items: center; }
-.p-doc.ok { border-color: var(--pass); color: #8fd6a6; }
+.p-doc.ok { border-color: var(--pass); color: var(--ok-ink); }
 .p-doc.act { border-color: var(--amber); color: var(--amber); }
 .p-quote { border-bottom: 1px solid var(--border); padding: 0.5rem 0; }
 .p-quote-head { display: flex; gap: 0.5rem; align-items: baseline; flex-wrap: wrap; font-size: 0.84rem; }
 .p-opts { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0.4rem; margin-top: 0.4rem; }
 .p-opt { border: 1px solid var(--border-strong); border-radius: 3px; padding: 0.4rem 0.5rem; display: flex; flex-direction: column; gap: 0.2rem; font-size: 0.8rem; }
 .p-opt.acc { border-color: var(--pass); background: var(--pass-dim); }
-.p-accepted { color: #8fd6a6; font-size: 0.8rem; }
+.p-accepted { color: var(--ok-ink); font-size: 0.8rem; }
 .p-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
 .p-table td { padding: 0.3rem 0.3rem; border-bottom: 1px solid var(--border); }
 .p-table td.num { text-align: end; }
@@ -154,13 +154,13 @@
 .c-inline .c-in { min-width: 0; flex: 1; }
 .c-in.warn { border-color: var(--amber); }
 .t-delta { font-family: var(--mono); font-size: 0.68rem; padding: 0.02rem 0.35rem; border-radius: 999px; white-space: nowrap; margin-inline-start: 0.3rem; }
-.t-delta.ok { color: #8fd6a6; border: 1px solid var(--pass); background: var(--pass-dim); }
+.t-delta.ok { color: var(--ok-ink); border: 1px solid var(--pass); background: var(--pass-dim); }
 .t-delta.warn { color: var(--amber); border: 1px solid var(--amber); background: var(--amber-dim); }
 
 /* MSDS */
 .msds-chip { font-family: var(--mono); font-size: 0.66rem; padding: 0.04rem 0.4rem; border-radius: 999px; white-space: nowrap; border: 1px solid var(--border); color: var(--muted, #9a9488); }
 .msds-chip.req { color: var(--amber); border-color: var(--amber); background: var(--amber-dim); }
-.msds-chip.ok { color: #8fd6a6; border-color: var(--pass); background: var(--pass-dim); }
+.msds-chip.ok { color: var(--ok-ink); border-color: var(--pass); background: var(--pass-dim); }
 .msds-slot { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem 0.5rem; padding: 0.35rem 0.5rem; border: 1px dashed var(--border); border-radius: 3px; font-size: 0.78rem; }
 .msds-slot.req { border-color: var(--amber); }
 .msds-slot.ok { border-style: solid; border-color: var(--pass); }

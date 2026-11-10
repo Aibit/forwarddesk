@@ -40,7 +40,7 @@
   font-family: var(--mono); font-size: 0.66rem; color: var(--amber);
   border: 1px solid var(--amber); padding: 0.1rem 0.45rem; border-radius: 2px; letter-spacing: 0.05em;
 }
-.q-timer.done { background: var(--pass-dim); border-color: var(--pass); color: #8fd6a6; }
+.q-timer.done { background: var(--pass-dim); border-color: var(--pass); color: var(--ok-ink); }
 .q-chips { display: flex; flex-wrap: wrap; gap: 0.4rem; }
 .q-chip {
   display: inline-flex; align-items: center; gap: 0.35rem;
@@ -60,9 +60,9 @@
 .q-chip.q-missing { border-color: var(--veto); background: var(--veto-dim); }
 .q-chip.q-missing .q-chip-flag { background: var(--veto); color: #fff; }
 .q-chip.q-ambiguous { border-color: var(--amber); background: var(--amber-dim); }
-.q-chip.q-ambiguous .q-chip-flag { background: var(--amber); color: #12100e; }
-.q-chip.q-assumed { border-color: #6b8fb3; }
-.q-chip.q-assumed .q-chip-flag { background: #3b5873; color: #dbe8f5; }
+.q-chip.q-ambiguous .q-chip-flag { background: var(--amber); color: var(--on-accent); }
+.q-chip.q-assumed { border-color: var(--blue-line); }
+.q-chip.q-assumed .q-chip-flag { background: var(--blue-dim); color: var(--blue-ink); }
 .q-chip.editing { border-color: var(--amber); }
 .q-input {
   background: var(--bg); color: var(--text); border: 1px solid var(--amber); border-radius: 2px;
@@ -72,8 +72,8 @@
 .q-issue { display: grid; grid-template-columns: 4.6rem minmax(0, 1fr); gap: 0.5rem; align-items: start; font-size: 0.74rem; }
 .q-issue-tag { font-family: var(--mono); font-size: 0.56rem; letter-spacing: 0.06em; padding: 0.12rem 0.3rem; border-radius: 2px; text-align: center; margin-top: 0.1rem; }
 .q-issue.q-missing .q-issue-tag { background: var(--veto); color: #fff; }
-.q-issue.q-ambiguous .q-issue-tag { background: var(--amber); color: #12100e; }
-.q-issue.q-assumed .q-issue-tag { background: #3b5873; color: #dbe8f5; }
+.q-issue.q-ambiguous .q-issue-tag { background: var(--amber); color: var(--on-accent); }
+.q-issue.q-assumed .q-issue-tag { background: var(--blue-dim); color: var(--blue-ink); }
 .q-issue-msg { color: var(--text); }
 .q-issue-q { color: var(--muted); font-style: italic; margin-top: 0.15rem; }
 .q-options { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-top: 0.3rem; }
@@ -88,10 +88,10 @@
 .q-banner-actions { display: flex; gap: 0.35rem; flex-wrap: wrap; }
 .q-banner-actions a.btn { text-decoration: none; display: inline-flex; align-items: center; }
 .q-warn {
-  border: 1px solid var(--warn); background: rgba(201, 162, 39, 0.12); color: #f0d98a;
+  border: 1px solid var(--warn); background: var(--amber-dim); color: var(--amber-ink);
   border-radius: var(--radius); padding: 0.4rem 0.65rem; font-size: 0.7rem;
 }
-.q-warn.stale { border-color: var(--veto); background: var(--veto-dim); color: #f3b3b3; }
+.q-warn.stale { border-color: var(--veto); background: var(--veto-dim); color: var(--red-ink); }
 .q-format p, .q-format ul { margin: 0.2rem 0; font-size: 0.68rem; color: var(--muted); }
 .q-format ul { padding-left: 1rem; }
 .q-format code, .q-empty code { font-family: var(--mono); color: var(--text); font-size: 0.66rem; }
@@ -100,11 +100,11 @@
 .q-scope { font-size: 0.66rem; color: var(--muted); margin-bottom: 0.45rem; }
 .q-table { width: 100%; border-collapse: collapse; font-size: 0.72rem; table-layout: auto; }
 .q-table th { text-align: left; font-size: 0.56rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 600; padding: 0.25rem 0.35rem; border-bottom: 1px solid var(--border); }
-.q-table td { padding: 0.22rem 0.35rem; border-bottom: 1px solid rgba(58, 53, 48, 0.5); }
+.q-table td { padding: 0.22rem 0.35rem; border-bottom: 1px solid var(--border); }
 .q-table .num { text-align: right; white-space: nowrap; }
 .q-table .mono { font-family: var(--mono); }
 .q-table tr.q-group td { font-size: 0.56rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--amber); padding-top: 0.45rem; border-bottom: none; }
-.q-table tr.stale td { color: #f3b3b3; }
+.q-table tr.stale td { color: var(--red-ink); }
 .q-stale-tag { margin-left: 0.35rem; font-size: 0.52rem; background: var(--veto); color: #fff; padding: 0.02rem 0.22rem; border-radius: 2px; }
 .q-excluded { font-size: 0.64rem; color: var(--muted); margin-top: 0.4rem; }
 .q-margin { display: flex; align-items: center; gap: 0.7rem; margin-top: 0.6rem; font-size: 0.72rem; }
@@ -114,12 +114,12 @@
 .q-totals span { display: block; font-size: 0.52rem; letter-spacing: 0.08em; color: var(--muted); }
 .q-totals strong { font-size: 0.84rem; white-space: nowrap; }
 .q-totals .sell strong { color: var(--amber); }
-.q-totals .margin strong { color: #8fd6a6; }
+.q-totals .margin strong { color: var(--ok-ink); }
 .q-totals small { font-size: 0.6rem; }
 .q-alt { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.5rem; }
 .q-lang { display: inline-flex; border: 1px solid var(--border-strong); border-radius: var(--radius); overflow: hidden; }
 .q-lang button { appearance: none; border: none; background: transparent; color: var(--muted); font-family: var(--mono); font-size: 0.62rem; padding: 0.15rem 0.5rem; cursor: pointer; }
-.q-lang button.active { background: var(--amber); color: #12100e; }
+.q-lang button.active { background: var(--amber); color: var(--on-accent); }
 .q-text {
   margin: 0; white-space: pre-wrap; word-break: break-word;
   background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius);
@@ -143,9 +143,9 @@
   .q-right { position: sticky; top: 0; max-height: calc(100vh - 7rem); overflow: auto; }
 }
 /* Stale rates: amber warning, not an error */
-.q-warn.stale { border-color: var(--amber); background: var(--amber-dim); color: #f5d08a; }
-.q-table tr.stale td { color: #f5d08a; }
-.q-stale-tag { background: var(--amber); color: #12100e; }
+.q-warn.stale { border-color: var(--amber); background: var(--amber-dim); color: var(--amber-ink); }
+.q-table tr.stale td { color: var(--amber-ink); }
+.q-stale-tag { background: var(--amber); color: var(--on-accent); }
 .q-pdf-internal { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.72rem; color: var(--muted); cursor: pointer; }
 .q-pdf-internal input { accent-color: var(--amber); }
 .q-send-note { margin-top: 0.4rem; font-size: 0.72rem; }
@@ -167,16 +167,16 @@
 .q-opt-pick input { accent-color: var(--amber); }
 .q-opt-badges { display: flex; flex-wrap: wrap; gap: 0.25rem; min-height: 1rem; }
 .q-badge { font-family: var(--mono); font-size: 0.54rem; letter-spacing: 0.05em; padding: 0.08rem 0.35rem; border-radius: 999px; border: 1px solid var(--border-strong); color: var(--text); white-space: nowrap; }
-.q-badge.recommended { background: var(--amber); border-color: var(--amber); color: #12100e; font-weight: 600; }
-.q-badge.cheapest { border-color: var(--pass); color: #8fd6a6; }
-.q-badge.fastest { border-color: #6b8fb3; color: #b9d2ea; }
-.q-badge.mostFree { border-color: #9a86c4; color: #d2c6ec; }
+.q-badge.recommended { background: var(--amber); border-color: var(--amber); color: var(--on-accent); font-weight: 600; }
+.q-badge.cheapest { border-color: var(--pass); color: var(--ok-ink); }
+.q-badge.fastest { border-color: var(--blue-line); color: var(--blue-ink); }
+.q-badge.mostFree { border-color: var(--purple-line); color: var(--purple-ink); }
 .q-opt-name { font-weight: 600; font-size: 0.86rem; }
 .q-opt-route { font-size: 0.68rem; color: var(--muted); }
 .q-opt-sell { display: flex; align-items: baseline; gap: 0.45rem; flex-wrap: wrap; }
 .q-opt-sell .mono { font-size: 1.15rem; font-weight: 600; }
 .q-delta { font-family: var(--mono); font-size: 0.6rem; color: var(--muted); margin-inline-start: 0.4rem; display: inline-block; }
-.q-delta.best { color: #8fd6a6; }
+.q-delta.best { color: var(--ok-ink); }
 .q-opt-bm { font-size: 0.6rem; color: var(--muted); }
 .q-opt-facts { margin: 0; display: grid; grid-template-columns: 1fr; gap: 0.12rem; font-size: 0.68rem; }
 .q-opt-facts > div { display: flex; justify-content: space-between; gap: 0.4rem; border-top: 1px dotted var(--border); padding-top: 0.12rem; }
@@ -201,4 +201,4 @@
 .q-trade-notes { margin: 0.4rem 0 0; padding-inline-start: 1.1rem; }
 .q-trade-agents { margin-top: 0.5rem; }
 .q-trade-agents ul { margin: 0.25rem 0; padding-inline-start: 1.1rem; }
-.q-ok { color: #8fd6a6; }
+.q-ok { color: var(--ok-ink); }

@@ -1,4 +1,5 @@
 import type { CapacityOffer, ShipperRfq } from '../types';
+import { Art } from '../ui/Art';
 
 interface Props {
   rfqs: ShipperRfq[];
@@ -36,6 +37,7 @@ export function LiveBoard({ rfqs, capacity, selectedRfqId, onSelectRfq }: Props)
       <div className="col-scroll">
         {rfqs.length === 0 ? (
           <div className="empty-state">
+            <Art name="truck" className="fd-empty-art" />
             No customer RFQs on the desk.
             <div className="hint-action">
               <span>Add a customer RFQ from the top strip.</span>
@@ -92,8 +94,9 @@ export function LiveBoard({ rfqs, capacity, selectedRfqId, onSelectRfq }: Props)
           </div>
           {capacity.length === 0 ? (
             <div className="empty-state">
+              <Art name="ship" className="fd-empty-art" />
               No buy-side rows. Open{' '}
-              <a href="/capacity" style={{ color: 'var(--amber)' }}>
+              <a href="/capacity" style={{ color: 'var(--link)' }}>
                 Capacity Inbox
               </a>{' '}
               to ingest or add soft space.
