@@ -10,7 +10,8 @@ import {
   type Issue,
   type QuoteFields,
 } from './parser';
-import { CSV_COLUMNS, buildQuote, loadRateCsv, sampleRates, type Quote, type RateRow, type Side } from './rates';
+import { CSV_COLUMNS, buildOptions, buildQuote, loadRateCsv, optionBadges, sampleRates, type Badge, type Quote, type RateRow, type Side } from './rates';
+import { BADGE_L, MODE_L, ol, type QLang } from './optlabels';
 import { SAMPLE_REQUESTS } from './samples';
 import './quote.css';
 
@@ -18,7 +19,6 @@ type Lang = 'en' | 'es';
 type FieldKey = keyof QuoteFields;
 
 const MODE_LABEL: Record<QMode, string> = { fcl: 'Ocean FCL', lcl: 'Ocean LCL', air: 'Air', road: 'Road' };
-const MODE_LABEL_ES: Record<QMode, string> = { fcl: 'Marítimo FCL', lcl: 'Marítimo LCL (grupaje)', air: 'Aéreo', road: 'Carretera' };
 const SIDE_LABEL: Record<Side, string> = { origin: 'Origin', freight: 'Main freight', destination: 'Destination', customs: 'Customs' };
 const SIDE_ORDER: Side[] = ['origin', 'freight', 'destination', 'customs'];
 const PENDING: Partial<Record<string, { en: string; es: string }>> = {
@@ -43,11 +43,15 @@ function fmtElapsed(ms: number): string {
   return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
 }
 
-function fmtDate(iso: string | null, lang: Lang): string {
+function fmtShort(iso: string, lang: QLang): string {
+  return new Date(iso + 'T12:00:00').toLocaleDateString(lang === 'es' ? 'es-ES' : lang === 'fa' ? 'fa-IR' : 'en-GB', { day: 'numeric', month: 'short' });
+}
+
+function fmtDate(iso: string | null, lang: QLang): string {
   if (!iso) return '—';
-  if (iso === 'ASAP') return lang === 'es' ? 'lo antes posible' : 'ASAP';
+  if (iso === 'ASAP') return lang === 'es' ? 'lo antes posible' : lang === 'fa' ? 'در اسرع وقت' : 'ASAP';
   const d = new Date(iso + 'T12:00:00');
-  return d.toLocaleDateString(lang === 'es' ? 'es-ES' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  return d.toLocaleDateString(lang === 'es' ? 'es-ES' : lang === 'fa' ? 'fa-IR' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
 function equipmentText(eq: Record<string, number>): string {
@@ -91,69 +95,116 @@ function questionsText(issues: Issue[], lang: Lang): string {
   return `Hi,\n\nThanks for your request. To give you a firm price, could you please confirm:\n\n${all.map((q, i) => `${i + 1}. ${q}`).join('\n')}\n\nIn the meantime, please find an indicative quote below.\n\nBest regards,`;
 }
 
-function quoteText(f: QuoteFields, q: Quote, issues: Issue[], lang: Lang): string {
-  const es = lang === 'es';
-  const mode = f.mode ? (es ? MODE_LABEL_ES : MODE_LABEL)[f.mode] : '';
-  const units = f.mode === 'fcl' || f.mode === 'road' ? equipmentText(f.equipment).replace(/x/g, '×') : f.mode === 'air' ? `${q.chargeable} kg ${es ? 'tasables' : 'chargeable'}` : `${q.units}`;
-  const cargoBits = [f.cargo, f.dg === 'no' ? (es ? 'no peligrosa' : 'non-DG') : f.dg === 'yes' ? 'DG' : null].filter(Boolean).join(' · ');
-  const weightBits = [f.pieces ? `${f.pieces} ${es ? 'bultos' : 'pcs'}` : null, f.weightKg ? `${f.weightKg.toLocaleString('en-US')} kg${f.mode === 'fcl' ? (es ? ' por contenedor' : ' per container') : ''}` : null, f.volumeCbm ? `${f.volumeCbm} cbm` : null].filter(Boolean).join(' / ');
+const TXT = {
+  en: {
+    subject: 'Subject: Quotation', hi: 'Hi,', thanks: 'Thank you for your request. Please find our offer below:', thanksMulti: 'Thank you for your request. Please find our options below:',
+    route: 'Route', mode: 'Mode', cargo: 'Cargo', ready: 'Cargo ready', transit: 'Transit time', approx: (n: number) => `approx. ${n} days`, tbc: 'to be confirmed',
+    charges: 'Charges', line: 'Line', free: 'free time', days: 'days', optionsHead: 'Options', allIn: 'all-in for the charges listed', common: 'Charges included in every option above',
+    validity: (d: string) => `Validity: until ${d}, subject to space and equipment availability at time of booking.`,
+    notIncl: (x: string) => `Not included: duties, taxes, insurance${x} and anything not listed above.`, pending: (x: string) => `Subject to confirmation of: ${x}.`,
+    bye: 'Best regards,', stale: '  (subject to carrier confirmation)', option: 'Option', perCntr: ' per container', chargeable: 'chargeable', pcs: 'pcs', nonDg: 'non-DG',
+    fobTbc: 'FOB (to be confirmed)', vs: (o: number) => `vs Option ${o}`, more: 'more', less: 'less', fewer: 'fewer', options: 'options',
+  },
+  es: {
+    subject: 'Asunto: Cotización', hi: 'Hola,', thanks: 'Gracias por vuestra solicitud. Os pasamos nuestra oferta:', thanksMulti: 'Gracias por vuestra solicitud. Os pasamos varias opciones:',
+    route: 'Ruta', mode: 'Modo', cargo: 'Mercancía', ready: 'Mercancía lista', transit: 'Tránsito', approx: (n: number) => `aprox. ${n} días`, tbc: 'por confirmar',
+    charges: 'Cargos', line: 'Naviera', free: 'free time', days: 'días', optionsHead: 'Opciones', allIn: 'total de los conceptos detallados', common: 'Cargos incluidos en todas las opciones',
+    validity: (d: string) => `Validez: hasta ${d}, sujeto a disponibilidad de espacio y equipo en el momento de la reserva.`,
+    notIncl: (x: string) => `No incluido: aranceles, impuestos, seguro${x} y cualquier concepto no detallado.`, pending: (x: string) => `Pendiente de confirmar: ${x}.`,
+    bye: 'Un saludo,', stale: '  (sujeto a confirmación)', option: 'Opción', perCntr: ' por contenedor', chargeable: 'tasables', pcs: 'bultos', nonDg: 'no peligrosa',
+    fobTbc: 'FOB (por confirmar)', vs: (o: number) => `vs Opción ${o}`, more: 'más', less: 'menos', fewer: 'menos', options: 'opciones',
+  },
+  fa: {
+    subject: 'موضوع: پیشنهاد قیمت حمل', hi: 'با سلام،', thanks: 'از درخواست شما سپاسگزاریم. پیشنهاد ما به شرح زیر است:', thanksMulti: 'از درخواست شما سپاسگزاریم. گزینه‌های ما به شرح زیر است:',
+    route: 'مسیر', mode: 'نوع حمل', cargo: 'کالا', ready: 'آماده بودن کالا', transit: 'زمان حمل', approx: (n: number) => `حدود ${n} روز`, tbc: 'نیاز به تأیید',
+    charges: 'هزینه‌ها', line: 'خط کشتیرانی', free: 'فری‌تایم', days: 'روز', optionsHead: 'گزینه‌ها', allIn: 'جمع هزینه‌های ذکرشده', common: 'هزینه‌های مشترک در همه گزینه‌ها',
+    validity: (d: string) => `اعتبار: تا ${d}، منوط به وجود فضا و تجهیزات در زمان بوکینگ.`,
+    notIncl: (x: string) => `شامل نمی‌شود: حقوق گمرکی، مالیات، بیمه${x} و هر موردی که ذکر نشده است.`, pending: (x: string) => `منوط به تأیید: ${x}.`,
+    bye: 'با احترام،', stale: '  (منوط به تأیید خط)', option: 'گزینه', perCntr: ' برای هر کانتینر', chargeable: 'وزن قابل محاسبه', pcs: 'بسته', nonDg: 'غیرخطرناک',
+    fobTbc: 'FOB (نیاز به تأیید)', vs: (o: number) => `نسبت به گزینه ${o}`, more: 'بیشتر', less: 'کمتر', fewer: 'کمتر', options: 'گزینه',
+  },
+};
+
+function optionHeader(q: Quote, i: number, badges: Badge[], lang: QLang): string {
+  const W = TXT[lang];
+  const name = [q.carrier, q.routing].filter(Boolean).join(' · ');
+  const b = badges.length ? `  [${badges.map((x) => BADGE_L[lang][x]).join(' · ')}]` : '';
+  return `${W.option} ${i + 1} — ${name}${b}`;
+}
+
+function optionFacts(q: Quote, lang: QLang): string {
+  const W = TXT[lang];
+  return [
+    q.transitDays != null ? `${W.transit} ${W.approx(q.transitDays)}` : null,
+    q.etd ? `ETD ${fmtDate(q.etd, lang)}${q.eta ? ` → ETA ${fmtDate(q.eta, lang)}` : ''}` : null,
+    q.freeDays != null ? `${W.free} ${q.freeDays} ${W.days}` : null,
+  ].filter(Boolean).join(' · ');
+}
+
+function quoteText(f: QuoteFields, opts: Quote[], badges: Badge[][], issues: Issue[], lang: QLang): string {
+  if (!opts.length) return '';
+  const W = TXT[lang];
+  const tl: Lang = lang === 'fa' ? 'en' : lang;
+  const q = opts[0];
+  const multi = opts.length > 1;
+  const mode = f.mode ? MODE_L[lang][f.mode] : '';
+  const units = f.mode === 'fcl' || f.mode === 'road' ? equipmentText(f.equipment).replace(/x/g, '×') : f.mode === 'air' ? `${q.chargeable} kg ${W.chargeable}` : `${q.units}`;
+  const cargoBits = [f.cargo, f.dg === 'no' ? W.nonDg : f.dg === 'yes' ? 'DG' : null].filter(Boolean).join(' · ');
+  const weightBits = [f.pieces ? `${f.pieces} ${W.pcs}` : null, f.weightKg ? `${f.weightKg.toLocaleString('en-US')} kg${f.mode === 'fcl' ? W.perCntr : ''}` : null, f.volumeCbm ? `${f.volumeCbm} cbm` : null].filter(Boolean).join(' / ');
   const cur = q.currencies.length === 1 ? q.currencies[0] : q.currencies.join('/');
-  const width = Math.max(...q.lines.map((l) => l.charge.length), 12) + 2;
-  const lines = [...q.lines]
-    .sort((a, b) => SIDE_ORDER.indexOf(a.side) - SIDE_ORDER.indexOf(b.side))
-    .map((l) => `  ${l.charge.padEnd(width)}${money(l.sell).padStart(10)}${l.stale ? (es ? '  (sujeto a confirmación)' : '  (subject to carrier confirmation)') : ''}`);
-  const pending = [...new Set(issues.filter((i) => i.kind !== 'assumed' && i.question).map((i) => PENDING[i.field]?.[lang]).filter(Boolean))];
-  const incotermLine = f.incoterm ?? (es ? 'FOB (por confirmar)' : 'FOB (to be confirmed)');
+  const allLines = opts.flatMap((o) => o.lines);
+  const width = Math.max(...allLines.map((l) => l.charge.length), 12) + 2;
+  const row = (l: Quote['lines'][number]) => `  ${l.charge.padEnd(width)}${money(l.sell).padStart(10)}${l.stale ? W.stale : ''}`;
+  const pending = [...new Set(issues.filter((i) => i.kind !== 'assumed' && i.question).map((i) => PENDING[i.field]?.[tl]).filter(Boolean))];
+  const incotermLine = f.incoterm ?? W.fobTbc;
   const route = `${f.origin} → ${f.destination}`;
-  const transit = q.transitDays != null ? (es ? `aprox. ${q.transitDays} días` : `approx. ${q.transitDays} days`) : es ? 'por confirmar' : 'to be confirmed';
-  const excluded = q.excluded.map((l) => l.charge);
-  if (es) {
-    return [
-      `Asunto: Cotización — ${units} ${route} (${mode}, ${incotermLine})`,
+  const excluded = [...new Set(opts.flatMap((o) => o.excluded.map((l) => l.charge)))];
+  const validMin = opts.map((o) => o.validUntil).filter((v): v is string => !!v).sort()[0] ?? null;
+  const head = [
+    `${W.subject} — ${units} ${route} (${mode}, ${incotermLine})${multi ? ` — ${opts.length} ${W.options}` : ''}`,
+    '',
+    W.hi,
+    '',
+    multi ? W.thanksMulti : W.thanks,
+    '',
+    `${W.route}: ${route}`,
+    `${W.mode}: ${mode} · ${units}`,
+    cargoBits || weightBits ? `${W.cargo}: ${[cargoBits, weightBits].filter(Boolean).join(' · ')}` : null,
+    `Incoterm: ${incotermLine} · ${W.ready}: ${fmtDate(f.readyDate, lang)}`,
+  ];
+  let body: (string | null)[];
+  if (!multi) {
+    body = [
+      q.carrier ? `${W.line}: ${[q.carrier, q.routing].filter(Boolean).join(' · ')}` : null,
+      `${W.transit}: ${q.transitDays != null ? W.approx(q.transitDays) : W.tbc}${q.etd ? ` · ETD ${fmtDate(q.etd, lang)}${q.eta ? ` → ETA ${fmtDate(q.eta, lang)}` : ''}` : ''}${q.freeDays != null ? ` · ${W.free} ${q.freeDays} ${W.days}` : ''}`,
       '',
-      'Hola,',
-      '',
-      'Gracias por vuestra solicitud. Os pasamos nuestra oferta:',
-      '',
-      `Ruta: ${route}`,
-      `Modo: ${mode} · ${units}`,
-      cargoBits || weightBits ? `Mercancía: ${[cargoBits, weightBits].filter(Boolean).join(' · ')}` : null,
-      `Incoterm: ${incotermLine} · Mercancía lista: ${fmtDate(f.readyDate, 'es')}`,
-      `Tránsito: ${transit}`,
-      '',
-      `Cargos (${cur}):`,
-      ...lines,
+      `${W.charges} (${cur}):`,
+      ...[...q.lines].sort((a, b) => SIDE_ORDER.indexOf(a.side) - SIDE_ORDER.indexOf(b.side)).map(row),
       `  ${'TOTAL'.padEnd(width)}${money(q.sellTotal).padStart(10)}`,
-      '',
-      `Validez: hasta ${fmtDate(q.validUntil, 'es')}, sujeto a disponibilidad de espacio y equipo en el momento de la reserva.`,
-      `No incluido: aranceles, impuestos, seguro${excluded.length ? `, ${excluded.join(', ')}` : ''} y cualquier concepto no detallado.`,
-      pending.length ? `Pendiente de confirmar: ${pending.join('; ')}.` : null,
-      '',
-      'Un saludo,',
-    ].filter((x) => x !== null).join('\n');
+    ];
+  } else {
+    const base = opts[0];
+    body = ['', `${W.optionsHead} (${cur}, ${W.allIn}):`];
+    opts.forEach((o, i) => {
+      const dSell = o.sellTotal - base.sellTotal;
+      const dT = o.transitDays != null && base.transitDays != null ? o.transitDays - base.transitDays : 0;
+      const diff = i === 0 ? '' : `  (${dSell >= 0 ? '+' : '−'}${money(Math.abs(dSell))}${dT ? `, ${dT > 0 ? '+' : '−'}${Math.abs(dT)} ${W.days}` : ''} ${W.vs(1)})`;
+      body.push('', optionHeader(o, i, badges[i] ?? [], lang) + diff, `  ${optionFacts(o, lang)}`);
+      body.push(...o.lines.filter((l) => l.side === 'freight').map(row));
+      body.push(`  ${'TOTAL'.padEnd(width)}${money(o.sellTotal).padStart(10)}`);
+    });
+    const common = base.lines.filter((l) => l.side !== 'freight').sort((a, b) => SIDE_ORDER.indexOf(a.side) - SIDE_ORDER.indexOf(b.side));
+    if (common.length) body.push('', `${W.common}:`, ...common.map(row));
   }
   return [
-    `Subject: Quotation — ${units} ${route} (${mode}, ${incotermLine})`,
+    ...head,
+    ...body,
     '',
-    'Hi,',
+    W.validity(fmtDate(validMin, lang)),
+    W.notIncl(excluded.length ? `, ${excluded.join(', ')}` : ''),
+    pending.length ? W.pending(pending.join('; ')) : null,
     '',
-    'Thank you for your request. Please find our offer below:',
-    '',
-    `Route: ${route}`,
-    `Mode: ${mode} · ${units}`,
-    cargoBits || weightBits ? `Cargo: ${[cargoBits, weightBits].filter(Boolean).join(' · ')}` : null,
-    `Incoterm: ${incotermLine} · Cargo ready: ${fmtDate(f.readyDate, 'en')}`,
-    `Transit time: ${transit}`,
-    '',
-    `Charges (${cur}):`,
-    ...lines,
-    `  ${'TOTAL'.padEnd(width)}${money(q.sellTotal).padStart(10)}`,
-    '',
-    `Validity: until ${fmtDate(q.validUntil, 'en')}, subject to space and equipment availability at time of booking.`,
-    `Not included: duties, taxes, insurance${excluded.length ? `, ${excluded.join(', ')}` : ''} and anything not listed above.`,
-    pending.length ? `Subject to confirmation of: ${pending.join('; ')}.` : null,
-    '',
-    'Best regards,',
+    W.bye,
   ].filter((x) => x !== null).join('\n');
 }
 
@@ -194,7 +245,9 @@ export function QuoteView({ seed }: { seed?: { text: string; n: number } | null 
   const [rates, setRates] = useState<RateRow[]>(() => sampleRates());
   const [sheet, setSheet] = useState<{ name: string; rows: number; skipped: { line: number; reason: string }[] } | null>(null);
   const [extraLocs, setExtraLocs] = useState<string[]>([]);
-  const [lang, setLang] = useState<Lang>('en');
+  const [lang, setLang] = useState<QLang>('en');
+  const [activeCarrier, setActiveCarrier] = useState<string | null>(null);
+  const [offCarriers, setOffCarriers] = useState<string[]>([]);
   const [copied, setCopied] = useState<'quote' | 'questions' | null>(null);
   const [showFormat, setShowFormat] = useState(false);
   const [pdfInternal, setPdfInternal] = useState(false);
@@ -220,6 +273,8 @@ export function QuoteView({ seed }: { seed?: { text: string; n: number } | null 
     setNow(Date.now());
     const p = parseRequest(t, extraLocs);
     setLang(p.language);
+    setActiveCarrier(null);
+    setOffCarriers([]);
   };
 
   useEffect(() => {
@@ -273,7 +328,20 @@ export function QuoteView({ seed }: { seed?: { text: string; n: number } | null 
     return 'ok';
   };
 
-  const quote = useMemo(() => (text.trim() ? buildQuote(fields, rates, margin) : null), [text, JSON.stringify(fields), rates, margin]); // eslint-disable-line react-hooks/exhaustive-deps
+  const rawQuote = useMemo(() => (text.trim() ? buildQuote(fields, rates, margin) : null), [text, JSON.stringify(fields), rates, margin]); // eslint-disable-line react-hooks/exhaustive-deps
+  const options = useMemo(() => (text.trim() ? buildOptions(fields, rates, margin) : []), [text, JSON.stringify(fields), rates, margin]); // eslint-disable-line react-hooks/exhaustive-deps
+  const badges = useMemo(() => optionBadges(options), [options]);
+  const recIdx = Math.max(0, badges.findIndex((b) => b.includes('recommended')));
+  const activeIdx = options.findIndex((o) => o.carrier === activeCarrier) >= 0 ? options.findIndex((o) => o.carrier === activeCarrier) : recIdx;
+  const quote: Quote | null = options.length ? options[activeIdx] : rawQuote;
+  // customer options: recommended first, then by price
+  const custIdx = options
+    .map((_, i) => i)
+    .filter((i) => !offCarriers.includes(options[i].carrier ?? ''))
+    .sort((a, b) => (a === recIdx ? -1 : b === recIdx ? 1 : options[a].sellTotal - options[b].sellTotal));
+  const custOpts = custIdx.map((i) => options[i]);
+  const custBadges = custIdx.map((i) => badges[i] ?? []);
+  const tl: Lang = lang === 'fa' ? 'en' : lang;
 
   const alternatives = useMemo(() => {
     const opts = originRes?.options;
@@ -319,18 +387,18 @@ export function QuoteView({ seed }: { seed?: { text: string; n: number } | null 
     setExtraLocs([]);
   };
 
-  const qText = quote && quote.hasFreight ? quoteText(fields, quote, issues, lang) : '';
-  const askText = questionsText(issues, lang);
+  const qText = custOpts.length ? quoteText(fields, custOpts, custBadges, issues, lang) : '';
+  const askText = questionsText(issues, tl);
   const elapsed = startedAt == null ? null : (doneMs ?? now - startedAt);
   const usingSample = !sheet || sheet.rows === 0;
 
   async function doPdf() {
-    if (!quote || !quote.hasFreight) return;
+    if (!custOpts.length) return;
     setPdfState('busy');
     try {
       const { generateQuotePdf } = await import('./pdf');
       const { blob, filename } = await generateQuotePdf({
-        fields, quote, issues: issues.filter((i) => i.kind !== 'assumed'), lang, internal: pdfInternal, sampleRates: usingSample, sourceText: text, marginTarget: margin,
+        fields, quote: custOpts[0], options: custOpts, badges: custBadges, issues: issues.filter((i) => i.kind !== 'assumed'), lang: tl, internal: pdfInternal, sampleRates: usingSample, sourceText: text, marginTarget: margin,
       });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -457,6 +525,7 @@ export function QuoteView({ seed }: { seed?: { text: string; n: number } | null 
                 <span className="q-summary-tag">PRICED</span>
                 <span className="mono">
                   SELL <strong>${money(quote.sellTotal)}</strong> · margin ${money(quote.marginUsd)} ({quote.marginPct}%) · {quote.transitDays ?? '?'} d
+                  {options.length > 1 && <> · {options.length} options from ${money(Math.min(...options.map((o) => o.sellTotal)))}</>}
                 </span>
                 <span className="q-summary-meta">
                   {issues.filter((i) => i.kind === 'missing').length === 0
@@ -543,7 +612,7 @@ export function QuoteView({ seed }: { seed?: { text: string; n: number } | null 
                   <span className="q-issue-tag">{i.kind === 'missing' ? 'MISSING' : i.kind === 'assumed' ? 'ASSUMED' : 'TO CONFIRM'}</span>
                   <div>
                     <div className="q-issue-msg">{i.message}</div>
-                    {i.question && <div className="q-issue-q">“{i.question[lang]}”</div>}
+                    {i.question && <div className="q-issue-q">“{i.question[tl]}”</div>}
                     {i.options && (
                       <div className="q-options">
                         {i.options.map((o) => (
@@ -615,6 +684,7 @@ export function QuoteView({ seed }: { seed?: { text: string; n: number } | null 
               <li><code>basis</code>: per_container · per_kg (air = chargeable kg) · per_wm (LCL) · per_truck · per_shipment</li>
               <li><code>origin</code>/<code>destination</code>: port or city name; <code>*</code> = any (for local charges). <code>equipment</code>: 20GP, 40GP, 40HC, FTL or <code>*</code></li>
               <li><code>valid_until</code>: YYYY-MM-DD (or DD/MM/YYYY) — past dates are flagged STALE. Amounts are taken as-is (no FX conversion).</li>
+              <li><code>carrier</code>: each distinct carrier with freight rows on a lane becomes a quote option. Optional per line: <code>routing</code> (Direct, via Port Klang…), <code>free_days</code> (10/14/21), <code>sails</code> (Mon…Sun or daily).</li>
             </ul>
           </div>
         )}
@@ -651,10 +721,79 @@ export function QuoteView({ seed }: { seed?: { text: string; n: number } | null 
               <div className="q-head">
                 <h2>
                   Quote · {fields.origin} → {fields.destination}
+                  {options.length > 1 && quote.carrier ? ` · ${ol('en', 'showing')} ${quote.carrier}` : ''}
                 </h2>
                 <span className="q-muted">{quote.units}</span>
               </div>
               <div className="q-scope">{quote.scopeNote}</div>
+              {options.length > 1 && (
+                <div className="q-opts-wrap" dir={lang === 'fa' ? 'rtl' : 'ltr'} lang={lang} data-testid="quote-options">
+                  <div className="q-opts-head">
+                    <strong>{ol(lang, 'options')} · {options.length}</strong>
+                    <span className="q-muted">{ol(lang, 'optionsSub')}</span>
+                  </div>
+                  <div className="q-opts" style={{ gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` }}>
+                    {options.map((o, i) => {
+                      const cheapest = options.reduce((a, b) => (b.sellTotal < a.sellTotal ? b : a));
+                      const dSell = o.sellTotal - cheapest.sellTotal;
+                      const dT = o.transitDays != null && cheapest.transitDays != null ? o.transitDays - cheapest.transitDays : null;
+                      const dF = o.freeDays != null && cheapest.freeDays != null ? o.freeDays - cheapest.freeDays : null;
+                      const on = !offCarriers.includes(o.carrier ?? '');
+                      const D = ol(lang, 'd');
+                      return (
+                        <div key={o.carrier ?? i} className={`q-opt ${i === activeIdx ? 'active' : ''} ${on ? 'on' : 'off'}`} onClick={() => setActiveCarrier(o.carrier)} data-testid={`option-${i}`}>
+                          <div className="q-opt-top">
+                            <label className="q-opt-pick" onClick={(e) => e.stopPropagation()}>
+                              <input
+                                type="checkbox"
+                                checked={on}
+                                data-testid={`option-pick-${i}`}
+                                onChange={() => setOffCarriers((off) => (on ? [...off, o.carrier ?? ''] : off.filter((c) => c !== (o.carrier ?? ''))))}
+                              />
+                              {ol(lang, 'inQuote')}
+                            </label>
+                          </div>
+                          <div className="q-opt-badges">
+                            {(badges[i] ?? []).map((b) => (
+                              <span key={b} className={`q-badge ${b}`}>{BADGE_L[lang][b]}</span>
+                            ))}
+                          </div>
+                          <div className="q-opt-name">{o.carrier ?? '—'}</div>
+                          <div className="q-opt-route">{o.routing ?? '—'}</div>
+                          <div className="q-opt-sell">
+                            <bdi dir="ltr" className="mono">${money(o.sellTotal)}</bdi>
+                            <span className={`q-delta ${dSell === 0 ? 'best' : ''}`}>{dSell === 0 ? ol(lang, 'cheapest') : <bdi dir="ltr">+${money(dSell)}</bdi>}</span>
+                          </div>
+                          <div className="q-opt-bm mono">
+                            {ol(lang, 'buy')} <bdi dir="ltr">${money(o.buyTotal)}</bdi> · {ol(lang, 'margin')} <bdi dir="ltr">${money(o.marginUsd)} ({o.marginPct}%)</bdi>
+                          </div>
+                          <dl className="q-opt-facts">
+                            <div><dt>{ol(lang, 'transit')}</dt><dd>{o.transitDays ?? '?'} {D}{dT ? <bdi className={`q-delta ${dT < 0 ? 'best' : ''}`}><bdi dir="ltr">{dT > 0 ? '+' : '−'}{Math.abs(dT)}</bdi> {D}</bdi> : null}</dd></div>
+                            <div><dt>{ol(lang, 'sailing')}</dt><dd className="mono"><bdi dir={lang === 'fa' ? 'rtl' : 'ltr'}>{o.etd ? fmtShort(o.etd, lang) : '—'}{o.eta ? `${lang === 'fa' ? ' ← ' : ' → '}${fmtShort(o.eta, lang)}` : ''}</bdi></dd></div>
+                            <div><dt>{ol(lang, 'freeTime')}</dt><dd>{o.freeDays != null ? `${o.freeDays} ${D}` : ol(lang, 'na')}{dF ? <bdi className={`q-delta ${dF > 0 ? 'best' : ''}`}><bdi dir="ltr">{dF > 0 ? '+' : '−'}{Math.abs(dF)}</bdi> {D}</bdi> : null}</dd></div>
+                            <div><dt>{ol(lang, 'validTo')}</dt><dd className="mono">{o.validUntil ?? '—'}</dd></div>
+                          </dl>
+                          {o.staleCount > 0 && <div className="q-opt-stale">{ol(lang, 'recheck')}: {o.lines.filter((l) => l.stale).map((l) => l.charge).join(', ')}</div>}
+                          <div className="q-opt-incl">
+                            <span>{ol(lang, 'included')}:</span> {o.lines.filter((l) => l.side === 'freight').map((l) => l.charge).join(', ')} + {o.lines.filter((l) => l.side !== 'freight').length} {ol(lang, 'common')}
+                            {o.excluded.length > 0 && (
+                              <>
+                                <br />
+                                <span>{ol(lang, 'excluded')}:</span> {o.excluded.map((l) => l.charge).join(', ')}
+                              </>
+                            )}
+                          </div>
+                          <div className="q-opt-foot">{i === activeIdx ? `▼ ${ol(lang, 'breakdown')}` : ol(lang, 'breakdown')}</div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div className="q-muted q-opts-note">
+                    {custOpts.length ? `${custOpts.length} ${ol(lang, 'nSelected')} · ` : ''}
+                    {custOpts.length === 0 ? <span className="q-amber">{ol(lang, 'pickOne')}</span> : null} {ol(lang, 'recRule')}
+                  </div>
+                </div>
+              )}
               <table className="q-table">
                 <thead>
                   <tr>
@@ -720,15 +859,16 @@ export function QuoteView({ seed }: { seed?: { text: string; n: number } | null 
                 <div className="q-lang" role="group" aria-label="Quote language">
                   <button type="button" className={lang === 'en' ? 'active' : ''} onClick={() => setLang('en')}>EN</button>
                   <button type="button" className={lang === 'es' ? 'active' : ''} onClick={() => setLang('es')}>ES</button>
+                  <button type="button" className={lang === 'fa' ? 'active' : ''} onClick={() => setLang('fa')}>FA</button>
                 </div>
               </div>
-              <pre className="q-text" data-testid="quote-text">{qText}</pre>
+              <pre className="q-text" data-testid="quote-text" dir={lang === 'fa' ? 'rtl' : 'ltr'}>{qText}</pre>
               <div className="q-actions">
                 <button type="button" className="btn primary" onClick={() => void doCopy('quote')}>
                   {copied === 'quote' ? 'Copied ✓' : 'Copy quote'}
                 </button>
-                <button type="button" className="btn" data-testid="generate-pdf" disabled={pdfState === 'busy'} onClick={() => void doPdf()}>
-                  {pdfState === 'busy' ? 'Building PDF…' : pdfState === 'done' ? 'PDF downloaded ✓' : pdfState === 'error' ? 'PDF failed — retry' : 'Generate PDF'}
+                <button type="button" className="btn" data-testid="generate-pdf" disabled={pdfState === 'busy' || !custOpts.length} title={lang === 'fa' ? ol('fa', 'pdfFa') + ' / PDF is generated in English when FA is selected.' : undefined} onClick={() => void doPdf()}>
+                  {pdfState === 'busy' ? 'Building PDF…' : pdfState === 'done' ? 'PDF downloaded ✓' : pdfState === 'error' ? 'PDF failed — retry' : `Generate PDF${custOpts.length > 1 ? ` (${custOpts.length} options)` : ''}${lang === 'fa' ? ' · EN' : ''}`}
                 </button>
                 <label className="q-pdf-internal" title="Adds buy and margin columns. Never send this version to the customer.">
                   <input type="checkbox" data-testid="pdf-internal" checked={pdfInternal} onChange={(e) => setPdfInternal(e.target.checked)} /> Internal (with buy/margin)

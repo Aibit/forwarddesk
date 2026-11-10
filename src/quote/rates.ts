@@ -19,10 +19,16 @@ export interface RateRow {
   validUntil: string; // yyyy-mm-dd
   transitDays: number | null;
   carrier: string;
+  /** Optional per-line option data (freight rows): 'Direct' or 'via Port Klang'. */
+  routing?: string;
+  /** Free time at destination/origin granted by this line, days (10 / 14 / 21). */
+  freeDays?: number | null;
+  /** Sailing weekday (Mon–Sun) or 'daily'. */
+  sails?: string;
 }
 
 export const CSV_COLUMNS = [
-  'mode', 'origin', 'destination', 'equipment', 'charge', 'side', 'basis', 'currency', 'buy', 'min', 'valid_until', 'transit_days', 'carrier',
+  'mode', 'origin', 'destination', 'equipment', 'charge', 'side', 'basis', 'currency', 'buy', 'min', 'valid_until', 'transit_days', 'carrier', 'routing', 'free_days', 'sails',
 ] as const;
 
 const MODES: QMode[] = ['fcl', 'lcl', 'air', 'road'];
@@ -52,6 +58,19 @@ const SAMPLE: SampleSpec[] = [
   ['fcl', 'Shanghai (Waigaoqiao)', 'Barcelona', '40HC', 'BAF (bunker surcharge)', 'freight', 'per_container', 360, 0, 14, null, 'Sample Line B'],
   ['fcl', 'Shanghai (Waigaoqiao)', 'Barcelona', '20GP', 'Ocean freight', 'freight', 'per_container', 1300, 0, 21, 34, 'Sample Line B'],
   ['fcl', 'Shanghai (Waigaoqiao)', 'Barcelona', '20GP', 'BAF (bunker surcharge)', 'freight', 'per_container', 190, 0, 14, null, 'Sample Line B'],
+  // more lines on the same lane (E3: ask several lines, take the best)
+  ['fcl', 'Shanghai (Yangshan)', 'Barcelona', '40HC', 'Ocean freight', 'freight', 'per_container', 1890, 0, 21, 38, 'Sample Line C'],
+  ['fcl', 'Shanghai (Yangshan)', 'Barcelona', '40HC', 'BAF (bunker surcharge)', 'freight', 'per_container', 360, 0, 14, null, 'Sample Line C'],
+  ['fcl', 'Shanghai (Yangshan)', 'Barcelona', '40GP', 'Ocean freight', 'freight', 'per_container', 1800, 0, 21, 38, 'Sample Line C'],
+  ['fcl', 'Shanghai (Yangshan)', 'Barcelona', '40GP', 'BAF (bunker surcharge)', 'freight', 'per_container', 360, 0, 14, null, 'Sample Line C'],
+  ['fcl', 'Shanghai (Yangshan)', 'Barcelona', '20GP', 'Ocean freight', 'freight', 'per_container', 1080, 0, 21, 38, 'Sample Line C'],
+  ['fcl', 'Shanghai (Yangshan)', 'Barcelona', '20GP', 'BAF (bunker surcharge)', 'freight', 'per_container', 190, 0, 14, null, 'Sample Line C'],
+  ['fcl', 'Shanghai (Yangshan)', 'Barcelona', '40HC', 'Ocean freight', 'freight', 'per_container', 2390, 0, 10, 29, 'Sample Line D'],
+  ['fcl', 'Shanghai (Yangshan)', 'Barcelona', '40HC', 'BAF (bunker surcharge)', 'freight', 'per_container', 380, 0, 10, null, 'Sample Line D'],
+  ['fcl', 'Shanghai (Yangshan)', 'Barcelona', '40GP', 'Ocean freight', 'freight', 'per_container', 2290, 0, 10, 29, 'Sample Line D'],
+  ['fcl', 'Shanghai (Yangshan)', 'Barcelona', '40GP', 'BAF (bunker surcharge)', 'freight', 'per_container', 380, 0, 10, null, 'Sample Line D'],
+  ['fcl', 'Shanghai (Yangshan)', 'Barcelona', '20GP', 'Ocean freight', 'freight', 'per_container', 1390, 0, 10, 29, 'Sample Line D'],
+  ['fcl', 'Shanghai (Yangshan)', 'Barcelona', '20GP', 'BAF (bunker surcharge)', 'freight', 'per_container', 200, 0, 10, null, 'Sample Line D'],
   ['fcl', 'Shanghai (Yangshan)', '*', '*', 'Origin THC', 'origin', 'per_container', 120, 0, 30, null, 'Terminal tariff'],
   ['fcl', 'Shanghai (Yangshan)', '*', '*', 'Origin trucking (incl. bridge toll)', 'origin', 'per_container', 260, 0, 30, null, 'Sample trucker'],
   ['fcl', 'Shanghai (Waigaoqiao)', '*', '*', 'Origin THC', 'origin', 'per_container', 115, 0, 30, null, 'Terminal tariff'],
@@ -65,6 +84,11 @@ const SAMPLE: SampleSpec[] = [
   ['fcl', 'Bandar Abbas', 'Nhava Sheva', '20GP', 'Ocean freight', 'freight', 'per_container', 690, 0, 14, 5, 'Sample Line A'],
   ['fcl', 'Bandar Abbas', 'Nhava Sheva', '20GP', 'BAF (bunker surcharge)', 'freight', 'per_container', 110, 0, 14, null, 'Sample Line A'],
   ['fcl', 'Bandar Abbas', 'Nhava Sheva', '20GP', 'Heavy-weight surcharge', 'freight', 'per_container', 75, 0, 14, null, 'Sample Line A'],
+  ['fcl', 'Bandar Abbas', 'Nhava Sheva', '20GP', 'Ocean freight', 'freight', 'per_container', 560, 0, 14, 8, 'Sample Line B'],
+  ['fcl', 'Bandar Abbas', 'Nhava Sheva', '20GP', 'BAF (bunker surcharge)', 'freight', 'per_container', 95, 0, 14, null, 'Sample Line B'],
+  ['fcl', 'Bandar Abbas', 'Nhava Sheva', '20GP', 'Heavy-weight surcharge', 'freight', 'per_container', 75, 0, 14, null, 'Sample Line B'],
+  ['fcl', 'Bandar Abbas', 'Nhava Sheva', '20GP', 'Ocean freight', 'freight', 'per_container', 760, 0, 10, 4, 'Sample Line C'],
+  ['fcl', 'Bandar Abbas', 'Nhava Sheva', '20GP', 'BAF (bunker surcharge)', 'freight', 'per_container', 120, 0, 10, null, 'Sample Line C'],
   ['fcl', 'Bandar Abbas', 'Jebel Ali', '20GP', 'Ocean freight', 'freight', 'per_container', 380, 0, 14, 2, 'Sample Line A'],
   ['fcl', 'Bandar Abbas', '*', '*', 'THC (Ports Organization tariff)', 'origin', 'per_container', 110, 0, 120, null, 'Ports Organization (sample)'],
   ['fcl', 'Bandar Abbas', '*', '*', 'B/L fee', 'origin', 'per_shipment', 60, 0, 120, null, 'Shipping Association (sample)'],
@@ -73,6 +97,8 @@ const SAMPLE: SampleSpec[] = [
 
   ['lcl', 'Ningbo', 'Valencia', '*', 'Ocean freight (LCL)', 'freight', 'per_wm', 48, 48, 21, 34, 'Sample Consol'],
   ['lcl', 'Ningbo', 'Valencia', '*', 'BAF (LCL)', 'freight', 'per_wm', 9, 0, 10, null, 'Sample Consol'],
+  ['lcl', 'Ningbo', 'Valencia', '*', 'Ocean freight (LCL)', 'freight', 'per_wm', 41, 41, 21, 40, 'Sample Consol B'],
+  ['lcl', 'Ningbo', 'Valencia', '*', 'BAF (LCL)', 'freight', 'per_wm', 9, 0, 21, null, 'Sample Consol B'],
   ['lcl', 'Ningbo', '*', '*', 'Origin CFS', 'origin', 'per_wm', 18, 36, 30, null, 'Sample Consol'],
   ['lcl', 'Ningbo', '*', '*', 'Pickup to CFS', 'origin', 'per_shipment', 95, 0, 30, null, 'Sample trucker'],
   ['lcl', '*', 'Valencia', '*', 'Destination CFS / handling', 'destination', 'per_wm', 32, 64, 45, null, 'Sample Consol'],
@@ -82,6 +108,9 @@ const SAMPLE: SampleSpec[] = [
   ['air', 'Dubai (DXB)', 'Madrid (MAD)', '*', 'Air freight', 'freight', 'per_kg', 2.35, 120, 7, 2, 'Sample Airline'],
   ['air', 'Dubai (DXB)', 'Madrid (MAD)', '*', 'Fuel surcharge', 'freight', 'per_kg', 0.85, 0, 7, null, 'Sample Airline'],
   ['air', 'Dubai (DXB)', 'Madrid (MAD)', '*', 'Security surcharge', 'freight', 'per_kg', 0.15, 0, 30, null, 'Sample Airline'],
+  ['air', 'Dubai (DXB)', 'Madrid (MAD)', '*', 'Air freight', 'freight', 'per_kg', 1.95, 100, 7, 3, 'Sample Airline B'],
+  ['air', 'Dubai (DXB)', 'Madrid (MAD)', '*', 'Fuel surcharge', 'freight', 'per_kg', 0.85, 0, 7, null, 'Sample Airline B'],
+  ['air', 'Dubai (DXB)', 'Madrid (MAD)', '*', 'Security surcharge', 'freight', 'per_kg', 0.15, 0, 30, null, 'Sample Airline B'],
   ['air', 'Dubai (DXB)', '*', '*', 'Origin handling', 'origin', 'per_kg', 0.12, 35, 30, null, 'Sample handler'],
   ['air', 'Dubai (DXB)', '*', '*', 'AWB fee', 'origin', 'per_shipment', 30, 0, 60, null, 'Sample agent'],
   ['air', '*', 'Madrid (MAD)', '*', 'Destination handling', 'destination', 'per_kg', 0.18, 45, 30, null, 'Sample handler'],
@@ -89,21 +118,45 @@ const SAMPLE: SampleSpec[] = [
 
   ['road', 'Jebel Ali', 'Riyadh', 'FTL', 'Linehaul (FTL)', 'freight', 'per_truck', 1450, 0, 14, 3, 'Sample Haulier'],
   ['road', 'Jebel Ali', 'Riyadh', 'FTL', 'Border / transit docs', 'freight', 'per_truck', 60, 0, 30, null, 'Sample Haulier'],
+  ['road', 'Jebel Ali', 'Riyadh', 'FTL', 'Linehaul (FTL)', 'freight', 'per_truck', 1320, 0, 14, 4, 'Sample Haulier B'],
+  ['road', 'Jebel Ali', 'Riyadh', 'FTL', 'Border / transit docs', 'freight', 'per_truck', 60, 0, 30, null, 'Sample Haulier B'],
   ['road', 'Jebel Ali', '*', '*', 'UAE export clearance', 'origin', 'per_shipment', 85, 0, 60, null, 'Sample broker'],
   ['road', '*', 'Riyadh', '*', 'KSA import clearance', 'customs', 'per_shipment', 140, 0, 60, null, 'Sample broker'],
 ];
 
+/** SAMPLE per-line option data (routing, free time, sailing day), keyed by carrier + lane. */
+const LINE_META: Record<string, { routing: string; freeDays: number | null; sails: string }> = {
+  'Sample Line A|Shanghai (Yangshan)|Barcelona': { routing: 'Direct', freeDays: 10, sails: 'Thu' },
+  'Sample Line C|Shanghai (Yangshan)|Barcelona': { routing: 'via Port Klang', freeDays: 21, sails: 'Mon' },
+  'Sample Line D|Shanghai (Yangshan)|Barcelona': { routing: 'Direct (express)', freeDays: 14, sails: 'Sat' },
+  'Sample Line B|Shanghai (Waigaoqiao)|Barcelona': { routing: 'Direct', freeDays: 14, sails: 'Wed' },
+  'Sample Line A|Bandar Abbas|Nhava Sheva': { routing: 'Direct', freeDays: 10, sails: 'Tue' },
+  'Sample Line B|Bandar Abbas|Nhava Sheva': { routing: 'via Jebel Ali', freeDays: 14, sails: 'Sat' },
+  'Sample Line C|Bandar Abbas|Nhava Sheva': { routing: 'Direct', freeDays: 21, sails: 'Thu' },
+  'Sample Line A|Bandar Abbas|Jebel Ali': { routing: 'Direct', freeDays: 10, sails: 'Sun' },
+  'Sample Consol|Ningbo|Valencia': { routing: 'Direct consol', freeDays: null, sails: 'Fri' },
+  'Sample Consol B|Ningbo|Valencia': { routing: 'via Singapore', freeDays: null, sails: 'Tue' },
+  'Sample Airline|Dubai (DXB)|Madrid (MAD)': { routing: 'Direct flight', freeDays: null, sails: 'daily' },
+  'Sample Airline B|Dubai (DXB)|Madrid (MAD)': { routing: 'via Doha', freeDays: null, sails: 'daily' },
+  'Sample Haulier|Jebel Ali|Riyadh': { routing: 'Direct via Batha', freeDays: null, sails: 'daily' },
+  'Sample Haulier B|Jebel Ali|Riyadh': { routing: 'Direct via Batha (groupage wait)', freeDays: null, sails: 'daily' },
+};
+
 export function sampleRates(today = new Date()): RateRow[] {
-  return SAMPLE.map(([mode, origin, destination, equipment, charge, side, basis, buy, min, valid, transit, carrier]) => ({
-    mode, origin, destination, equipment, charge, side, basis, currency: 'USD', buy, min, validUntil: day(valid, today), transitDays: transit, carrier,
-  }));
+  return SAMPLE.map(([mode, origin, destination, equipment, charge, side, basis, buy, min, valid, transit, carrier]) => {
+    const meta = side === 'freight' ? LINE_META[`${carrier}|${origin}|${destination}`] : undefined;
+    return {
+      mode, origin, destination, equipment, charge, side, basis, currency: 'USD', buy, min, validUntil: day(valid, today), transitDays: transit, carrier,
+      ...(meta ? { routing: meta.routing, freeDays: meta.freeDays, sails: meta.sails } : {}),
+    };
+  });
 }
 
 export function rowsToCsv(rows: RateRow[]): string {
   const esc = (v: string) => (/[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v);
   const lines = [CSV_COLUMNS.join(',')];
   for (const r of rows) {
-    lines.push([r.mode, r.origin, r.destination, r.equipment, r.charge, r.side, r.basis, r.currency, String(r.buy), String(r.min || ''), r.validUntil, r.transitDays == null ? '' : String(r.transitDays), r.carrier].map(esc).join(','));
+    lines.push([r.mode, r.origin, r.destination, r.equipment, r.charge, r.side, r.basis, r.currency, String(r.buy), String(r.min || ''), r.validUntil, r.transitDays == null ? '' : String(r.transitDays), r.carrier, r.routing ?? '', r.freeDays == null ? '' : String(r.freeDays), r.sails ?? ''].map(esc).join(','));
   }
   return lines.join('\n') + '\n';
 }
@@ -201,6 +254,9 @@ export function loadRateCsv(text: string): CsvLoad {
       validUntil: valid,
       transitDays: tRaw ? parseNum(tRaw) || null : null,
       carrier: get('carrier'),
+      routing: get('routing') || undefined,
+      freeDays: get('free_days') ? parseNum(get('free_days')) || null : null,
+      sails: get('sails') || undefined,
     });
     return undefined;
   });
@@ -260,6 +316,68 @@ export interface Quote {
   chargeable: number | null;
   units: string;
   currencies: string[];
+  /** Option data: which line/carrier this quote uses for the main freight. */
+  carrier: string | null;
+  routing: string | null;
+  freeDays: number | null;
+  sails: string | null;
+  etd: string | null;
+  eta: string | null;
+}
+
+export type Badge = 'recommended' | 'cheapest' | 'fastest' | 'mostFree';
+
+const WEEKDAYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+function sailingDates(f: QuoteFields, sails: string | null, transit: number | null, today: Date): { etd: string | null; eta: string | null } {
+  const base = f.readyDate && f.readyDate !== 'ASAP' ? new Date(f.readyDate + 'T12:00:00') : new Date(today);
+  const etd = new Date(base);
+  const wd = sails ? WEEKDAYS.indexOf(sails.slice(0, 3).toLowerCase()) : -1;
+  if (f.mode === 'air') etd.setDate(etd.getDate() + 1);
+  else if (f.mode === 'road') etd.setDate(etd.getDate() + 0);
+  else {
+    etd.setDate(etd.getDate() + 2); // gate-in / cut-off
+    if (wd >= 0) while (etd.getDay() !== wd) etd.setDate(etd.getDate() + 1);
+    else etd.setDate(etd.getDate() + 1);
+  }
+  if (transit == null) return { etd: isoDate(etd), eta: null };
+  const eta = new Date(etd);
+  eta.setDate(eta.getDate() + transit);
+  return { etd: isoDate(etd), eta: isoDate(eta) };
+}
+
+/** One priced option per line/carrier that has main-freight rates for this lane and equipment (E3: several lines, best rate). */
+export function buildOptions(f: QuoteFields, rates: RateRow[], marginPct: number, today = new Date()): Quote[] {
+  if (!f.mode || !f.origin || !f.destination) return [];
+  const carriers = [
+    ...new Set(rates.filter((r) => r.mode === f.mode && r.side === 'freight' && r.origin === f.origin && r.destination === f.destination).map((r) => r.carrier)),
+  ];
+  const opts = (carriers.length ? carriers : [undefined])
+    .map((c) => buildQuote(f, rates, marginPct, today, c))
+    .filter((q): q is Quote => !!q && q.hasFreight);
+  return opts.sort((a, b) => a.sellTotal - b.sellTotal);
+}
+
+/** Badges across options. Recommended = lowest price after adding 1% per extra transit day vs the fastest, preferring options whose rates are all current. */
+export function optionBadges(opts: Quote[]): Badge[][] {
+  if (opts.length < 2) return opts.map(() => []);
+  const minSell = Math.min(...opts.map((o) => o.sellTotal));
+  const transits = opts.map((o) => o.transitDays).filter((t): t is number => t != null);
+  const minT = transits.length ? Math.min(...transits) : null;
+  const frees = opts.map((o) => o.freeDays).filter((t): t is number => t != null);
+  const maxFree = frees.length ? Math.max(...frees) : null;
+  const freeVaries = frees.length > 1 && new Set(frees).size > 1;
+  const tVaries = new Set(transits).size > 1;
+  const pool = opts.some((o) => o.staleCount === 0) ? opts.filter((o) => o.staleCount === 0) : opts;
+  const score = (o: Quote) => o.sellTotal * (1 + 0.01 * ((o.transitDays ?? minT ?? 0) - (minT ?? 0)));
+  const rec = pool.reduce((a, b) => (score(b) < score(a) ? b : a));
+  return opts.map((o) => {
+    const b: Badge[] = [];
+    if (o === rec) b.push('recommended');
+    if (o.sellTotal === minSell) b.push('cheapest');
+    if (tVaries && minT != null && o.transitDays === minT) b.push('fastest');
+    if (freeVaries && maxFree != null && o.freeDays === maxFree) b.push('mostFree');
+    return b;
+  });
 }
 
 function qtyFor(basis: Basis, f: QuoteFields, equipment: string): { qty: number; ok: boolean } {
@@ -284,7 +402,7 @@ function qtyFor(basis: Basis, f: QuoteFields, equipment: string): { qty: number;
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
 
-export function buildQuote(f: QuoteFields, rates: RateRow[], marginPct: number, today = new Date()): Quote | null {
+export function buildQuote(f: QuoteFields, rates: RateRow[], marginPct: number, today = new Date(), carrier?: string): Quote | null {
   if (!f.mode || !f.origin || !f.destination) return null;
   const todayIso = isoDate(today);
   const scope = scopeFor(f.incoterm);
@@ -292,6 +410,7 @@ export function buildQuote(f: QuoteFields, rates: RateRow[], marginPct: number, 
   const relevant = rates.filter((r) => {
     if (r.mode !== f.mode) return false;
     if (r.side === 'freight' && !(r.origin === f.origin && r.destination === f.destination)) return false;
+    if (r.side === 'freight' && carrier !== undefined && r.carrier !== carrier) return false;
     if (r.side === 'origin' && !(r.origin === f.origin && (r.destination === '*' || r.destination === f.destination))) return false;
     if ((r.side === 'destination' || r.side === 'customs') && !(r.destination === f.destination && (r.origin === '*' || r.origin === f.origin))) return false;
     if (r.equipment !== '*' && !eqKeys.includes(r.equipment) && !(f.mode !== 'fcl' && f.mode !== 'road')) return false;
@@ -311,6 +430,9 @@ export function buildQuote(f: QuoteFields, rates: RateRow[], marginPct: number, 
   const sellTotal = lines.reduce((s, l) => s + l.sell, 0);
   const marginUsd = round2(sellTotal - buyTotal);
   const transit = relevant.find((r) => r.side === 'freight' && r.transitDays != null)?.transitDays ?? null;
+  const freightRow = relevant.find((r) => r.side === 'freight' && (r.routing || r.freeDays != null || r.sails)) ?? relevant.find((r) => r.side === 'freight');
+  const sails = freightRow?.sails ?? null;
+  const { etd, eta } = sailingDates(f, sails, transit, today);
   const fresh = lines.filter((l) => !l.stale).map((l) => l.validUntil).sort();
   const cap = new Date(today);
   cap.setDate(cap.getDate() + 14);
@@ -337,5 +459,11 @@ export function buildQuote(f: QuoteFields, rates: RateRow[], marginPct: number, 
     chargeable: f.mode === 'air' ? chargeableKg(f.weightKg, f.volumeCbm) : null,
     units,
     currencies: [...new Set(lines.map((l) => l.currency))],
+    carrier: freightRow?.carrier ?? null,
+    routing: freightRow?.routing ?? null,
+    freeDays: freightRow?.freeDays ?? null,
+    sails,
+    etd,
+    eta,
   };
 }

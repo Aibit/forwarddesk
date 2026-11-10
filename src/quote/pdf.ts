@@ -2,7 +2,8 @@ import { jsPDF } from 'jspdf';
 import { COORDS, greatCircle, haversineKm } from './geo';
 import type { QMode } from './locations';
 import type { Issue, QuoteFields } from './parser';
-import type { Quote, Side } from './rates';
+import type { Badge, Quote, Side } from './rates';
+import { BADGE_L } from './optlabels';
 
 export interface PdfInput {
   fields: QuoteFields;
@@ -13,6 +14,9 @@ export interface PdfInput {
   sampleRates: boolean;
   sourceText: string;
   marginTarget: number;
+  /** multi-option quote: options in customer order (options[0] === quote) */
+  options?: Quote[];
+  badges?: Badge[][];
 }
 
 type RGB = [number, number, number];
@@ -43,6 +47,8 @@ const T = {
     commodity: 'Commodity', dg: 'Dangerous goods', yes: 'Yes', no: 'No', unknown: 'To confirm', perCntr: 'per container', origin: 'ORIGIN', destination: 'DESTINATION',
     preparedBy: 'Prepared by', yourForwarder: 'Your forwarder', contact: 'Name · email · phone', sample: 'Sample rates — illustrative only', page: 'Page',
     internal: 'INTERNAL — NOT FOR CUSTOMER', subjectCarrier: 'subject to carrier confirmation', asap: 'ASAP',
+    optionsHead: 'OPTIONS COMPARISON', option: 'Option', from: 'FROM', nOptions: (n: number) => `${n} options · all-in for the charges listed`, routing: 'Routing', freeTime: 'Free time at destination',
+    sailing: 'ETD → ETA', freightItems: 'Main freight', common: 'Origin / destination / customs', commonHead: 'CHARGES INCLUDED IN EVERY OPTION', vsCheapest: 'vs cheapest', cheapest: 'cheapest', na: 'n/a', scheduleOpt: 'Schedule shown for Option 1', total2: 'TOTAL',
     sides: { origin: 'Origin', freight: 'Main freight', destination: 'Destination', customs: 'Customs' } as Record<Side, string>,
     basisL: { per_container: 'per container', per_kg: 'per kg', per_wm: 'per W/M', per_truck: 'per truck', per_shipment: 'per shipment' } as Record<string, string>,
     modes: { fcl: 'Ocean FCL', lcl: 'Ocean LCL', air: 'Air freight', road: 'Road freight' } as Record<QMode, string>,
@@ -69,6 +75,8 @@ const T = {
     commodity: 'Mercancía', dg: 'Mercancía peligrosa', yes: 'Sí', no: 'No', unknown: 'Por confirmar', perCntr: 'por contenedor', origin: 'ORIGEN', destination: 'DESTINO',
     preparedBy: 'Preparado por', yourForwarder: 'Tu transitario', contact: 'Nombre · email · teléfono', sample: 'Tarifas de ejemplo — solo ilustrativas', page: 'Página',
     internal: 'INTERNO — NO ENVIAR AL CLIENTE', subjectCarrier: 'sujeto a confirmación de la naviera', asap: 'Lo antes posible',
+    optionsHead: 'COMPARATIVA DE OPCIONES', option: 'Opción', from: 'DESDE', nOptions: (n: number) => `${n} opciones · total de los conceptos detallados`, routing: 'Ruta', freeTime: 'Free time destino',
+    sailing: 'ETD → ETA', freightItems: 'Flete principal', common: 'Origen / destino / aduanas', commonHead: 'CARGOS INCLUIDOS EN TODAS LAS OPCIONES', vsCheapest: 'vs la más barata', cheapest: 'la más barata', na: 'n/a', scheduleOpt: 'Calendario de la opción 1', total2: 'TOTAL',
     sides: { origin: 'Origen', freight: 'Flete principal', destination: 'Destino', customs: 'Aduanas' } as Record<Side, string>,
     basisL: { per_container: 'por contenedor', per_kg: 'por kg', per_wm: 'por W/M', per_truck: 'por camión', per_shipment: 'por envío' } as Record<string, string>,
     modes: { fcl: 'Marítimo FCL', lcl: 'Marítimo LCL (grupaje)', air: 'Aéreo', road: 'Carretera' } as Record<QMode, string>,
@@ -148,8 +156,10 @@ export function quoteNumber(text: string): string {
 export async function generateQuotePdf(inp: PdfInput): Promise<{ blob: Blob; filename: string }> {
   const { fields: f, quote: q, lang } = inp;
   const L = T[lang];
+  const opts = inp.options && inp.options.length > 1 ? inp.options : null;
+  const validMin = opts ? opts.map((o) => o.validUntil).filter((v): v is string => !!v).sort()[0] ?? q.validUntil : q.validUntil;
   const { fonts, land } = await loadAssets();
-  const render = (mh: number) => {
+  const render = (mh: number, noSchedule = false) => {
   let overflow = 0;
     const doc = new jsPDF({ unit: 'mm', format: 'a4', compress: true });
     for (const [k, data] of Object.entries(fonts)) {
@@ -239,6 +249,146 @@ export async function generateQuotePdf(inp: PdfInput): Promise<{ blob: Blob; fil
       return 20;
     };
 
+    // ── Options comparison (multi-option quote) ──
+    function drawOptions(y0: number): number {
+      const os = opts!;
+      const n = os.length;
+      const curO = q.currencies.length === 1 ? q.currencies[0] : q.currencies.join('/');
+      const labW = 38;
+      const gap = 2.5;
+      const colW = (CW - labW - gap * (n - 1)) / n;
+      const cx = (i: number) => M + labW + i * (colW + gap);
+      const cheapest = Math.min(...os.map((o) => o.sellTotal));
+      const maxSell = Math.max(...os.map((o) => o.sellTotal));
+      const maxT = Math.max(...os.map((o) => o.transitDays ?? 0), 1);
+      const fr = (o: Quote) => o.lines.filter((l) => l.side === 'freight');
+      const commonLines = q.lines.filter((l) => l.side !== 'freight').sort((a, b) => SIDE_ORDER.indexOf(a.side) - SIDE_ORDER.indexOf(b.side));
+      const commonSum = commonLines.reduce((s2, l) => s2 + l.sell, 0);
+      const sd = (iso: string | null | number) => (typeof iso === 'string' && iso ? shortDate(new Date(iso + 'T12:00:00'), lang) : '—');
+      const rows: { k: string; h: number; draw: (o: Quote, x: number, yy: number, i: number) => void }[] = [
+        { k: L.routing, h: 5.4, draw: (o, x, yy) => { font('PlexSB', 7.4, C.ink); doc.text(fit(String(o.routing ?? '—'), colW - 5), x + 3, yy); } },
+        {
+          k: L.transit, h: 7, draw: (o, x, yy) => {
+            const t = o.transitDays;
+            font('PlexSB', 7.6, C.ink);
+            doc.text(t != null ? `${t} ${L.days}` : '—', x + 3, yy);
+            if (t != null) {
+              const bw = colW - 6;
+              fillC(C.line); doc.roundedRect(x + 3, yy + 1.4, bw, 1.3, 0.6, 0.6, 'F');
+              fillC(t === Math.min(...os.map((z) => z.transitDays ?? 999)) ? C.amber : C.faint); doc.roundedRect(x + 3, yy + 1.4, Math.max(2, (bw * t) / maxT), 1.3, 0.6, 0.6, 'F');
+            }
+          },
+        },
+        { k: L.sailing, h: 5.4, draw: (o, x, yy) => { font('MonoR', 7, C.text); doc.text(fit(`${sd(o.etd)} → ${sd(o.eta)}`, colW - 5), x + 3, yy); } },
+        ...(os.every((o) => o.freeDays == null) ? [] : [{ k: L.freeTime, h: 5.4, draw: (o: Quote, x: number, yy: number) => { font('PlexSB', 7.4, C.ink); doc.text(o.freeDays != null ? `${o.freeDays} ${L.days}` : L.na, x + 3, yy); } }]),
+        { k: L.valid, h: 5.4, draw: (o, x, yy) => { font('MonoR', 7, C.text); doc.text(fmtDate(o.validUntil as string | null, lang), x + 3, yy); } },
+        {
+          k: L.freightItems, h: 8.6, draw: (o, x, yy) => {
+            font('MonoM', 7.6, C.ink);
+            doc.text(money(fr(o).reduce((s2, l) => s2 + l.sell, 0)) + (o.staleCount ? ' *' : ''), x + 3, yy);
+            font('PlexR', 5.9, C.muted);
+            doc.text(fit(fr(o).map((l) => l.charge).join(' + '), colW - 5), x + 3, yy + 3.3);
+          },
+        },
+        ...(commonLines.length ? [{ k: L.common, h: 6, draw: (_o: Quote, x: number, yy: number) => { font('MonoR', 7.4, C.text); doc.text(money(commonSum), x + 3, yy); } }] : []),
+      ];
+      if (inp.internal) {
+        rows.push(
+          { k: L.buy, h: 6, draw: (o, x, yy) => { font('MonoR', 7.4, C.text); doc.text(money(o.buyTotal), x + 3, yy); } },
+          { k: L.margin, h: 6, draw: (o, x, yy) => { font('MonoR', 7.4, C.text); doc.text(`${money(o.marginUsd)} (${o.marginPct}%)`, x + 3, yy); } },
+        );
+      }
+      const headH = 14;
+      const bodyH = rows.reduce((s2, r) => s2 + r.h, 0);
+      const totH = 15;
+      let yy = ensure(y0, 8 + headH + bodyH + totH);
+      caps(L.optionsHead, M, yy);
+      font('PlexR', 6.4, C.faint);
+      doc.text(`${curO} · ${L.allIn}`, W - M, yy, { align: 'right' });
+      yy += 3;
+      // column backgrounds
+      os.forEach((_, i) => {
+        fillC(i === 0 ? C.amberSoft : C.panel);
+        doc.roundedRect(cx(i), yy, colW, headH + bodyH + totH, 1.8, 1.8, 'F');
+      });
+      // header
+      os.forEach((o, i) => {
+        const x = cx(i);
+        fillC(i === 0 ? C.ink : [228, 222, 212]);
+        doc.roundedRect(x, yy, colW, headH, 1.8, 1.8, 'F');
+        doc.rect(x, yy + headH - 2, colW, 2, 'F');
+        caps(`${L.option.toUpperCase()} ${i + 1}`, x + 3, yy + 4.2, i === 0 ? C.amber : C.muted, 5.6);
+        font('PlexB', 8.6, i === 0 ? C.white : C.ink);
+        doc.text(fit(String(o.carrier ?? '—'), colW - 6), x + 3, yy + 8.8);
+        let bx = x + 3;
+        for (const b of inp.badges?.[i] ?? []) {
+          const lbl = BADGE_L[lang][b];
+          font('PlexSB', 5.4, C.ink);
+          const bw = doc.getTextWidth(lbl) + 3;
+          if (bx + bw > x + colW - 2) break;
+          fillC(b === 'recommended' ? C.amber : C.white);
+          doc.roundedRect(bx, yy + 10.3, bw, 3.4, 1.7, 1.7, 'F');
+          doc.text(lbl, bx + 1.5, yy + 12.65);
+          bx += bw + 1.2;
+        }
+      });
+      // label column + rows
+      let ry = yy + headH;
+      for (const r of rows) {
+        const base = ry + 4.2;
+        font('PlexR', 6.6, C.muted);
+        doc.text(fit(r.k, labW - 3), M + 1, base);
+        os.forEach((o, i) => r.draw(o, cx(i), base, i));
+        ry += r.h;
+        drawC(C.line);
+        doc.setLineWidth(0.15);
+        doc.line(M + 1, ry, W - M - 1, ry);
+      }
+      // totals with price bar
+      font('PlexB', 8.4, C.ink);
+      doc.text(`${L.total2} ${curO}`, M + 1, ry + 6);
+      font('PlexR', 6.2, C.muted);
+      doc.text(L.vsCheapest, M + 1, ry + 10);
+      os.forEach((o, i) => {
+        const x = cx(i);
+        font('PlexB', 10.5, C.ink);
+        doc.text(money(o.sellTotal), x + 3, ry + 6.2);
+        const dlt = o.sellTotal - cheapest;
+        font('PlexSB', 6.2, dlt === 0 ? C.amberDeep : C.muted);
+        doc.text(dlt === 0 ? L.cheapest : `+${money(dlt)}`, x + colW - 3, ry + 6.2, { align: 'right' });
+        const bw = colW - 6;
+        fillC(C.line); doc.roundedRect(x + 3, ry + 9, bw, 1.6, 0.8, 0.8, 'F');
+        fillC(i === 0 ? C.amber : C.ink); doc.roundedRect(x + 3, ry + 9, Math.max(2, (bw * o.sellTotal) / maxSell), 1.6, 0.8, 0.8, 'F');
+      });
+      yy = ry + totH;
+      if (os.some((o) => o.staleCount > 0)) {
+        yy += 3.2;
+        font('PlexR', 6.2, C.muted);
+        doc.text(`* ${L.subjectCarrier}`, M + 1, yy);
+      }
+      // common charges list
+      if (commonLines.length) {
+        yy = ensure(yy + 5, 6 + Math.ceil(commonLines.length / 2) * 4.2);
+        caps(L.commonHead, M, yy);
+        yy += 1.5;
+        const half = Math.ceil(commonLines.length / 2);
+        const cw2 = (CW - 8) / 2;
+        commonLines.forEach((l, i) => {
+          const x = M + (i < half ? 0 : cw2 + 8);
+          const y2 = yy + 4 + (i % half) * 4.2;
+          font('PlexR', 7, C.text);
+          doc.text(fit(`${l.charge} · ${L.basisL[l.basis] ?? l.basis}${l.qty !== 1 ? ` ×${qtyFmt(l.qty)}` : ''}`, cw2 - 22), x + 1, y2);
+          font('MonoM', 7.2, C.ink);
+          doc.text(money(l.sell), x + cw2, y2, { align: 'right' });
+          drawC(C.line);
+          doc.setLineWidth(0.12);
+          doc.line(x, y2 + 1.4, x + cw2, y2 + 1.4);
+        });
+        yy += 4 + half * 4.2 - 2;
+      }
+      return yy;
+    }
+
     // ── Header ──
     fillC(C.amber);
     doc.rect(0, 0, W, 2.6, 'F');
@@ -256,7 +406,7 @@ export async function generateQuotePdf(inp: PdfInput): Promise<{ blob: Blob; fil
     font('MonoM', 10.5, C.ink);
     doc.text(qn, W - M, 19.2, { align: 'right' });
     font('PlexR', 7.4, C.muted);
-    doc.text(`${L.date} ${fmtDate(todayIso, lang)}   ·   ${L.valid} ${fmtDate(q.validUntil, lang)}`, W - M, 23.6, { align: 'right' });
+    doc.text(`${L.date} ${fmtDate(todayIso, lang)}   ·   ${L.valid} ${fmtDate(validMin, lang)}`, W - M, 23.6, { align: 'right' });
     if (inp.internal) {
       fillC(C.red);
       doc.roundedRect(W / 2 - 30, 9.5, 60, 6, 1, 1, 'F');
@@ -427,27 +577,28 @@ export async function generateQuotePdf(inp: PdfInput): Promise<{ blob: Blob; fil
     doc.roundedRect(tx, my, tw, mh, 2.5, 2.5, 'F');
     fillC(C.amber);
     doc.rect(tx, my + 9.5, 1.4, 15.5, 'F');
-    caps(L.total, tx + 6, my + 8, C.amber, 6.6);
+    caps(opts ? L.from : L.total, tx + 6, my + 8, C.amber, 6.6);
     const cur = q.currencies.length === 1 ? q.currencies[0] : q.currencies.join('/');
     font('PlexR', 8.6, [200, 194, 184]);
     doc.text(cur, tx + 6, my + 14);
     let ps = 24;
     font('PlexB', ps, C.white);
-    const totalStr = money(q.sellTotal);
+    const totalStr = money(opts ? Math.min(...opts.map((o) => o.sellTotal)) : q.sellTotal);
     while (doc.getTextWidth(totalStr) > tw - 12 && ps > 14) doc.setFontSize(--ps);
     doc.text(totalStr, tx + 6, my + 23.5);
     font('PlexR', 6.6, [170, 164, 154]);
-    doc.text(L.allIn, tx + 6, my + 28.5);
+    doc.text(opts ? L.nOptions(opts.length) : L.allIn, tx + 6, my + 28.5);
+    const tRange = opts ? [...new Set(opts.map((o) => o.transitDays).filter((t): t is number => t != null))].sort((a, b) => a - b) : [];
     const rows: [string, string][] = [
       [L.incoterm, f.incoterm ?? `FOB (${lang === 'es' ? 'a conf.' : 'TBC'})`],
       [f.mode === 'air' ? L.chargeable : L.equipment, f.mode === 'air' ? `${q.chargeable ?? '—'} kg` : eqText],
       [L.ready, fmtDate(f.readyDate, lang)],
-      [L.transit, q.transitDays != null ? `${L.approx} ${q.transitDays} ${L.days}` : '—'],
-      [L.valid, fmtDate(q.validUntil, lang)],
+      [L.transit, opts && tRange.length > 1 ? `${tRange[0]}–${tRange[tRange.length - 1]} ${L.days}` : q.transitDays != null ? `${L.approx} ${q.transitDays} ${L.days}` : '—'],
+      [L.valid, fmtDate(validMin, lang)],
     ];
-    if (inp.internal) rows.splice(3, 0, [L.buy, money(q.buyTotal)], [L.margin, `${money(q.marginUsd)} (${q.marginPct}%)`]);
+    if (inp.internal && !opts) rows.splice(3, 0, [L.buy, money(q.buyTotal)], [L.margin, `${money(q.marginUsd)} (${q.marginPct}%)`]);
     // drop trailing rows that don't fit (valid-until is also in the header, transit in the timeline)
-    while (rows.length > 3 && 35 + (rows.length - 1) * 4.4 > mh - 3.5) rows.splice(rows.length - 1, 1);
+    while (rows.length > (opts ? 0 : 3) && 35 + (rows.length - 1) * 4.4 > mh - 3.5) rows.splice(rows.length - 1, 1);
     const rstep = Math.min(5.2, (mh - 3.5 - 35) / Math.max(1, rows.length - 1));
     let ry = my + 35;
     for (const [k, v] of rows) {
@@ -463,13 +614,18 @@ export async function generateQuotePdf(inp: PdfInput): Promise<{ blob: Blob; fil
 
     // ── Timeline ──
     let y = my + mh + 8;
+    if (!noSchedule) {
     caps(L.schedule, M, y);
     font('PlexR', 6.4, C.faint);
-    doc.text(L.scheduleNote, W - M, y, { align: 'right' });
+    doc.text(opts ? `${L.scheduleOpt} (${q.carrier ?? ''}) · ${L.scheduleNote}` : L.scheduleNote, W - M, y, { align: 'right' });
     const kind = f.mode === 'air' ? 'air' : f.mode === 'road' ? 'road' : 'sea';
     const T0 = q.transitDays ?? (kind === 'air' ? 2 : kind === 'road' ? 3 : 30);
-    const offs = kind === 'sea' ? [0, 2, 3, 3 + T0, 5 + T0] : kind === 'air' ? [0, 0, 1, 1 + T0, 2 + T0] : [0, 0, Math.max(1, Math.round(T0 / 2)), T0, T0];
     const base = f.readyDate && f.readyDate !== 'ASAP' ? new Date(f.readyDate + 'T12:00:00') : new Date();
+    const etdOff = typeof q.etd === 'string' && q.etd ? Math.max(0, Math.round((new Date(q.etd + 'T12:00:00').getTime() - base.getTime()) / 86400000)) : null;
+    const offs =
+      kind === 'sea'
+        ? etdOff != null && etdOff >= 2 ? [0, etdOff - 1, etdOff, etdOff + T0, etdOff + T0 + 2] : [0, 2, 3, 3 + T0, 5 + T0]
+        : kind === 'air' ? [0, 0, 1, 1 + T0, 2 + T0] : [0, 0, Math.max(1, Math.round(T0 / 2)), T0, T0];
     const xs = [0, 0.2, 0.36, 0.8, 1].map((r) => M + 6 + r * (CW - 12));
     const ly = y + 12;
     drawC(C.line);
@@ -506,8 +662,9 @@ export async function generateQuotePdf(inp: PdfInput): Promise<{ blob: Blob; fil
       doc.text(`${shortDate(dt, lang)} · ${lang === 'es' ? 'día' : 'day'} ${offs[i]}`, ax, ly + 9.6, { align });
     });
 
-    // ── Shipment details ──
     y = ly + 17.5;
+    } else y -= 1;
+    // ── Shipment details ──
     caps(L.details, M, y);
     const det: [string, string][] = [
       [f.mode === 'air' ? L.chargeable : L.equipment, f.mode === 'air' ? `${q.chargeable ?? '—'} kg (1:6000)` : f.mode === 'lcl' ? q.units : eqText || '—'],
@@ -518,6 +675,7 @@ export async function generateQuotePdf(inp: PdfInput): Promise<{ blob: Blob; fil
       [L.ready, fmtDate(f.readyDate, lang)],
     ];
     if (f.pieces) det.splice(4, 0, [L.pieces, String(f.pieces)]);
+    if (opts && det.length > 4) det.splice(det.findIndex((x) => x[0] === L.ready), 1); // cargo-ready is in the totals card
     const colW = CW / 4;
     const detRows = Math.ceil(det.length / 4);
     fillC(C.panel);
@@ -533,6 +691,9 @@ export async function generateQuotePdf(inp: PdfInput): Promise<{ blob: Blob; fil
     });
     y += detRows * 9.5 + 10.5;
 
+    if (opts) {
+      y = drawOptions(y);
+    } else {
     // ── Charges ──
     y = ensure(y, 30);
     caps(L.charges, M, y);
@@ -603,10 +764,11 @@ export async function generateQuotePdf(inp: PdfInput): Promise<{ blob: Blob; fil
       font('PlexR', 6.4, C.muted);
       doc.text(`* ${L.subjectCarrier}`, M + 1, y);
     }
+    }
 
     // ── Please confirm + terms ──
     const qs = [...new Set(inp.issues.filter((i) => i.question).map((i) => i.question![lang]))];
-    const terms = L.termsList(fmtDate(q.validUntil, lang), f.incoterm ?? 'FOB', q.excluded.map((l) => l.charge));
+    const terms = L.termsList(fmtDate(validMin, lang), f.incoterm ?? 'FOB', q.excluded.map((l) => l.charge));
     const drawTerms = (x0: number, y0: number, colW: number, cols: number): number => {
       font('PlexR', 6.3, C.muted);
       const wrapped = terms.map((t) => doc.splitTextToSize(t, colW - 4) as string[]);
@@ -675,8 +837,14 @@ export async function generateQuotePdf(inp: PdfInput): Promise<{ blob: Blob; fil
   footer();
     return { doc, overflow };
   };
-  const first = render(60);
-  const doc = first.overflow > 0 && first.overflow <= 16 ? render(Math.max(44, 60 - first.overflow - 1)).doc : first.doc;
+  let out = render(60);
+  if (out.overflow > 0 && out.overflow <= (opts ? 22 : 16)) out = render(Math.max(opts ? 40 : 44, 60 - out.overflow - 1));
+  if (out.overflow > 0 && opts) {
+    // multi-option: drop the per-option schedule strip (ETD → ETA is in the table) before spilling to page 2
+    const b = render(60, true);
+    out = b.overflow > 0 && b.overflow <= 22 ? render(Math.max(40, 60 - b.overflow - 1), true) : b;
+  }
+  const doc = out.doc;
   const blob = doc.output('blob');
   const slug = `${f.origin ?? 'origin'}-${f.destination ?? 'dest'}`.replace(/[^A-Za-z0-9]+/g, '-').replace(/-+$/, '');
   return { blob, filename: `${quoteNumber(inp.sourceText)}_${slug}${inp.internal ? '_INTERNAL' : ''}.pdf` };
