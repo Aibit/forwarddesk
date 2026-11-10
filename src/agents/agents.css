@@ -23,3 +23,7 @@
 .ad-filters .c-in { width: auto; }
 .ad-table td:first-child { min-width: 11rem; }
 .ad-table td:first-child .c-sub { overflow-wrap: anywhere; }
+.agents-db .ad-filters { flex-wrap: nowrap; }
+.agents-db .ad-filters input.c-in { flex: 1 1 12rem; min-width: 9rem; width: auto; }
+.agents-db .ad-filters select.c-in { flex: 0 0 10rem; width: 10rem; max-width: 10rem; }
+.agents-db .ad-filters > span { white-space: nowrap; }
