@@ -27,6 +27,7 @@ export const COORDS: Record<string, [number, number]> = {
   Singapore: [1.26, 103.82],
   'Nhava Sheva': [18.95, 72.95],
   Casablanca: [33.6, -7.62],
+  'Bandar Abbas': [27.11, 56.06],
 };
 
 const rad = (d: number) => (d * Math.PI) / 180;

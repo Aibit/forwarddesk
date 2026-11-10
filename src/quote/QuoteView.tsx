@@ -183,7 +183,7 @@ function Chip({ label, value, status, evidence, editing, onEdit, editor }: ChipP
   );
 }
 
-export function QuoteView() {
+export function QuoteView({ seed }: { seed?: { text: string; n: number } | null } = {}) {
   const [text, setText] = useState('');
   const [startedAt, setStartedAt] = useState<number | null>(null);
   const [doneMs, setDoneMs] = useState<number | null>(null);
@@ -221,6 +221,10 @@ export function QuoteView() {
     const p = parseRequest(t, extraLocs);
     setLang(p.language);
   };
+
+  useEffect(() => {
+    if (seed?.text) startFresh(seed.text);
+  }, [seed?.n]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const mode = overrides.mode !== undefined ? overrides.mode : parsed.fields.mode;
   const originRes = parsed.originBase ? resolveForMode(parsed.originBase, mode) : null;

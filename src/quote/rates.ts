@@ -62,6 +62,15 @@ const SAMPLE: SampleSpec[] = [
   ['fcl', '*', 'Barcelona', '*', 'Delivery order / handling', 'destination', 'per_shipment', 90, 0, 45, null, 'Sample agent'],
   ['fcl', '*', 'Barcelona', '*', 'Import customs clearance', 'customs', 'per_shipment', 110, 0, 90, null, 'Sample broker'],
 
+  ['fcl', 'Bandar Abbas', 'Nhava Sheva', '20GP', 'Ocean freight', 'freight', 'per_container', 690, 0, 14, 5, 'Sample Line A'],
+  ['fcl', 'Bandar Abbas', 'Nhava Sheva', '20GP', 'BAF (bunker surcharge)', 'freight', 'per_container', 110, 0, 14, null, 'Sample Line A'],
+  ['fcl', 'Bandar Abbas', 'Nhava Sheva', '20GP', 'Heavy-weight surcharge', 'freight', 'per_container', 75, 0, 14, null, 'Sample Line A'],
+  ['fcl', 'Bandar Abbas', 'Jebel Ali', '20GP', 'Ocean freight', 'freight', 'per_container', 380, 0, 14, 2, 'Sample Line A'],
+  ['fcl', 'Bandar Abbas', '*', '*', 'THC (Ports Organization tariff)', 'origin', 'per_container', 110, 0, 120, null, 'Ports Organization (sample)'],
+  ['fcl', 'Bandar Abbas', '*', '*', 'B/L fee', 'origin', 'per_shipment', 60, 0, 120, null, 'Shipping Association (sample)'],
+  ['fcl', 'Bandar Abbas', '*', '*', 'Seal fee', 'origin', 'per_container', 15, 0, 120, null, 'Sample Line A'],
+  ['fcl', '*', 'Nhava Sheva', '*', 'Destination THC', 'destination', 'per_container', 140, 0, 45, null, 'Terminal tariff'],
+
   ['lcl', 'Ningbo', 'Valencia', '*', 'Ocean freight (LCL)', 'freight', 'per_wm', 48, 48, 21, 34, 'Sample Consol'],
   ['lcl', 'Ningbo', 'Valencia', '*', 'BAF (LCL)', 'freight', 'per_wm', 9, 0, 10, null, 'Sample Consol'],
   ['lcl', 'Ningbo', '*', '*', 'Origin CFS', 'origin', 'per_wm', 18, 36, 30, null, 'Sample Consol'],

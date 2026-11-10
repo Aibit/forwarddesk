@@ -47,6 +47,7 @@ export const LOCATIONS: LocationDef[] = [
   { name: 'Dammam', aliases: ['dammam', 'dmm'] },
   { name: 'Singapore', aliases: ['singapore', 'singapur'] },
   { name: 'Nhava Sheva', aliases: ['nhava sheva', 'jnpt', 'mumbai'] },
+  { name: 'Bandar Abbas', aliases: ['bandar abbas', 'bandar-abbas', 'bandarabbas', 'shahid rajaee', 'shahid rajaei', 'irbnd', 'bnd'] },
   { name: 'Casablanca', aliases: ['casablanca'] },
 ];
 

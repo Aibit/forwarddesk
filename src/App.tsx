@@ -7,6 +7,7 @@ import { MatchCards } from './components/MatchCards';
 import { RfqForm } from './components/RfqForm';
 import { SalesSim } from './components/SalesSim';
 import { QuoteView } from './quote/QuoteView';
+import { JobsView } from './jobs/JobsView';
 import { AGENT_META, initialCapacity, initialRfqs } from './data';
 import { buildProposals } from './matching';
 import type {
@@ -53,7 +54,9 @@ function App() {
   const [busy, setBusy] = useState(false);
   const [showRfqForm, setShowRfqForm] = useState(false);
   const [showCapForm, setShowCapForm] = useState(false);
-  const [viewMode, setViewMode] = useState<'quote' | 'desk' | 'pitch'>('quote');
+  const [viewMode, setViewMode] = useState<'jobs' | 'quote' | 'desk' | 'pitch'>('jobs');
+  const [quoteSeed, setQuoteSeed] = useState<{ text: string; n: number } | null>(null);
+  const lite = viewMode === 'quote' || viewMode === 'jobs';
   const [selectedProposalId, setSelectedProposalId] = useState<string | null>(null);
 
   const pushMsg = useCallback(
@@ -552,7 +555,7 @@ function App() {
       ) {
         return;
       }
-      if (showRfqForm || showCapForm || viewMode === 'quote') return;
+      if (showRfqForm || showCapForm || lite) return;
       if (e.key === 'r' || e.key === 'R') {
         e.preventDefault();
         void runMatch();
@@ -561,7 +564,7 @@ function App() {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedRfqId, busy, showRfqForm, showCapForm, rfqs, capacity, viewMode]);
+  }, [selectedRfqId, busy, showRfqForm, showCapForm, rfqs, capacity, viewMode, lite]);
 
   const srcLabel =
     dataSource === 'ingest'
@@ -577,10 +580,10 @@ function App() {
           <div className="logo">FD</div>
           <div>
             <h1>FORWARDDESK</h1>
-            <p className="corridor">{viewMode === 'quote' ? 'REQUEST → QUOTE IN MINUTES' : 'SALES + QUOTING DESK'}</p>
+            <p className="corridor">{viewMode === 'jobs' ? 'JOBS · DEADLINES · MONEY AT RISK' : viewMode === 'quote' ? 'REQUEST → QUOTE IN MINUTES' : 'SALES + QUOTING DESK'}</p>
           </div>
         </div>
-        {viewMode !== 'quote' && (
+        {!lite && (
         <div className="top-meta">
           <span
             className="corridor-chip"
@@ -614,7 +617,14 @@ function App() {
         </div>
         )}
         <div className="top-actions">
-          <div className="view-toggle" role="group" aria-label="Quote, Desk or Pitch view">
+          <div className="view-toggle" role="group" aria-label="Jobs, Quote, Desk or Pitch view">
+            <button
+              type="button"
+              className={viewMode === 'jobs' ? 'active' : ''}
+              onClick={() => setViewMode('jobs')}
+            >
+              Jobs
+            </button>
             <button
               type="button"
               className={viewMode === 'quote' ? 'active' : ''}
@@ -637,7 +647,7 @@ function App() {
               Pitch
             </button>
           </div>
-          {viewMode !== 'quote' && (<>
+          {!lite && (<>
           <button
             type="button"
             className="btn ghost sm"
@@ -673,9 +683,10 @@ function App() {
         </div>
       </header>
 
-      {viewMode === 'quote' && <QuoteView />}
+      {viewMode === 'jobs' && <JobsView onDraftQuote={(text) => { setQuoteSeed((q) => ({ text, n: (q?.n ?? 0) + 1 })); setViewMode('quote'); }} />}
+      {viewMode === 'quote' && <QuoteView seed={quoteSeed} />}
 
-      {viewMode !== 'quote' && selected && (
+      {!lite && selected && (
         <div className="sticky-bar">
           <span className="mono">{selected.id}</span>
           <span className="route-label">
@@ -718,7 +729,7 @@ function App() {
         </div>
       )}
 
-      {viewMode !== 'quote' && (
+      {!lite && (
       <main className={`ops-grid ${viewMode === 'pitch' ? 'pitch-mode' : ''}`}>
         <section className="ops-col" aria-label="Customer RFQs and buy-side capacity">
           <LiveBoard
@@ -757,7 +768,7 @@ function App() {
 
       <footer className="ops-footer">
         <span>
-          {viewMode === 'quote' ? 'Paste → read → ask → price → copy' : <><kbd>R</kbd> build quotes on selected RFQ</>}
+          {viewMode === 'jobs' ? 'Dashboard + deadline tracker · read-only, alerts only · people act' : viewMode === 'quote' ? 'Paste → read → ask → price → copy' : <><kbd>R</kbd> build quotes on selected RFQ</>}
         </span>
         <span>ForwardDesk · sales + quoting · pitch lane then lock buy/sell · human confirm</span>
         <span>Schedules ≠ soft leftover</span>

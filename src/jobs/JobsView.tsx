@@ -1,0 +1,598 @@
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { sampleJobs, type Doc, type Job } from './data';
+import { FA_TERM, GLOSSARY, dur, fmtDay, fmtWhen, num, tr, usd, type Key } from './i18n';
+import { CHARGE_LABEL, DAY, chargeAmount, chequeAmount, clock, cutoff, jobAlerts, nextDeadline, summarize, unpaidBeforeBl } from './logic';
+import { PHASES, stepDef, stepIndex, stepsFor, type Lang } from './steps';
+import { DEFAULT_TARIFFS, TARIFF_ROWS, loadTariffs, saveTariffs, type TariffKey, type Tariffs } from './tariffs';
+import './jobs.css';
+
+const LIDX: Record<Lang, 0 | 1 | 2> = { en: 0, es: 1, fa: 2 };
+
+export function JobsView({ onDraftQuote }: { onDraftQuote: (text: string) => void }) {
+  const [lang, setLang] = useState<Lang>('en');
+  const [now, setNow] = useState(() => Date.now());
+  const [jobs] = useState<Job[]>(() => sampleJobs());
+  const [tariffs, setTariffs] = useState<Tariffs>(() => loadTariffs());
+  const [openId, setOpenId] = useState<string | null>(null);
+  const [filter, setFilter] = useState<'all' | 'export' | 'import'>('all');
+
+  useEffect(() => {
+    const t = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(t);
+  }, []);
+  useEffect(() => saveTariffs(tariffs), [tariffs]);
+  useEffect(() => {
+    if (!openId) return;
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpenId(null);
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [openId]);
+
+  const L = (k: Key) => tr(lang, k);
+  /** Label with the Persian term beside it in EN/ES. */
+  const T = (k: Key): ReactNode =>
+    lang !== 'fa' && FA_TERM[k] ? (
+      <>
+        {L(k)} <span className="fa-term" lang="fa" dir="rtl">{FA_TERM[k]}</span>
+      </>
+    ) : (
+      L(k)
+    );
+  const sum = useMemo(() => summarize(jobs, now, tariffs), [jobs, now, tariffs]);
+  const shown = jobs.filter((j) => filter === 'all' || j.dir === filter);
+  const open = jobs.find((j) => j.id === openId) ?? null;
+  const stepName = (code: string) => stepDef(code)[lang];
+
+  // ── Deadline tracker rows ──
+  const tracker = useMemo(() => {
+    const rows: { job: Job; kind: 'cutoff' | 'free' | 'over' | 'stopped'; level: 'red' | 'amber' | 'ok' | 'idle'; ms: number; used: number; text: string; sub: string; right?: string }[] = [];
+    for (const j of jobs) {
+      const co = cutoff(j);
+      if (co != null) {
+        const total = 72 * 3600000;
+        rows.push({ job: j, kind: 'cutoff', level: co < now ? 'red' : co - now < 72 * 3600000 ? 'amber' : 'ok', ms: co - now, used: Math.min(1, Math.max(0, 1 - (co - now) / total)), text: `${L('docCutoff')} · E18`, sub: `${L('vessel')} ${j.vessel?.name} · ${L('eta')} ${fmtWhen(lang, j.vessel!.eta)}` });
+      }
+      const ks = j.containers.map((c) => ({ c, k: clock(c, now, tariffs) })).filter((x) => x.k.state === 'running');
+      if (ks.length) {
+        const worst = ks.reduce((a, b) => (b.k.remainingMs < a.k.remainingMs ? b : a));
+        const fd = worst.c.freeDays ?? 10;
+        const used = Math.min(1, (fd * DAY - worst.k.remainingMs) / (fd * DAY));
+        const over = worst.k.daysOver > 0;
+        const cost = ks.reduce((s, x) => s + x.k.cost, 0);
+        rows.push({
+          job: j, kind: over ? 'over' : 'free', level: worst.k.level === 'idle' ? 'ok' : worst.k.level, ms: worst.k.remainingMs, used,
+          text: `${L('freeTime')} ${num(lang, fd)} ${lang === 'fa' ? 'روز' : lang === 'es' ? 'días' : 'days'} · ${j.dir === 'export' ? 'E8' : 'I14'} · ${num(lang, ks.length)} ${L('cntr')}`,
+          sub: over ? `${num(lang, worst.k.daysOver)} ${lang === 'fa' ? 'روز' : 'd'} ${L('over')} · ${usd(lang, cost)} ${L('estDemurrage')}${j.docDelay ? ` · ${L('docDelay')}` : ''}` : `${L('freeTime')} → ${fmtDay(lang, worst.k.end!)}`,
+        });
+      }
+      const stopped = j.containers.map((c) => clock(c, now, tariffs)).filter((k) => k.state === 'stopped' && k.daysOver > 0);
+      if (stopped.length) {
+        const cost = stopped.reduce((s, k) => s + k.cost, 0);
+        rows.push({ job: j, kind: 'stopped', level: 'red', ms: 0, used: 1, right: usd(lang, cost), text: `${L('demurrage')} · E21 · ${num(lang, stopped.length)} ${L('cntr')}`, sub: `${num(lang, Math.max(...stopped.map((k) => k.daysOver)))} ${lang === 'fa' ? 'روز' : 'd'} ${L('over')} (${L('loaded')}) · ${usd(lang, cost)} ${L('estDemurrage')}` });
+      }
+    }
+    const rank = (r: (typeof rows)[number]) => (r.kind === 'over' ? -2e12 + r.ms : r.kind === 'stopped' ? -1e12 : r.ms);
+    return rows.sort((a, b) => rank(a) - rank(b));
+  }, [jobs, now, tariffs, lang]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const blJobs = jobs.filter((j) => unpaidBeforeBl(j, tariffs, now) > 0 || (j.dir === 'export' && stepIndex(j.step) >= 19 && stepIndex(j.step) <= 22));
+  const collectJobs = jobs.filter((j) => j.collect && stepIndex(j.step) >= 10);
+  const chequeJobs = jobs.filter((j) => j.cheques.length);
+
+  return (
+    <div className="jobs-view" dir={lang === 'fa' ? 'rtl' : 'ltr'} lang={lang}>
+      <div className="j-top">
+        <div className="j-title">
+          <span className="j-sample">{L('sampleData')}</span>
+          <span className="j-note">{L('sampleNote')}</span>
+        </div>
+        <div className="q-lang j-lang" role="group" aria-label="Language">
+          {(['en', 'es', 'fa'] as Lang[]).map((l) => (
+            <button key={l} type="button" className={lang === l ? 'active' : ''} onClick={() => setLang(l)} data-testid={`jobs-lang-${l}`}>
+              {l === 'fa' ? 'FA فا' : l.toUpperCase()}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="j-summary" data-testid="jobs-summary">
+        <Tile label={L('jobsLive')} value={num(lang, sum.jobsLive)} />
+        <Tile label={T('inFreeTime')} value={num(lang, sum.inFreeTime)} />
+        <Tile label={L('atRisk')} value={num(lang, sum.atRisk)} tone={sum.atRisk ? 'amber' : undefined} sub={sum.inDemurrage ? `${num(lang, sum.inDemurrage)} ${L('inDemurrage').toLowerCase()}` : undefined} subTone="red" />
+        <Tile label={L('cutoffs72')} value={num(lang, sum.cutoffs72)} tone={sum.cutoffs72 ? 'amber' : undefined} />
+        <Tile label={L('unpaidBl')} value={usd(lang, sum.unpaidBl)} tone={sum.unpaidBl ? 'amber' : undefined} />
+        <Tile label={L('chequesHeld')} value={num(lang, sum.chequesHeld)} sub={usd(lang, sum.chequesValue)} />
+      </div>
+
+      <div className="j-main">
+        <section className="q-panel j-board" aria-label={L('board')}>
+          <div className="q-head">
+            <h2>1 · {L('board')}</h2>
+            <div className="q-lang" role="group">
+              {(['all', 'export', 'import'] as const).map((f) => (
+                <button key={f} type="button" className={filter === f ? 'active' : ''} onClick={() => setFilter(f)}>
+                  {L(f)}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="j-rows" role="table">
+            <div className="j-row j-row-head" role="row">
+              <span>{L('job')}</span>
+              <span>{L('route')} · {L('customer')}</span>
+              <span>{L('step')}</span>
+              <span>{L('containers')}</span>
+              <span>{L('next')}</span>
+            </div>
+            {shown.map((j) => {
+              const nd = nextDeadline(j, now, tariffs);
+              const steps = stepsFor(j.dir);
+              const cur = stepIndex(j.step);
+              const holder = stepDef(j.step).holder;
+              return (
+                <button type="button" role="row" key={j.id} className={`j-row ${openId === j.id ? 'sel' : ''}`} onClick={() => setOpenId(j.id)} data-testid={`job-${j.id}`}>
+                  <span className="j-c-id">
+                    <bdi className="mono">{j.id}</bdi>
+                    <span className="j-tags">
+                      <span className={`j-dir ${j.dir}`}>{L(j.dir)}</span>
+                      <span className={`j-owner ${holder}`}>{L(holder)}</span>
+                    </span>
+                  </span>
+                  <span className="j-c-cust">
+                    <strong>
+                      <bdi>{j.pol} → {j.pod}</bdi>
+                    </strong>
+                    <span className="j-sub">
+                      {j.customer} · {j.commodity}
+                    </span>
+                    <span className="j-sub">{j.line}</span>
+                  </span>
+                  <span className="j-c-step">
+                    <span className="j-stepname">
+                      <bdi className={`j-code ${stepDef(j.step).critical ? 'crit' : ''}`}>{j.step}</bdi> {stepName(j.step)}
+                    </span>
+                    <span className="j-mini" aria-label={`${j.step} of ${steps.length}`}>
+                      {steps.map((s, i) => (
+                        <i key={s.code} className={`${i + 1 < cur ? 'done' : i + 1 === cur ? 'cur' : ''} ${s.critical ? 'crit' : ''}`} title={`${s.code} ${s[lang]}`} />
+                      ))}
+                    </span>
+                  </span>
+                  <span className="j-c-cntr">
+                    {j.containers.length ? (
+                      <>
+                        <strong>
+                          {num(lang, j.containers.length)} × {j.containers[0].size === '40HC' ? "40′HC" : `${j.containers[0].size}′`}
+                          {j.containers[0].heavy ? (lang === 'fa' ? ' سنگین' : lang === 'es' ? ' pesado' : ' heavy') : ''}
+                        </strong>
+                        <bdi className="j-sub mono">
+                          {j.containers[0].no}
+                          {j.containers.length > 1 ? ` +${j.containers.length - 1}` : ''}
+                        </bdi>
+                      </>
+                    ) : (
+                      <>
+                        <strong>{j.plannedEquipment}</strong>
+                        <span className="j-sub">{L('notBooked')}</span>
+                      </>
+                    )}
+                  </span>
+                  <span className="j-c-next">
+                    {nd ? (
+                      <span className={`j-count ${nd.level}`}>
+                        <span className="j-count-k">{nd.kind === 'cutoff' ? L('cutoff') : nd.kind === 'over' ? L('inDemurrage') : L('freeTime')}</span>
+                        <bdi className="mono">{nd.kind === 'over' ? `+${num(lang, Math.ceil(-nd.ms / DAY))} ${lang === 'fa' ? 'روز' : 'd'}` : dur(lang, nd.ms, nd.ms < 2 * DAY)}</bdi>
+                      </span>
+                    ) : (
+                      <span className="j-sub">—</span>
+                    )}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          <p className="j-foot">{L('buildOrder')}</p>
+        </section>
+
+        <section className="q-panel j-tracker" aria-label={L('deadlines')} data-testid="deadline-tracker">
+          <div className="q-head">
+            <h2>2 · {L('deadlines')}</h2>
+            <span className="q-muted">E8 · E18 · E21 · I14–I16</span>
+          </div>
+          <ul className="j-dl">
+            {tracker.map((r, i) => (
+              <li key={i} className={`j-dl-item ${r.level}`}>
+                <button type="button" onClick={() => setOpenId(r.job.id)}>
+                  <span className="j-dl-top">
+                    <bdi className="mono j-dl-id">{r.job.id}</bdi>
+                    <span className="j-dl-what">{r.text}</span>
+                    <bdi className={`mono j-dl-time ${r.level}`}>
+                      {r.kind === 'over' ? `+${num(lang, Math.ceil(-r.ms / DAY))} ${lang === 'fa' ? 'روز' : 'd'}` : r.kind === 'stopped' ? r.right : dur(lang, r.ms, r.ms < 2 * DAY)}
+                    </bdi>
+                  </span>
+                  <span className="j-bar">
+                    <i style={{ width: `${Math.round(r.used * 100)}%` }} />
+                  </span>
+                  <span className="j-dl-sub">{r.sub}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      </div>
+
+      <section className="q-panel j-money" aria-label={L('money')} data-testid="money-at-risk">
+        <div className="q-head">
+          <h2>{L('money')}</h2>
+          <span className="q-muted">E21–E22 · I13 · I14–I16</span>
+        </div>
+        <div className="j-money-grid">
+          <div>
+            <h3>
+              {L('unpaidBl')} — {T('originalBl')}
+            </h3>
+            {blJobs.map((j) => {
+              const unpaid = unpaidBeforeBl(j, tariffs, now);
+              return (
+                <div key={j.id} className="j-money-card">
+                  <div className="j-mc-head">
+                    <button type="button" className="j-link mono" onClick={() => setOpenId(j.id)}>{j.id}</button>
+                    <span>{j.customer}</span>
+                  </div>
+                  <ChargeTable job={j} lang={lang} tariffs={tariffs} now={now} />
+                  <div className={`j-mc-foot ${unpaid ? 'amber' : 'ok'}`}>
+                    {unpaid ? `${usd(lang, unpaid)} ${L('unpaid')} — ${L('blocksBl')}` : `${L('paid')} ✓`}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <div>
+            <h3>{T('collectFreight')} + {L('rebate')} ({num(lang, tariffs.lineRebatePct)}%) · I13</h3>
+            {collectJobs.map((j) => (
+              <div key={j.id} className="j-money-card">
+                <div className="j-mc-head">
+                  <button type="button" className="j-link mono" onClick={() => setOpenId(j.id)}>{j.id}</button>
+                  <span>{j.line}</span>
+                </div>
+                <div className="j-kv">
+                  <span>{L('collectFreight')}</span>
+                  <strong className={j.collect!.collected ? 'ok' : 'amber'}>
+                    {usd(lang, j.collect!.amount)} · {j.collect!.collected ? L('collected') : L('notCollected')}
+                  </strong>
+                </div>
+                <div className="j-kv">
+                  <span>{L('rebate')} {num(lang, tariffs.lineRebatePct)}%</span>
+                  <strong className={j.collect!.rebateReceived ? 'ok' : 'amber'}>
+                    {usd(lang, (j.collect!.amount * tariffs.lineRebatePct) / 100)} · {j.collect!.rebateReceived ? L('collected') : L('pending')}
+                  </strong>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div>
+            <h3>{T('cheque')} · I14–I16</h3>
+            {chequeJobs.map((j) => {
+              const total = j.cheques.reduce((s, c) => s + chequeAmount(j, c, tariffs), 0);
+              const holder = j.cheques[0].holder;
+              const st = j.cheques[0].status;
+              return (
+                <div key={j.id} className="j-money-card">
+                  <div className="j-mc-head">
+                    <button type="button" className="j-link mono" onClick={() => setOpenId(j.id)}>{j.id}</button>
+                    <span>{j.customer}</span>
+                  </div>
+                  <div className="j-kv">
+                    <span>{L('chequeDem')} × {num(lang, j.cheques.filter((c) => c.kind === 'demurrage').length)} + {L('chequeCntr')} × {num(lang, j.cheques.filter((c) => c.kind === 'container').length)}</span>
+                    <strong>{usd(lang, total)}</strong>
+                  </div>
+                  <div className="j-kv">
+                    <span>{st === 'toLodge' ? L('toLodge') : `${L('heldBy')} ${holder}`}</span>
+                    <strong className={j.containers.some((c) => clock(c, now, tariffs).daysOver > 0) ? 'red' : st === 'toLodge' ? 'amber' : ''}>{stepName(j.step)} · {j.step}</strong>
+                  </div>
+                </div>
+              );
+            })}
+            <p className="j-foot">{L('returnsWhen')}</p>
+          </div>
+        </div>
+      </section>
+
+      <div className="j-bottom">
+        <section className="q-panel j-tariffs" data-testid="tariffs">
+          <div className="q-head">
+            <h2>{T('tariffs')} · {tariffs.year}</h2>
+            <button type="button" className="btn ghost sm" onClick={() => setTariffs({ ...DEFAULT_TARIFFS })}>{L('reset')}</button>
+          </div>
+          <p className="j-foot">{L('tariffsNote')}</p>
+          <div className="j-tariff-grid">
+            {TARIFF_ROWS.map((r) => (
+              <label key={r.key} className="j-tariff">
+                <span className="j-tariff-name">{TARIFF_LABEL[r.key][LIDX[lang]]}</span>
+                <span className="j-tariff-by">{L(r.setBy === 'sa' ? 'setBySa' : r.setBy === 'po' ? 'setByPo' : 'setByLine')}</span>
+                <span className="j-tariff-in">
+                  <input
+                    type="number"
+                    min={0}
+                    step={r.key === 'lineRebatePct' ? 0.5 : 1}
+                    value={tariffs[r.key]}
+                    onChange={(e) => setTariffs((t) => ({ ...t, [r.key]: Math.max(0, Number(e.target.value) || 0) }))}
+                    aria-label={TARIFF_LABEL[r.key][0]}
+                  />
+                  <bdi className="j-unit">{r.key === 'lineRebatePct' || r.key === 'tier1Days' ? r.unit : `${tariffs.currency} ${r.unit}`}</bdi>
+                </span>
+              </label>
+            ))}
+          </div>
+        </section>
+        <section className="q-panel j-gloss">
+          <div className="q-head">
+            <h2>{L('glossary')} · واژه‌نامه</h2>
+          </div>
+          <dl className="j-gloss-list">
+            {GLOSSARY.map(([fa, en]) => (
+              <div key={fa}>
+                <dt lang="fa" dir="rtl">{fa}</dt>
+                <dd>{en}</dd>
+              </div>
+            ))}
+          </dl>
+        </section>
+      </div>
+
+      {open && (
+        <JobDrawer
+          job={open}
+          lang={lang}
+          now={now}
+          tariffs={tariffs}
+          T={T}
+          onClose={() => setOpenId(null)}
+          onDraftQuote={() => open.quoteText && onDraftQuote(open.quoteText)}
+        />
+      )}
+    </div>
+  );
+}
+
+const TARIFF_LABEL: Record<TariffKey, [string, string, string]> = {
+  demurrage20Tier1: ["Demurrage 20′, days 1–N", "Demora 20′, días 1–N", 'حق توقف ۲۰ فوت، روزهای اول'],
+  demurrage20Tier2: ["Demurrage 20′, after N", "Demora 20′, después de N", 'حق توقف ۲۰ فوت، بعد از آن'],
+  demurrage40Tier1: ["Demurrage 40′, days 1–N", "Demora 40′, días 1–N", 'حق توقف ۴۰ فوت، روزهای اول'],
+  demurrage40Tier2: ["Demurrage 40′, after N", "Demora 40′, después de N", 'حق توقف ۴۰ فوت، بعد از آن'],
+  tier1Days: ['N (first tier days)', 'N (días primer tramo)', 'تعداد روزهای پله اول'],
+  blFee: ['B/L fee', 'Tasa B/L', 'هزینه بارنامه'],
+  doFee: ['DO fee (ترخیصیه)', 'Tasa DO (ترخیصیه)', 'هزینه دی‌او (ترخیصیه)'],
+  thc20: ["THC 20′", "THC 20′", 'THC ۲۰ فوت'],
+  thc40: ["THC 40′", "THC 40′", 'THC ۴۰ فوت'],
+  sealFee: ['Seal fee (پلمپ)', 'Precinto (پلمپ)', 'هزینه پلمپ'],
+  chequeDemurrage: ['Demurrage cheque', 'Cheque de demora', 'چک تضمین حق توقف'],
+  chequeContainer20: ["Container cheque 20′", "Cheque contenedor 20′", 'چک تضمین کانتینر ۲۰ فوت'],
+  chequeContainer40: ["Container cheque 40′", "Cheque contenedor 40′", 'چک تضمین کانتینر ۴۰ فوت'],
+  lineRebatePct: ['Line rebate on collect freight (I13)', 'Comisión naviera sobre collect (I13)', 'سهم خط از کرایه کالکت (I13)'],
+};
+
+function Tile({ label, value, tone, sub, subTone }: { label: ReactNode; value: string; tone?: 'amber' | 'red'; sub?: string; subTone?: 'red' }) {
+  return (
+    <div className={`j-tile ${tone ?? ''}`}>
+      <span className="j-tile-label">{label}</span>
+      <bdi className="j-tile-value">{value}</bdi>
+      {sub && <span className={`j-tile-sub ${subTone ?? ''}`}>{sub}</span>}
+    </div>
+  );
+}
+
+function ChargeTable({ job, lang, tariffs, now }: { job: Job; lang: Lang; tariffs: Tariffs; now: number }) {
+  const i = LIDX[lang];
+  return (
+    <table className="j-charges">
+      <tbody>
+        {job.charges.map((c) => {
+          const amt = chargeAmount(job, c, tariffs, now);
+          return (
+            <tr key={c.key} className={c.paid ? 'paid' : 'unpaid'}>
+              <td>{CHARGE_LABEL[c.key][i]}</td>
+              <td className="mono num">{usd(lang, amt)}</td>
+              <td className={`st ${c.paid ? 'ok' : c.key === 'demurrage' && amt > 0 ? 'red' : 'amber'}`}>{tr(lang, c.paid ? 'paid' : 'unpaid')}</td>
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
+  );
+}
+
+const DOC_KEY: Record<Doc['key'], Key> = {
+  booking: 'booking', release: 'releaseOrder', seals: 'seals', declaration: 'declaration', shippingOrder: 'shippingOrder', draftBl: 'draftBl',
+  originalBl: 'originalBl', packing: 'packing', arrival: 'arrival', loi: 'loi', do: 'do', warehouse: 'warehouse',
+};
+
+function JobDrawer({ job, lang, now, tariffs, T, onClose, onDraftQuote }: { job: Job; lang: Lang; now: number; tariffs: Tariffs; T: (k: Key) => ReactNode; onClose: () => void; onDraftQuote: () => void }) {
+  const L = (k: Key) => tr(lang, k);
+  const steps = stepsFor(job.dir);
+  const cur = stepIndex(job.step);
+  const alerts = jobAlerts(job, now, tariffs, lang);
+  const canQuote = job.quoteText && ((job.dir === 'export' && cur >= 2 && cur <= 4) || (job.dir === 'import' && cur === 2));
+  const co = cutoff(job);
+  return (
+    <div className="j-drawer-wrap" onClick={onClose}>
+      <aside className="j-drawer" role="dialog" aria-label={job.id} onClick={(e) => e.stopPropagation()} data-testid="job-detail">
+        <header className="j-d-head">
+          <div>
+            <div className="j-d-id">
+              <bdi className="mono">{job.id}</bdi>
+              <span className={`j-dir ${job.dir}`}>{L(job.dir)}</span>
+              <span className={`j-owner ${stepDef(job.step).holder}`}>{L(stepDef(job.step).holder)}</span>
+              <span className="j-sample sm">{L('sampleData')}</span>
+            </div>
+            <h2>
+              <bdi>{job.pol} → {job.pod}</bdi>
+            </h2>
+            <p className="j-sub">
+              {job.customer} · {job.commodity} · {job.line}
+              {job.vessel && (
+                <>
+                  {' '}· {L('vessel')} <bdi>{job.vessel.name}</bdi> · {job.vessel.sailed ? `${L('sailed')} ${fmtDay(lang, job.vessel.sailed)}` : `${L('eta')} ${fmtWhen(lang, job.vessel.eta)}`}
+                </>
+              )}
+            </p>
+          </div>
+          <div className="j-d-actions">
+            {canQuote && (
+              <button type="button" className="btn primary" onClick={onDraftQuote} data-testid="draft-quote">
+                {L('draftQuote')} →
+              </button>
+            )}
+            <button type="button" className="btn ghost" onClick={onClose} aria-label={L('close')}>
+              ✕
+            </button>
+          </div>
+        </header>
+
+        {alerts.length > 0 && (
+          <ul className="j-alerts-now">
+            {alerts.map((a, i) => (
+              <li key={i} className={a.level}>
+                {a.text}
+              </li>
+            ))}
+          </ul>
+        )}
+        {co != null && (
+          <div className={`j-cutoff ${co < now ? 'red' : 'amber'}`}>
+            <span>{T('docCutoff')} · E18</span>
+            <bdi className="mono">{dur(lang, co - now)}</bdi>
+            <span className="j-sub">{fmtWhen(lang, co)}</span>
+          </div>
+        )}
+
+        <section className="j-d-sec">
+          <h3>{L('timeline')} · {steps[0].code}–{steps[steps.length - 1].code}</h3>
+          <div className="j-phases">
+            {PHASES[job.dir].map((p) => (
+              <div key={p.from} className="j-phase">
+                <div className="j-phase-name">{p[lang]}</div>
+                <ol>
+                  {steps.slice(p.from - 1, p.to).map((s) => {
+                    const i = stepIndex(s.code);
+                    return (
+                      <li key={s.code} className={`${i < cur ? 'done' : i === cur ? 'cur' : ''} ${s.critical ? 'crit' : ''}`}>
+                        <bdi className="j-code">{s.code}</bdi>
+                        <span>{s[lang]}</span>
+                      </li>
+                    );
+                  })}
+                </ol>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {job.containers.length > 0 && (
+          <section className="j-d-sec">
+            <h3>{L('containers')} · {T('freeTime')}</h3>
+            <table className="j-ctable">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>{T('seal')}</th>
+                  <th>{L('freeTime')}</th>
+                  <th>{L('next')}</th>
+                  <th>{L('demurrage')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {job.containers.map((c) => {
+                  const k = clock(c, now, tariffs);
+                  return (
+                    <tr key={c.no}>
+                      <td>
+                        <bdi className="mono">{c.no}</bdi> <span className="j-sub">{c.size === '40HC' ? "40′HC" : `${c.size}′`}</span>
+                      </td>
+                      <td><bdi className="mono">{c.seal ?? '—'}</bdi></td>
+                      <td>{c.freeDays != null ? `${num(lang, c.freeDays)} ${lang === 'fa' ? 'روز' : 'd'}` : '—'}</td>
+                      <td className={k.level}>
+                        {k.state === 'notStarted'
+                          ? L('notStarted')
+                          : k.daysOver > 0
+                            ? `${num(lang, k.daysOver)} ${lang === 'fa' ? 'روز' : 'd'} ${L('over')}${k.state === 'stopped' ? ` (${job.dir === 'export' ? L('loaded') : L('returnedEmpty')})` : ''}`
+                            : k.state === 'stopped'
+                              ? `${L('stopped')}${c.returned === 'checking' ? ' · I15' : ''}`
+                              : <bdi className="mono">{dur(lang, k.remainingMs, k.remainingMs < 2 * DAY)}</bdi>}
+                      </td>
+                      <td className={k.cost ? 'red mono' : 'mono'}>{k.cost ? usd(lang, k.cost) : '—'}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+            <p className="j-foot">{L('estDemurrage')}</p>
+          </section>
+        )}
+
+        <div className="j-d-two">
+          <section className="j-d-sec">
+            <h3>{L('documents')}</h3>
+            {job.docs.length ? (
+              <ul className="j-docs">
+                {job.docs.map((d) => (
+                  <li key={d.key} className={d.status}>
+                    <span className="j-doc-st" aria-hidden>{d.status === 'done' ? '✓' : d.status === 'blocked' ? '■' : d.status === 'waiting' ? '…' : '○'}</span>
+                    <span className="j-doc-name">{T(DOC_KEY[d.key])}</span>
+                    <span className="j-doc-meta">
+                      {L(d.status)}
+                      {d.rounds ? ` · ${num(lang, d.rounds)} ${L('rounds')}` : ''}
+                      {d.at ? ` · ${fmtDay(lang, d.at)}` : ''}
+                    </span>
+                    {d.note && <span className="j-doc-note">{d.note}</span>}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="j-sub">—</p>
+            )}
+          </section>
+          <section className="j-d-sec">
+            <h3>{L('charges')}</h3>
+            {job.charges.length ? <ChargeTable job={job} lang={lang} tariffs={tariffs} now={now} /> : <p className="j-sub">—</p>}
+            {job.collect && (
+              <div className="j-kv">
+                <span>{T('collectFreight')}</span>
+                <strong className={job.collect.collected ? 'ok' : 'amber'}>{usd(lang, job.collect.amount)} · {job.collect.collected ? L('collected') : L('notCollected')}</strong>
+              </div>
+            )}
+            {job.cheques.length > 0 && (
+              <>
+                <h3 className="j-h3-gap">{T('cheque')}</h3>
+                <table className="j-charges">
+                  <tbody>
+                    {job.cheques.map((c, i) => (
+                      <tr key={i}>
+                        <td>
+                          {c.kind === 'demurrage' ? L('chequeDem') : L('chequeCntr')} {c.container && <bdi className="mono j-sub">{c.container}</bdi>}
+                        </td>
+                        <td className="mono num">{usd(lang, chequeAmount(job, c, tariffs))}</td>
+                        <td className={`st ${c.status === 'returned' ? 'ok' : c.status === 'toLodge' ? 'amber' : ''}`}>{c.status === 'held' ? `${L('heldBy')} ${c.holder}` : c.status === 'toLodge' ? L('toLodge') : L('returned')}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </>
+            )}
+          </section>
+        </div>
+
+        <section className="j-d-sec">
+          <h3>{L('alerts')}</h3>
+          <ul className="j-log">
+            {[...job.log].sort((a, b) => b.at - a.at).map((e, i) => (
+              <li key={i} className={e.kind ?? 'info'}>
+                <bdi className="mono j-log-at">{fmtWhen(lang, e.at)}</bdi>
+                <span dir="ltr">{e.text}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      </aside>
+    </div>
+  );
+}
