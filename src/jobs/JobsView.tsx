@@ -8,7 +8,7 @@ import type { JobBalance } from '../billing/model';
 import { type Doc, type Job } from './data';
 import { jobsStore, useJobs } from './store';
 import { isLive } from '../backend/bridge';
-import { FA_TERM, GLOSSARY, unitTx, dur, fmtDay, fmtWhen, num, tr, usd, type Key } from './i18n';
+import { GLOSSARY, unitTx, dur, fmtDay, fmtWhen, num, tr, usd, type Key } from './i18n';
 import { DAY, chequeAmount, clock, cutoff, jobAlerts, nextDeadline, summarize } from './logic';
 import { PHASES, stepDef, stepIndex, stepsFor, type Lang } from './steps';
 import { DEFAULT_TARIFFS, TARIFF_ROWS, loadTariffs, saveTariffs, useTariffs, type TariffKey, type Tariffs } from './tariffs';
@@ -16,6 +16,14 @@ import { agentForPort, clientForJob, useStore } from '../clients/store';
 import { jobMsds } from '../clients/lanes';
 import { MsdsChip, MsdsSlot } from '../clients/Msds';
 import { store as clientStore, type Client } from '../clients/store';
+import { useAgentsDb } from '../agents/db';
+import { ledgerFor } from '../billing/store';
+import { WaButton, WaIcon, WaLogItem } from '../whatsapp/WhatsApp';
+import { agentRecipients, clientRecipients, jobCtx } from '../whatsapp/context';
+import { JOB_TPLS, suggestTpl } from '../whatsapp/templates';
+import { useWaLog, waFor } from '../whatsapp/log';
+import { wt } from '../whatsapp/i18n';
+import type { Agent } from '../clients/store';
 import './jobs.css';
 
 const LIDX: Record<Lang, 0 | 1 | 2 | 3> = { en: 0, es: 1, fa: 2, ar: 3 };
@@ -56,15 +64,8 @@ export function JobsView({ onDraftQuote, onOpenClient, openRequest }: { onDraftQ
   }, [openId]);
 
   const L = (k: Key) => tr(lang, k);
-  /** Label with the Persian term beside it in EN/ES. */
-  const T = (k: Key): ReactNode =>
-    lang !== 'fa' && FA_TERM[k] ? (
-      <>
-        {L(k)} <span className="fa-term" lang="fa" dir="rtl">{FA_TERM[k]}</span>
-      </>
-    ) : (
-      L(k)
-    );
+  /** Label in the UI language only (Persian terms appear only when the UI is FA). */
+  const T = (k: Key): ReactNode => L(k);
   const bill = useBilling();
   const blockOf = (j: Job) => releaseBlockFor(j, bill, now);
   const sum = useMemo(() => summarize(jobs, now, tariffs, (j) => { const b = releaseBlockFor(j, bill, now); return b.blocking ? b.open : 0; }), [jobs, now, tariffs, bill]);
@@ -353,19 +354,22 @@ export function JobsView({ onDraftQuote, onOpenClient, openRequest }: { onDraftQ
             ))}
           </div>
         </section>
-        <section className="q-panel j-gloss">
-          <div className="q-head">
-            <h2>{L('glossary')} · واژه‌نامه</h2>
-          </div>
-          <dl className="j-gloss-list">
-            {GLOSSARY.map(([fa, en, ar]) => (
-              <div key={fa}>
-                <dt lang="fa" dir="rtl">{fa}</dt>
-                <dd lang={lang === 'ar' ? 'ar' : undefined}>{lang === 'ar' ? ar : en}</dd>
-              </div>
-            ))}
-          </dl>
-        </section>
+        {/* Persian ↔ English trade-term glossary: only for the Persian UI. */}
+        {lang === 'fa' && (
+          <section className="q-panel j-gloss">
+            <div className="q-head">
+              <h2>{L('glossary')}</h2>
+            </div>
+            <dl className="j-gloss-list">
+              {GLOSSARY.map(([fa, en]) => (
+                <div key={fa}>
+                  <dt lang="fa" dir="rtl">{fa}</dt>
+                  <dd lang="en" dir="ltr">{en}</dd>
+                </div>
+              ))}
+            </dl>
+          </section>
+        )}
       </div>
 
       {open && (
@@ -379,6 +383,7 @@ export function JobsView({ onDraftQuote, onOpenClient, openRequest }: { onDraftQ
           onDraftQuote={() => open.quoteText && onDraftQuote(open.quoteText, open.customer)}
           onOpenClient={onOpenClient ? () => onOpenClient(open.customer) : undefined}
           agentName={agentOf(open)?.name ?? null}
+          agent={agentOf(open)}
           client={clientForJob(clients, open.customer)}
         />
       )}
@@ -393,10 +398,10 @@ const TARIFF_LABEL: Record<TariffKey, [string, string, string, string]> = {
   demurrage40Tier2: ["Demurrage 40′, after N", "Demora 40′, después de N", 'حق توقف ۴۰ فوت، بعد از آن', 'غرامة التأخير ٤٠′، بعد N'],
   tier1Days: ['N (first tier days)', 'N (días primer tramo)', 'تعداد روزهای پله اول', 'N (أيام الشريحة الأولى)'],
   blFee: ['B/L fee', 'Tasa B/L', 'هزینه بارنامه', 'رسوم بوليصة الشحن'],
-  doFee: ['DO fee (ترخیصیه)', 'Tasa DO (ترخیصیه)', 'هزینه دی‌او (ترخیصیه)', 'رسوم إذن التسليم (ترخیصیه)'],
+  doFee: ['DO fee', 'Tasa DO', 'هزینه دی‌او (ترخیصیه)', 'رسوم إذن التسليم'],
   thc20: ["THC 20′", "THC 20′", 'THC ۲۰ فوت', 'THC 20′'],
   thc40: ["THC 40′", "THC 40′", 'THC ۴۰ فوت', 'THC 40′'],
-  sealFee: ['Seal fee (پلمپ)', 'Precinto (پلمپ)', 'هزینه پلمپ', 'رسوم الختم (پلمپ)'],
+  sealFee: ['Seal fee', 'Precinto', 'هزینه پلمپ', 'رسوم الختم'],
   chequeDemurrage: ['Demurrage cheque', 'Cheque de demora', 'چک تضمین حق توقف', 'شيك غرامة التأخير'],
   chequeContainer20: ["Container cheque 20′", "Cheque contenedor 20′", 'چک تضمین کانتینر ۲۰ فوت', 'شيك الحاوية ٢٠′'],
   chequeContainer40: ["Container cheque 40′", "Cheque contenedor 40′", 'چک تضمین کانتینر ۴۰ فوت', 'شيك الحاوية ٤٠′'],
@@ -443,7 +448,7 @@ function JobDrawer(props: Parameters<typeof JobDrawerBody>[0]) {
   return <JobDrawerBody {...props} tab={tab} setTab={setTab} />;
 }
 
-function JobDrawerBody({ job, lang, now, tariffs, T, onClose, onDraftQuote, onOpenClient, agentName, client, tab = 'overview', setTab }: { job: Job; lang: Lang; now: number; tariffs: Tariffs; T: (k: Key) => ReactNode; onClose: () => void; onDraftQuote: () => void; onOpenClient?: () => void; agentName?: string | null; client?: Client | null; tab?: 'overview' | 'docs' | 'billing'; setTab?: (t: 'overview' | 'docs' | 'billing') => void }) {
+function JobDrawerBody({ job, lang, now, tariffs, T, onClose, onDraftQuote, onOpenClient, agentName, agent, client, tab = 'overview', setTab }: { job: Job; lang: Lang; now: number; tariffs: Tariffs; T: (k: Key) => ReactNode; onClose: () => void; onDraftQuote: () => void; onOpenClient?: () => void; agentName?: string | null; agent?: Agent | null; client?: Client | null; tab?: 'overview' | 'docs' | 'billing'; setTab?: (t: 'overview' | 'docs' | 'billing') => void }) {
   const L = (k: Key) => tr(lang, k);
   const steps = stepsFor(job.dir);
   const cur = stepIndex(job.step);
@@ -451,6 +456,13 @@ function JobDrawerBody({ job, lang, now, tariffs, T, onClose, onDraftQuote, onOp
   const alerts = jobAlerts(job, now, tariffs, lang, blk.blocking ? { amount: blk.open, kind: blk.kind } : null);
   const canQuote = job.quoteText && ((job.dir === 'export' && cur >= 2 && cur <= 4) || (job.dir === 'import' && cur === 2));
   const co = cutoff(job);
+  const { company } = useStore();
+  const agentsDb = useAgentsDb();
+  const waEntries = waFor(useWaLog(), 'jobId', job.id);
+  const waCtx = jobCtx(job, { company, ledger: ledgerFor(job), tariffs, now, openBalance: blk.open > 0.005 ? blk.open : undefined });
+  const clientR = clientRecipients(client ?? null);
+  const agentR = agentRecipients(agent ?? null, agentsDb.list);
+  const waTpl = suggestTpl(waCtx, { blocking: blk.blocking, draftBlPending: job.docs.some((d) => d.key === 'draftBl' && (d.status === 'waiting' || d.status === 'pending')), isImportArrival: job.dir === 'import' && !!job.vessel && !job.vessel.sailed });
   return (
     <div className="j-drawer-wrap" onClick={onClose}>
       <aside className={`j-drawer ${tab === 'billing' ? 'wide' : ''}`} role="dialog" aria-label={job.id} onClick={(e) => e.stopPropagation()} data-testid="job-detail">
@@ -493,6 +505,10 @@ function JobDrawerBody({ job, lang, now, tariffs, T, onClose, onDraftQuote, onOp
           </div>
         </header>
 
+        <div className="j-d-wa" data-testid="job-wa">
+          <WaButton recipients={clientR} templates={JOB_TPLS} ctx={waCtx} defaultTpl={waTpl} link={{ jobId: job.id, clientId: client?.id ?? null }} fallbackLang={client?.lang ?? 'en'} label={wt(lang, 'wa')} testid="job-client" />
+            {agentR.length > 0 && <WaButton recipients={agentR} templates={['general', 'arrival', 'draftBl', 'cutoff48']} ctx={waCtx} defaultTpl="general" link={{ jobId: job.id }} fallbackLang="en" label={`${wt(lang, 'wa')} · ${L('agent')}`} testid="job-agent" />}
+        </div>
         <div className="b-tabs" role="tablist" data-testid="job-tabs">
           {(['overview', 'docs', 'billing'] as const).map((k) => (
             <button key={k} type="button" role="tab" aria-selected={tab === k} className={tab === k ? 'active' : ''} onClick={() => setTab?.(k)} data-testid={`job-tab-${k}`}>
@@ -646,6 +662,12 @@ function JobDrawerBody({ job, lang, now, tariffs, T, onClose, onDraftQuote, onOp
 
         <section className="j-d-sec">
           <h3>{L('alerts')}</h3>
+          {waEntries.length > 0 && (
+            <div className="j-wa-log" data-testid="job-wa-log">
+              <div className="j-wa-log-h"><WaIcon size={16} /> {wt(lang, 'log')} · <span className="j-sub">{wt(lang, 'logNote')}</span></div>
+              <ul className="wa-log">{waEntries.map((e) => <WaLogItem key={e.id} e={e} ui={lang} />)}</ul>
+            </div>
+          )}
           <ul className="j-log">
             {[...job.log].sort((a, b) => b.at - a.at).map((e, i) => (
               <li key={i} className={e.kind ?? 'info'}>

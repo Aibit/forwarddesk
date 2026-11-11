@@ -594,3 +594,15 @@ body { overflow: hidden; }
   .app.nd .nd-top-right button, .app.nd .nd-top-right .btn { padding-inline: 10px !important; }
   .nd-burger { flex: none; }
 }
+
+/* What's new: sidebar item + unread dot (accent blue, never red) */
+.app.nd .nd-side-foot .nd-news { margin: 0 -2px 4px; }
+.app.nd .nd-news .nd-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--cur); margin-inline-start: auto; flex-shrink: 0; }
+.wn-list { display: flex; flex-direction: column; gap: 6px; max-width: 860px; }
+.wn-rel { border-bottom: 1px solid var(--border); padding: 18px 2px 20px; }
+.wn-rel:last-child { border-bottom: 0; }
+.wn-meta { display: flex; gap: 10px; align-items: center; color: var(--muted); font-size: 15px; margin-bottom: 4px; flex-wrap: wrap; }
+.wn-ver { font-family: var(--mono); background: var(--chip-bg); border-radius: 6px; padding: 1px 8px; color: var(--ink); font-size: 14px; }
+.wn-new { color: var(--blue-ink); font-weight: 600; font-size: 14px; }
+.wn-rel h2 { font-size: 22px; margin: 2px 0 8px; font-weight: 650; }
+.wn-rel ul { margin: 0; padding-inline-start: 22px; display: flex; flex-direction: column; gap: 6px; font-size: 17px; line-height: 1.55; }

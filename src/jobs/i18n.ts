@@ -104,9 +104,9 @@ const S = {
   agent: ['Client\'s agent', 'Agente del cliente', 'نماینده مشتری', 'وكيل العميل'],
   tariffs: ['Tariffs', 'Tarifas', 'تعرفه‌ها', 'التعرفات'],
   tariffsNote: [
-    'SAMPLE · set yearly by the Shipping Association (انجمن کشتیرانی) and Ports Organization (سازمان بنادر). Edit here; every clock and total updates. Saved in this browser only.',
-    'EJEMPLO · fijadas cada año por la Shipping Association (انجمن کشتیرانی) y la Ports Organization (سازمان بنادر). Edítalas aquí; todo se recalcula. Solo se guardan en este navegador.',
-    'نمونه · هر سال توسط انجمن کشتیرانی و سازمان بنادر تعیین می‌شود. اینجا ویرایش کنید؛ همه محاسبات به‌روز می‌شود. فقط در همین مرورگر ذخیره می‌شود.', 'عيّنة · تُحدَّد سنويًا من جمعية الملاحة (انجمن کشتیرانی) ومنظمة الموانئ (سازمان بنادر). عدّل هنا؛ يتحدّث كل عدّاد وإجمالي. محفوظة في هذا المتصفح فقط.',
+    'SAMPLE · set yearly by the Shipping Association and the Ports Organization. Edit here; every clock and total updates. Saved in this browser only.',
+    'EJEMPLO · fijadas cada año por la asociación de navieras y la autoridad portuaria. Edítalas aquí; todo se recalcula. Solo se guardan en este navegador.',
+    'نمونه · هر سال توسط انجمن کشتیرانی و سازمان بنادر تعیین می‌شود. اینجا ویرایش کنید؛ همه محاسبات به‌روز می‌شود. فقط در همین مرورگر ذخیره می‌شود.', 'عيّنة · تُحدَّد سنويًا من جمعية الملاحة وهيئة الموانئ. عدّل هنا؛ يتحدّث كل عدّاد وإجمالي. محفوظة في هذا المتصفح فقط.',
   ],
   reset: ['Reset to sample', 'Restablecer', 'بازگشت به نمونه', 'إعادة إلى بيانات العيّنة'],
   glossary: ['Glossary', 'Glosario', 'واژه‌نامه', 'مسرد المصطلحات'],
@@ -131,14 +131,6 @@ export type Key = keyof typeof S;
 const IDX: Record<Lang, number> = { en: 0, es: 1, fa: 2, ar: 3 };
 export const tr = (lang: Lang, k: Key): string => S[k][IDX[lang]];
 
-/** Persian term to show beside the English one (EN/ES views). */
-export const FA_TERM: Partial<Record<Key, string>> = {
-  freeTime: 'فری‌تایم', demurrage: 'حق توقف', originalBl: 'اصل بارنامه', draftBl: 'درفت بارنامه', cheque: 'چک تضمین',
-  shippingOrder: 'دستور حمل', cutoff: 'کات‌آف', docCutoff: 'کات‌آف', releaseOrder: 'حواله تحویل کانتینر', arrival: 'آرایوال نوتیس',
-  do: 'دی‌او', warehouse: 'قبض انبار', seals: 'پلمپ', collectFreight: 'کالکت', customer: 'صاحب‌کالا', line: 'خط کشتیرانی',
-  sales: 'بازاریابی', ops: 'قسمت عملیات', tariffs: 'تعرفه', booking: 'بوکینگ', declaration: 'اظهار', loi: 'تعهدنامه',
-  chequeDem: 'چک تضمین', chequeCntr: 'چک تضمین',
-};
 
 export const GLOSSARY: [string, string, string][] = [
   ['صاحب‌کالا', 'Cargo owner, the customer', 'صاحب البضاعة، العميل'],

@@ -19,6 +19,12 @@ import { MsdsRulesEditor } from './Msds';
 import { demoLogin } from './portal';
 import './clients.css';
 import { LogoMark } from '../ui/Brand';
+import { PhoneField, WaButton, WaInboxNote, WaLogList } from '../whatsapp/WhatsApp';
+import { clientRecipients, jobCtx } from '../whatsapp/context';
+import { useWaLog, waFor } from '../whatsapp/log';
+import { wt } from '../whatsapp/i18n';
+import { fmtPhone } from '../whatsapp/phone';
+import { balanceFor, ledgerFor } from '../billing/store';
 
 const INCOTERMS = ['EXW', 'FCA', 'FAS', 'FOB', 'CFR', 'CIF', 'CPT', 'CIP', 'DAP', 'DPU', 'DDP'];
 
@@ -186,6 +192,7 @@ function ClientDashboard({ c, k, lang, L, deadline, onBack, onEdit, onOpenJob, o
           <span className="c-muted">{L('dashboard')} · portal: <bdi className="mono" dir="ltr">{demoLogin(c) || '—'}</bdi> / demo</span>
         </div>
         <button type="button" className="btn sm ghost" onClick={onEdit} data-testid="edit-client">{L('edit')}</button>
+        <ClientWa c={c} k={k} now={now} />
         <button type="button" className="btn sm primary" onClick={() => onNewQuote()} data-testid="client-new-quote">{L('newQuote')}</button>
       </div>
 
@@ -260,16 +267,17 @@ function ClientDashboard({ c, k, lang, L, deadline, onBack, onEdit, onOpenJob, o
             <p className="c-muted c-small">{L('agentsNote')}</p>
             <AgentsEditor agents={c.agents} onChange={(a) => store.setAgents(c.id, a)} lang={lang} testid="dash-agents" />
           </section>
+          <ClientWaLog c={c} />
         </div>
 
         <aside className="q-panel c-info" aria-label={L('contact')}>
           <dl>
             <dt>{L('contact')}</dt>
-            <dd>{c.contactName || '—'}<br /><bdi className="mono" dir="ltr">{c.phone}</bdi><br /><bdi>{c.email}</bdi>{c.address ? <><br />{c.address}</> : null}</dd>
+            <dd>{c.contactName || '—'}<br /><bdi className="mono" dir="ltr">{fmtPhone(c.phone)}</bdi>{c.whatsapp ? <><br /><span className="c-sub">{wt(lang, 'wa')}</span> <bdi className="mono" dir="ltr">{fmtPhone(c.whatsapp)}</bdi></> : null}<br /><bdi>{c.email}</bdi>{c.address ? <><br />{c.address}</> : null}</dd>
             <dt>{L('clearanceAgent')}</dt>
-            <dd>{c.clearanceAgent.name || '—'}{c.clearanceAgent.phone ? <><br /><bdi className="mono" dir="ltr">{c.clearanceAgent.phone}</bdi></> : null}</dd>
+            <dd>{c.clearanceAgent.name || '—'}{c.clearanceAgent.phone ? <><br /><bdi className="mono" dir="ltr">{fmtPhone(c.clearanceAgent.phone)}</bdi></> : null}{c.clearanceAgent.whatsapp ? <><br /><span className="c-sub">{wt(lang, 'wa')}</span> <bdi className="mono" dir="ltr">{fmtPhone(c.clearanceAgent.whatsapp)}</bdi></> : null}</dd>
             <dt>{L('baContact')}</dt>
-            <dd>{c.bandarAbbas.name || '—'}{c.bandarAbbas.phone ? <><br /><bdi className="mono" dir="ltr">{c.bandarAbbas.phone}</bdi></> : null}</dd>
+            <dd>{c.bandarAbbas.name || '—'}{c.bandarAbbas.phone ? <><br /><bdi className="mono" dir="ltr">{fmtPhone(c.bandarAbbas.phone)}</bdi></> : null}{c.bandarAbbas.whatsapp ? <><br /><span className="c-sub">{wt(lang, 'wa')}</span> <bdi className="mono" dir="ltr">{fmtPhone(c.bandarAbbas.whatsapp)}</bdi></> : null}</dd>
           </dl>
           <h3>{L('defaults')}</h3>
           <dl className="c-defs">
@@ -333,13 +341,18 @@ function ClientForm({ c, L, lang, onClose, onSaved }: { c: Client; L: (k: CKey) 
         <div className="c-form">
           <Field label={L('company')}>{txt('name', 'cf-name')}</Field>
           <Field label={L('contactName')}>{txt('contactName')}</Field>
-          <Field label={L('phone')}>{txt('phone')}</Field>
+          <PhoneField label={L('phone')} value={d.phone} onChange={(v) => up('phone', v)} testid="cf-phone" />
+          <PhoneField label={wt(lang, 'waNumber')} hint={wt(lang, 'sameAsPhone')} value={d.whatsapp ?? ''} onChange={(v) => up('whatsapp', v)} testid="cf-whatsapp" />
           <Field label={L('email')}>{txt('email')}</Field>
           <Field label={L('address')} wide>{txt('address')}</Field>
           <Field label={`${L('clearanceAgent')} · ${L('name')}`}><input className="c-in" value={d.clearanceAgent.name} onChange={(e) => up('clearanceAgent', { ...d.clearanceAgent, name: e.target.value })} /></Field>
-          <Field label={`${L('clearanceAgent')} · ${L('phone')}`}><input className="c-in" value={d.clearanceAgent.phone} onChange={(e) => up('clearanceAgent', { ...d.clearanceAgent, phone: e.target.value })} /></Field>
+          <PhoneField label={`${L('clearanceAgent')} · ${L('phone')}`} value={d.clearanceAgent.phone} onChange={(v) => up('clearanceAgent', { ...d.clearanceAgent, phone: v })} testid="cf-broker-phone" />
+          <PhoneField label={`${L('clearanceAgent')} · ${wt(lang, 'waNumber')}`} hint={wt(lang, 'sameAsPhone')} value={d.clearanceAgent.whatsapp ?? ''} onChange={(v) => up('clearanceAgent', { ...d.clearanceAgent, whatsapp: v })} testid="cf-broker-wa" />
+          <span className="c-field" aria-hidden="true" />
           <Field label={`${L('baContact')} · ${L('name')}`}><input className="c-in" value={d.bandarAbbas.name} onChange={(e) => up('bandarAbbas', { ...d.bandarAbbas, name: e.target.value })} /></Field>
-          <Field label={`${L('baContact')} · ${L('phone')}`}><input className="c-in" value={d.bandarAbbas.phone} onChange={(e) => up('bandarAbbas', { ...d.bandarAbbas, phone: e.target.value })} /></Field>
+          <PhoneField label={`${L('baContact')} · ${L('phone')}`} value={d.bandarAbbas.phone} onChange={(v) => up('bandarAbbas', { ...d.bandarAbbas, phone: v })} testid="cf-office-phone" />
+          <PhoneField label={`${L('baContact')} · ${wt(lang, 'waNumber')}`} hint={wt(lang, 'sameAsPhone')} value={d.bandarAbbas.whatsapp ?? ''} onChange={(v) => up('bandarAbbas', { ...d.bandarAbbas, whatsapp: v })} testid="cf-office-wa" />
+          <span className="c-field" aria-hidden="true" />
           <Field label={L('language')}>
             <select className="c-in" value={d.lang} onChange={(e) => up('lang', e.target.value as CLang)}>
               <option value="en">EN</option><option value="es">ES</option><option value="fa">FA</option><option value="ar">AR</option>
@@ -411,7 +424,7 @@ function CompanyForm({ co, L, lang, onClose }: { co: Company; L: (k: CKey) => st
           <Field label={L('company')}><input className="c-in" value={d.name} onChange={(e) => up('name', e.target.value)} data-testid="co-name" /></Field>
           <Field label={`${L('preparedBy')} · ${L('contactName')}`}><input className="c-in" value={d.contactName} onChange={(e) => up('contactName', e.target.value)} data-testid="co-contact" /></Field>
           <Field label={L('email')}><input className="c-in" value={d.email} onChange={(e) => up('email', e.target.value)} data-testid="co-email" /></Field>
-          <Field label={L('phone')}><input className="c-in" value={d.phone} onChange={(e) => up('phone', e.target.value)} data-testid="co-phone" /></Field>
+          <PhoneField label={L('phone')} value={d.phone} onChange={(v) => up('phone', v)} testid="co-phone" />
           <Field label={L('address')} wide><input className="c-in" value={d.address} onChange={(e) => up('address', e.target.value)} /></Field>
           <Field label={L('logo')} wide>
             <span className="c-logo-row">
@@ -421,6 +434,7 @@ function CompanyForm({ co, L, lang, onClose }: { co: Company; L: (k: CKey) => st
             </span>
           </Field>
         </div>
+        <WaInboxNote />
         <div className="c-form-actions">
           <span style={{ flex: 1 }} />
           <button type="button" className="btn sm ghost" onClick={onClose}>{L('cancel')}</button>
@@ -428,5 +442,39 @@ function CompanyForm({ co, L, lang, onClose }: { co: Company; L: (k: CKey) => st
         </div>
       </div>
     </div>
+  );
+}
+
+/** WhatsApp from the client page: the client's contacts; job templates use the job with the largest open balance. */
+function ClientWa({ c, k, now }: { c: Client; k: ClientKpi; now: number }) {
+  const { company, quotes } = useStore();
+  const tariffs = useTariffs();
+  useBilling();
+  const job = [...k.jobs].sort((a, b) => balanceFor(b).open - balanceFor(a).open)[0] ?? null;
+  const ctx = job ? jobCtx(job, { company, ledger: ledgerFor(job), tariffs, now, openBalance: balanceFor(job).open || undefined }) : { company: company.name, now };
+  const q = quotes.filter((x) => x.clientId === c.id).sort((a, b) => b.at - a.at)[0];
+  const quoteText = q ? `${q.route} · ${q.mode} ${q.units}\n${q.options.map((o) => `${o.carrier.replace(/^Sample /, '')}: ${q.currency} ${o.sell.toLocaleString('en-US')}${o.transit != null ? ` · ${o.transit} d` : ''}`).join('\n')}` : '';
+  return (
+    <WaButton
+      className="sm ghost"
+      recipients={clientRecipients(c)}
+      templates={['general', 'quoteSent', 'invoiceIssued', 'payBeforeBl', 'freeTime', 'arrival']}
+      ctx={{ ...ctx, quoteText, quoteRef: q?.id }}
+      defaultTpl="general"
+      link={{ clientId: c.id, jobId: null }}
+      fallbackLang={c.lang}
+      testid="client"
+    />
+  );
+}
+function ClientWaLog({ c }: { c: Client }) {
+  const [lang] = useUiLang();
+  const log = waFor(useWaLog(), 'clientId', c.id);
+  return (
+    <section className="q-panel" aria-label={wt(lang, 'log')} data-testid="client-wa-log">
+      <div className="q-head"><h2>{wt(lang, 'log')} · {num(lang, log.length)}</h2></div>
+      <p className="c-muted c-small">{wt(lang, 'logNote')}</p>
+      <WaLogList entries={log} testid="client-wa-list" />
+    </section>
   );
 }

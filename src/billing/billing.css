@@ -110,3 +110,4 @@ select.b-in { width: auto; }
 .b-lines .b-in.xs { width: 3rem; }
 .b-lines .b-in.wide { min-width: 9rem; }
 .b-lines .b-in:not(.sm):not(.xs):not(.wide) { min-width: 5rem; }
+.b-actions { white-space: nowrap; display: inline-flex; gap: 0.35rem; align-items: center; }

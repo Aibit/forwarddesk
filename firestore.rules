@@ -16,6 +16,8 @@ rules_version = '2';
 //                                        (read: any member — clients pick preferred agents; write: staff; no CRM fields)
 //   orgs/{orgId}/agentCrm/{agentId}      agent CRM: status, contacts, payment terms, credit, rating, KYC, notes, tags — STAFF ONLY
 //   orgs/{orgId}/agentActivities/{aid}   CRM timeline { agentId, kind, at, text, by } — STAFF ONLY
+//   orgs/{orgId}/commLog/{id}            WhatsApp click-to-chat log { channel, at, by, jobId?, clientId?, agentId?, toName, toNumber, template, lang, text }
+//                                        "opened in WhatsApp" only (no delivery status) — STAFF ONLY, append-only
 //   orgs/{orgId}/jobs/{jobId}            { clientId, ..., portal: { draftBlApprovedAt, by } }   (no rebate / margin fields)
 //   orgs/{orgId}/jobInternal/{jobId}     { rebateReceived }               -> line rebate status — STAFF ONLY
 //   orgs/{orgId}/quotes/{qid}            sell-side quote only { clientId, options[{carrier, sell, transit}], status, ... }
@@ -150,6 +152,14 @@ service cloud.firestore {
       return d.keys().hasOnly(['agentId', 'kind', 'at', 'text', 'by'])
         && str(d.agentId, 80) && d.kind in ['note', 'call', 'email', 'meeting', 'rate_request', 'rate_reply']
         && d.at is number && str(d.text, 4000) && d.by == request.auth.uid;
+    }
+    function validCommLog(d) {
+      return d.keys().hasOnly(['channel', 'at', 'by', 'jobId', 'clientId', 'agentId', 'toName', 'toNumber', 'template', 'lang', 'text'])
+        && d.channel == 'whatsapp' && d.at is number && d.by == request.auth.uid
+        && optStr(d, 'jobId', 80) && optStr(d, 'clientId', 80) && optStr(d, 'agentId', 80)
+        && str(d.toName, 200) && d.toNumber is string && d.toNumber.matches('^[+][1-9][0-9]{7,14}$')
+        && d.template in ['freeTime', 'cutoff48', 'payBeforeBl', 'draftBl', 'invoiceIssued', 'arrival', 'quoteSent', 'general']
+        && d.lang in ['en', 'es', 'fa', 'ar'] && str(d.text, 4000);
     }
     function validMsdsDoc(d) {
       return d.keys().hasOnly(['clientId', 'name', 'type', 'size', 'dataB64', 'uid', 'at'])
@@ -291,6 +301,12 @@ service cloud.firestore {
       match /agentCrm/{agentId} {
         allow read, delete: if isStaff(orgId);
         allow create, update: if isStaff(orgId) && validAgentCrm(request.resource.data);
+      }
+      // WhatsApp log: staff append entries; nobody edits history.
+      match /commLog/{id} {
+        allow read, delete: if isStaff(orgId);
+        allow create: if isStaff(orgId) && validCommLog(request.resource.data);
+        allow update: if false;
       }
       match /agentActivities/{aid} {
         allow read, delete: if isStaff(orgId);

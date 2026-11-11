@@ -119,7 +119,7 @@ export function sampleJobs(now = Date.now()): Job[] {
       ],
     },
     {
-      id: 'FD-E-1038', dir: 'export', customer: 'Customer B', commodity: 'Stone blocks (سنگ کوپ)', pol: 'Bandar Abbas', pod: 'Shanghai',
+      id: 'FD-E-1038', dir: 'export', customer: 'Customer B', commodity: 'Stone blocks', pol: 'Bandar Abbas', pod: 'Shanghai',
       line: 'Line B (sample)', step: 'E21',
       containers: [
         box('LNBU', '310452', 'LB-117205', '20', 10, t(-15), t(-2), { heavy: true }),
@@ -165,7 +165,7 @@ export function sampleJobs(now = Date.now()): Job[] {
       quoteText: 'Hi, need price for 2x20GP heavy Bandar Abbas to Nhava Sheva, bitumen in drums, approx 24 tons per container, ready next week. Thanks',
     },
     {
-      id: 'FD-E-1031', dir: 'export', customer: 'Customer B', commodity: 'Stone blocks (سنگ کوپ)', pol: 'Bandar Abbas', pod: 'Shanghai',
+      id: 'FD-E-1031', dir: 'export', customer: 'Customer B', commodity: 'Stone blocks', pol: 'Bandar Abbas', pod: 'Shanghai',
       line: 'Line A (sample)', step: 'E14',
       containers: [
         ...['118020', '118035', '118041', '118057', '118063', '118079'].map((s, i) => box('LNAU', s, `LA-49${3100 + i}`, '20', 21, t(-9), null, { heavy: true })),

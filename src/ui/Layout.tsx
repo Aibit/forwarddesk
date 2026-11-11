@@ -3,8 +3,9 @@ import { Art, Icon, type ArtName, type NavIcon } from './Art';
 import { useUiLang, type UiLang } from './lang';
 import { useTheme } from './theme';
 import { LogoMark } from './Brand';
+import { hasUnread } from '../releaseNotes';
 
-export type ViewKey = 'jobs' | 'finance' | 'clients' | 'agents' | 'portal' | 'quote' | 'pipeline' | 'account';
+export type ViewKey = 'jobs' | 'finance' | 'clients' | 'agents' | 'portal' | 'quote' | 'pipeline' | 'account' | 'whatsnew';
 
 const NAV: Record<ViewKey, { label: [string, string, string, string]; sub: [string, string, string, string]; art: ArtName; icon: NavIcon }> = {
   jobs: {
@@ -47,6 +48,11 @@ const NAV: Record<ViewKey, { label: [string, string, string, string]; sub: [stri
     sub: ['Your company profile, your team and invite links.', 'El perfil de tu empresa, tu equipo y los enlaces de invitación.', 'مشخصات شرکت، تیم و لینک‌های دعوت.', 'ملف شركتك وفريقك وروابط الدعوة.'],
     art: 'containers', icon: 'account',
   },
+  whatsnew: {
+    label: ['What’s new', 'Novedades', 'تازه‌ها', 'الجديد'],
+    sub: ['Recent changes to ForwardDesk, newest first.', 'Cambios recientes en ForwardDesk, del más nuevo al más antiguo.', 'تغییرات اخیر ForwardDesk، از جدید به قدیم.', 'أحدث التغييرات في ForwardDesk، من الأحدث إلى الأقدم.'],
+    art: 'ship', icon: 'news',
+  },
 };
 const LI: Record<UiLang, 0 | 1 | 2 | 3> = { en: 0, es: 1, fa: 2, ar: 3 };
 const UI = {
@@ -56,6 +62,7 @@ const UI = {
   dark: ['Dark mode', 'Modo oscuro', 'حالت تیره', 'الوضع الداكن'],
   menu: ['Menu', 'Menú', 'منو', 'القائمة'],
   close: ['Close menu', 'Cerrar menú', 'بستن منو', 'إغلاق القائمة'],
+  unread: ['New release', 'Nueva versión', 'نسخه جدید', 'إصدار جديد'],
   tagline: ['Freight forwarding desk', 'Escritorio del transitario', 'میز کار فورواردر', 'مكتب الشحن والتخليص'],
 } as const;
 export const navLabel = (k: ViewKey, l: UiLang) => NAV[k].label[LI[l]];
@@ -105,6 +112,13 @@ export function Sidebar({ view, onPick, open, onClose, clientOnly, account = fal
           })}
         </nav>
         <div className="nd-side-foot">
+          {!clientOnly && (
+            <button type="button" className={`nd-item nd-news ${view === 'whatsnew' ? 'active' : ''}`} aria-current={view === 'whatsnew' ? 'page' : undefined} onClick={() => onPick('whatsnew')} data-testid="nav-whatsnew">
+              <Icon name="news" />
+              <span>{navLabel('whatsnew', lang)}</span>
+              {view !== 'whatsnew' && hasUnread() && <i className="nd-dot" data-testid="whatsnew-dot" title={ui('unread', lang)} aria-label={ui('unread', lang)} />}
+            </button>
+          )}
           <div className="nd-group-h">{ui('language', lang)}</div>
           <div className="q-lang nd-lang" role="group" aria-label="Language">
             {(['en', 'es', 'fa', 'ar'] as UiLang[]).map((l) => (

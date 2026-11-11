@@ -4,7 +4,8 @@ import { listedNames } from '../agents/db';
 import { bridge, type QuoteCosts } from '../backend/bridge';
 
 export type CLang = 'en' | 'es' | 'fa' | 'ar';
-export interface Person { name: string; phone: string }
+/** phone / whatsapp: E.164 ("+34600112233"); whatsapp only when it differs from the phone. */
+export interface Person { name: string; phone: string; whatsapp?: string }
 export type AgentType = 'overseas' | 'line' | 'clearance';
 export type AgentRank = 'preferred' | 'allowed' | 'avoid';
 /** A partner the client prefers to work with (overseas agent I2/I4–I8, shipping line, clearance agent). */
@@ -30,6 +31,8 @@ export interface Client {
   jobName?: string;
   contactName: string;
   phone: string;
+  /** separate WhatsApp number (E.164) when it differs from `phone` */
+  whatsapp?: string;
   email: string;
   address: string;
   /** E1/E10: the cargo owner's own customs clearance agent (ترخیص‌کار). */
@@ -71,7 +74,7 @@ export interface QuoteRecord {
   options: { carrier: string; sell: number; transit: number | null }[];
   currency: string;
   status: QuoteStatus;
-  via: ('copy' | 'pdf')[];
+  via: ('copy' | 'pdf' | 'whatsapp')[];
   /** Option the customer accepted (portal), if any. */
   acceptedOption?: string;
   acceptedVia?: 'portal' | 'desk';
@@ -96,7 +99,7 @@ export function sampleClients(): Client[] {
   const base = { sample: true, address: '', notes: '' };
   return [
     { ...base, id: 'c-a', name: 'Customer A', contactName: 'Sample contact A', phone: '+98 000 000 0001', email: 'customer-a@example.com', address: 'Tehran (sample)', clearanceAgent: P('Sample clearance agent 1', '+98 000 000 1001'), bandarAbbas: P('BA office · desk 1 (sample)', '+98 76 0000 0001'), lang: 'fa', incoterm: 'FOB', marginPct: 12, lines: ['Line A'], freeTimeRequest: 14, paymentTerms: 'Prepaid — B/L fee, THC, seals before original B/L', notes: 'Bitumen exporter. Heavy 20′ only. Always ask Line A first.' },
-    { ...base, id: 'c-b', name: 'Customer B', contactName: 'Sample contact B', phone: '+98 000 000 0002', email: 'customer-b@example.com', address: 'Isfahan (sample)', clearanceAgent: P('Sample clearance agent 2', '+98 000 000 1002'), bandarAbbas: P('BA office · desk 2 (sample)', '+98 76 0000 0002'), lang: 'fa', incoterm: 'FOB', marginPct: 15, lines: ['Line B'], freeTimeRequest: 21, paymentTerms: 'Prepaid before original B/L', notes: 'Stone blocks (سنگ کوپ) to China. Heavy; ask for 21 days free time.' },
+    { ...base, id: 'c-b', name: 'Customer B', contactName: 'Sample contact B', phone: '+98 000 000 0002', email: 'customer-b@example.com', address: 'Isfahan (sample)', clearanceAgent: P('Sample clearance agent 2', '+98 000 000 1002'), bandarAbbas: P('BA office · desk 2 (sample)', '+98 76 0000 0002'), lang: 'fa', incoterm: 'FOB', marginPct: 15, lines: ['Line B'], freeTimeRequest: 21, paymentTerms: 'Prepaid before original B/L', notes: 'Stone blocks to China. Heavy; ask for 21 days free time.' },
     { ...base, id: 'c-c', name: 'Customer C', contactName: 'Sample contact C', phone: '+98 000 000 0003', email: 'customer-c@example.com', address: 'Shiraz (sample)', clearanceAgent: P('Sample clearance agent 1', '+98 000 000 1001'), bandarAbbas: P('BA office · desk 1 (sample)', '+98 76 0000 0001'), lang: 'en', incoterm: 'FOB', marginPct: 15, lines: ['Line A', 'Line B', 'Line C'], freeTimeRequest: 14, paymentTerms: '50% on booking, 50% before B/L', notes: 'Bitumen to India. Compares several lines every time.' },
     { ...base, id: 'c-d', name: 'Customer D', contactName: 'Sample contact D', phone: '+98 000 000 0004', email: 'customer-d@example.com', address: 'Mashhad (sample)', clearanceAgent: P('Sample clearance agent 3', '+98 000 000 1003'), bandarAbbas: P('BA office · import desk (sample)', '+98 76 0000 0003'), lang: 'fa', incoterm: 'FOB', marginPct: 12, lines: [], freeTimeRequest: 14, paymentTerms: 'Collect freight at destination (I13)', notes: 'Rice importer. Collect freight + 2–3% handling.' },
     { ...base, id: 'c-e', name: 'Customer E', contactName: 'Sample contact E', phone: '+98 000 000 0005', email: 'customer-e@example.com', address: 'Tabriz (sample)', clearanceAgent: P('Sample clearance agent 2', '+98 000 000 1002'), bandarAbbas: P('BA office · import desk (sample)', '+98 76 0000 0003'), lang: 'en', incoterm: 'FOB', marginPct: 15, lines: [], freeTimeRequest: 10, paymentTerms: 'Prepaid', notes: 'Machinery spare parts from China.' },
@@ -106,8 +109,9 @@ export function sampleClients(): Client[] {
 }
 
 let aid = 0;
+// Sample WhatsApp numbers use the UK range reserved for fiction (+44 7700 900xxx), so a click never reaches a real person.
 const A = (name: string, type: AgentType, ports: string, rank: AgentRank, notes = '', contactName = 'Sample contact'): Agent => ({
-  id: `a-${(aid++).toString(36)}`, name, type, ports, contactName, phone: '+00 000 000 0000', email: `${name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/-+$/, '')}@example.com`, whatsapp: '+00 000 000 0000', rank, notes,
+  id: `a-${(aid++).toString(36)}`, name, type, ports, contactName, phone: '+00 000 000 0000', email: `${name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/-+$/, '')}@example.com`, whatsapp: `+44 7700 900${String(100 + (aid % 900)).padStart(3, '0')}`, rank, notes,
 });
 export function sampleAgents(clientId: string): Agent[] {
   const clearance = (n: string) => A(`Sample clearance agent ${n}`, 'clearance', 'Bandar Abbas (Shahid Rajaee)', 'preferred', 'Collects release order + seals (E12), files the export declaration (E15).');
@@ -211,7 +215,7 @@ export const store = {
     bridge.w?.setCompany(c);
     set({ company: c });
   },
-  recordQuote(q: Omit<QuoteRecord, 'status' | 'via'> & { via: 'copy' | 'pdf' }, costs?: QuoteCosts) {
+  recordQuote(q: Omit<QuoteRecord, 'status' | 'via'> & { via: 'copy' | 'pdf' | 'whatsapp' }, costs?: QuoteCosts) {
     const prev = state.quotes.find((x) => x.id === q.id);
     const rec: QuoteRecord = { ...q, status: prev?.status ?? 'sent', via: [...new Set([...(prev?.via ?? []), q.via])] };
     bridge.w?.recordQuote(rec, costs);

@@ -16,6 +16,7 @@ import type { LaneProfile } from '../clients/lanes';
 import { hydrateMsdsRules, reloadMsdsRules, type MsdsMeta } from '../clients/msds';
 import { agentsDb, joinAgent, splitAgent } from '../agents/db';
 import { activities, type AgentActivity } from '../agents/crm';
+import { waLog, type WaLogEntry } from '../whatsapp/log';
 import { jobsStore } from '../jobs/store';
 import type { Job } from '../jobs/data';
 import { hydrateTariffs, reloadTariffs, type Tariffs } from '../jobs/tariffs';
@@ -148,6 +149,7 @@ function subscribe(role: 'staff' | 'client', clientId: string | null) {
       const a = x.data();
       return { ...(a as AgentActivity), id: x.id };
     })), err));
+    unsubs.push(onSnapshot(c('commLog'), (s) => waLog.hydrate(s.docs.map((x) => ({ ...(x.data() as WaLogEntry), id: x.id }))), err));
   }
   let pubT: Partial<Tariffs> = {};
   let privT: Partial<Tariffs> = {};
@@ -270,6 +272,13 @@ function writer(user: User, role: 'staff' | 'client', clientId: string | null): 
     activityRemove(id) {
       if (staffOnly('agentActivities')) run(deleteDoc(d(`agentActivities/${id}`)));
     },
+    commLogAdd(e) {
+      if (!staffOnly('commLog')) return;
+      const { id, ...rest } = e;
+      // Firestore refuses undefined values: drop empty links.
+      const doc = Object.fromEntries(Object.entries({ ...rest, by: user.uid }).filter(([, v]) => v !== undefined && v !== null));
+      run(setDoc(d(`commLog/${id}`), doc));
+    },
     setMsdsRules(r) {
       if (staffOnly('msdsRules')) run(setDoc(d('settings/msdsRules'), { rules: r }));
     },
@@ -329,6 +338,7 @@ function stop() {
   jobsStore.reload();
   agentsDb.reload();
   activities.reload();
+  waLog.reload();
   reloadTariffs();
   reloadMsdsRules();
   stopBilling();

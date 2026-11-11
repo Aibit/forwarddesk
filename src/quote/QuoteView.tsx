@@ -14,6 +14,8 @@ import {
 import { CSV_COLUMNS, buildOptions, buildQuote, loadRateCsv, optionBadges, sampleRates, type Badge, type Quote, type RateRow, type Side } from './rates';
 import { BADGE_L, MODE_L, ol, type QLang } from './optlabels';
 import { DEFAULT_CATALOG } from '../billing/model';
+import { WaButton } from '../whatsapp/WhatsApp';
+import { clientRecipients } from '../whatsapp/context';
 import { quoteNumber } from './quoteno';
 import { agentForPort, lineRank, store, useStore } from '../clients/store';
 import { SAMPLE_REQUESTS } from './samples';
@@ -590,7 +592,7 @@ export function QuoteView({ seed, onOpenClient }: { seed?: { text: string; n: nu
   }
   const templateHref = `${import.meta.env.BASE_URL}rate-sheet-template.csv`;
 
-  function record(via: 'copy' | 'pdf') {
+  function record(via: 'copy' | 'pdf' | 'whatsapp') {
     if (!custOpts.length) return;
     const units = fields.mode === 'fcl' || fields.mode === 'road' ? equipmentText(fields.equipment).replace(/x/g, '×') : fields.mode === 'air' ? `${custOpts[0].chargeable} kg` : String(custOpts[0].units);
     store.recordQuote({
@@ -1142,6 +1144,16 @@ export function QuoteView({ seed, onOpenClient }: { seed?: { text: string; n: nu
                 <button type="button" className="btn" data-testid="generate-pdf" disabled={pdfState === 'busy' || !custOpts.length} title={lang === 'fa' || lang === 'ar' ? u('pdfFa') : undefined} onClick={() => void doPdf()}>
                   {pdfState === 'busy' ? u('pdfBusy') : pdfState === 'done' ? u('pdfDone') : pdfState === 'error' ? u('pdfErr') : `${u('pdfGen')}${custOpts.length > 1 ? ` (${custOpts.length} ${u('options')})` : ''}${lang === 'fa' || lang === 'ar' ? ' · EN' : ''}`}
                 </button>
+                <WaButton
+                  recipients={clientRecipients(client)}
+                  templates={['quoteSent', 'general']}
+                  ctx={{ company: company.name, quoteText: qText, quoteRef: quoteNumber(text) }}
+                  defaultTpl="quoteSent"
+                  link={{ clientId }}
+                  fallbackLang={lang}
+                  testid="quote"
+                  onOpened={() => record('whatsapp')}
+                />
                 <label className="q-pdf-internal" title={u('internalTitle')}>
                   <input type="checkbox" data-testid="pdf-internal" checked={pdfInternal} onChange={(e) => setPdfInternal(e.target.checked)} /> {u('internal')}
                 </label>

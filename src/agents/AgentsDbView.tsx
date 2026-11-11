@@ -14,6 +14,11 @@ import '../jobs/jobs.css';
 import '../clients/clients.css';
 import './agents.css';
 import './crm.css';
+import { PhoneField, WaButton, WaLogItem } from '../whatsapp/WhatsApp';
+import { dbAgentRecipients } from '../whatsapp/context';
+import { useWaLog, waFor } from '../whatsapp/log';
+import { wt } from '../whatsapp/i18n';
+import { fmtPhone, isE164 } from '../whatsapp/phone';
 
 type SortKey = 'name' | 'country' | 'status' | 'rating' | 'kyc' | 'last';
 type Tab = 'overview' | 'contacts' | 'activity' | 'deals' | 'kyc';
@@ -282,6 +287,7 @@ function AgentDetail({ a, tab, setTab, L, lang, acts, quotes, jobs, usedBy, onCl
             <div className="crm-sub">{[a.city, a.country].filter((x) => x && x !== '—').join(', ')}</div>
           </div>
           <div className="crm-d-btns">
+            <AgentWa a={a} />
             <button type="button" className="btn sm primary" onClick={onEdit} data-testid="agent-edit">{L('edit')}</button>
             <button type="button" className="btn sm ghost" onClick={onClose} data-testid="agent-close">{L('close')}</button>
           </div>
@@ -324,7 +330,7 @@ function AgentDetail({ a, tab, setTab, L, lang, acts, quotes, jobs, usedBy, onCl
               <Row k={L('currency')} v={a.currency} />
               <Row k={L('tags')} v={(a.tags ?? []).length ? <span className="crm-tags">{a.tags!.map((t) => <span key={t} className="crm-tag">{t}</span>)}</span> : ''} />
               <Row k={L('website')} v={a.website ? <a href={/^https?:/.test(a.website) ? a.website : `https://${a.website}`} target="_blank" rel="noreferrer noopener"><bdi dir="ltr">{a.website}</bdi></a> : ''} />
-              <Row k={L('generalContact')} v={[a.email, a.phone, a.whatsapp ? `WA ${a.whatsapp}` : ''].filter(Boolean).join(' · ')} ltr />
+              <Row k={L('generalContact')} v={[a.email, a.phone ? fmtPhone(a.phone) : '', a.whatsapp ? `WhatsApp ${fmtPhone(a.whatsapp)}` : ''].filter(Boolean).join(' · ')} ltr />
               <Row k={L('notes')} v={a.notes} />
               {a.portal && <Row k="Portal" v={`${portalYn(a.portal)} — ${a.portal}`} />}
               <Row k={L('source')} v={a.source} />
@@ -398,7 +404,7 @@ function ContactsPane({ a, L }: { a: DbAgent; L: (k: string) => string }) {
               <div className="crm-contact-links">
                 {c.email && <a href={`mailto:${c.email}`}><bdi dir="ltr">{c.email}</bdi></a>}
                 {c.phone && <a href={`tel:${c.phone.replace(/[^\d+]/g, '')}`}><bdi dir="ltr">{c.phone}</bdi></a>}
-                {c.whatsapp && <a href={`https://wa.me/${c.whatsapp.replace(/\D/g, '')}`} target="_blank" rel="noreferrer noopener">WhatsApp <bdi dir="ltr">{c.whatsapp}</bdi></a>}
+                {c.whatsapp && <span className="crm-sub">WhatsApp <bdi dir="ltr">{fmtPhone(c.whatsapp)}</bdi></span>}
               </div>
             </div>
             <div className="crm-contact-btns">
@@ -412,11 +418,12 @@ function ContactsPane({ a, L }: { a: DbAgent; L: (k: string) => string }) {
   );
 }
 function ContactForm({ c, L, onSave, onCancel }: { c: AgentContact; L: (k: string) => string; onSave: (c: AgentContact) => void; onCancel: () => void }) {
+  const [lang] = useUiLang<Lang>();
   const [d, setD] = useState(c);
   const f = (k: keyof AgentContact, label: string, ltr = false) => <label className="c-field"><span>{label}</span><input className="c-in" dir={ltr ? 'ltr' : undefined} value={d[k]} onChange={(e) => setD({ ...d, [k]: e.target.value })} data-testid={`cf-${k}`} /></label>;
   return (
     <div className="crm-subform" data-testid="contact-form">
-      <div className="c-form crm-form3">{f('name', L('cName'))}{f('role', L('cRole'))}{f('email', L('email'), true)}{f('phone', L('phone'), true)}{f('whatsapp', L('whatsapp'), true)}</div>
+      <div className="c-form crm-form3">{f('name', L('cName'))}{f('role', L('cRole'))}{f('email', L('email'), true)}<PhoneField label={L('phone')} value={d.phone} onChange={(v) => setD({ ...d, phone: v })} testid="cf-phone" /><PhoneField label={L('whatsapp')} hint={wt(lang, 'sameAsPhone')} value={d.whatsapp} onChange={(v) => setD({ ...d, whatsapp: v })} testid="cf-whatsapp" /></div>
       <div className="c-form-actions"><span style={{ flex: 1 }} /><button type="button" className="btn sm ghost" onClick={onCancel}>{L('cancel')}</button><button type="button" className="btn sm primary" disabled={!d.name.trim() && !d.email.trim() && !d.phone.trim()} onClick={() => onSave({ ...d, name: d.name.trim() })} data-testid="cf-save">{L('save')}</button></div>
     </div>
   );
@@ -444,6 +451,7 @@ function ActivityPane({ a, L, lang, mine }: { a: DbAgent; L: (k: string) => stri
         <input className="c-in crm-act-text" placeholder={L('what')} value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && text.trim()) add(); }} data-testid="act-text" />
         <button type="button" className="btn sm primary" disabled={!text.trim()} onClick={add} data-testid="act-log">{L('log')}</button>
       </div>
+      <AgentWaLog a={a} />
       {mine.length === 0 ? <p className="c-muted">{L('noActs')}</p> : (
         <ol className="crm-timeline" data-testid="act-list">
           {mine.map((x) => (
@@ -534,6 +542,7 @@ function AgentForm({ a, L, lang, onClose, onSaved }: { a: DbAgent; L: (k: string
           </label>
           {txt('country', L('country'))}{txt('city', L('city'))}
           {txt('website', L('website'), '', true)}{txt('email', `${L('generalContact')} · ${L('email')}`, '', true)}{txt('phone', L('phone'), '', true)}
+          <PhoneField label={`${L('generalContact')} · ${wt(lang, 'waNumber')}`} hint={wt(lang, 'sameAsPhone')} value={d.whatsapp ?? ''} onChange={(v) => up('whatsapp', v as never)} testid="af-whatsapp" />
         </div>
         <h3 className="crm-h">{L('coverage')}</h3>
         <div className="c-form crm-form3">
@@ -575,7 +584,7 @@ function AgentForm({ a, L, lang, onClose, onSaved }: { a: DbAgent; L: (k: string
               <input className="c-in" placeholder={L('cRole')} value={c.role} onChange={(e) => setC(i, { role: e.target.value })} />
               <input className="c-in" dir="ltr" placeholder={L('email')} value={c.email} onChange={(e) => setC(i, { email: e.target.value })} data-testid={`af-c-email-${i}`} />
               <input className="c-in" dir="ltr" placeholder={L('phone')} value={c.phone} onChange={(e) => setC(i, { phone: e.target.value })} />
-              <input className="c-in" dir="ltr" placeholder={L('whatsapp')} value={c.whatsapp} onChange={(e) => setC(i, { whatsapp: e.target.value })} />
+              <input className={`c-in ${c.whatsapp && !isE164(c.whatsapp) ? 'wa-bad' : ''}`} title={c.whatsapp && !isE164(c.whatsapp) ? wt(lang, 'badPhone') : undefined} dir="ltr" placeholder={`${L('whatsapp')} (+…)`} value={c.whatsapp} onChange={(e) => setC(i, { whatsapp: e.target.value })} data-testid={`af-c-wa-${i}`} />
               <button type="button" className="crm-x" onClick={() => up('contacts', cs.filter((_, j) => j !== i))} aria-label={L('remove')}>×</button>
             </div>
           ))}
@@ -593,6 +602,24 @@ function AgentForm({ a, L, lang, onClose, onSaved }: { a: DbAgent; L: (k: string
           <button type="button" className="btn primary" disabled={!d.name.trim()} onClick={save} data-testid="af-save">{L('save')}</button>
         </div>
       </div>
+    </div>
+  );
+}
+
+/** WhatsApp from the agent page: general number + contacts. */
+function AgentWa({ a }: { a: DbAgent }) {
+  const { company } = useStore();
+  return <WaButton className="sm ghost" recipients={dbAgentRecipients(a)} templates={['general']} ctx={{ company: company.name }} defaultTpl="general" link={{ agentId: a.id }} fallbackLang="en" testid="agent" />;
+}
+function AgentWaLog({ a }: { a: DbAgent }) {
+  const [ui] = useUiLang();
+  const log = waFor(useWaLog(), 'agentId', a.id);
+  if (!log.length) return null;
+  return (
+    <div className="crm-wa-log" data-testid="agent-wa-log">
+      <h3 className="crm-h">{wt(ui, 'log')}</h3>
+      <p className="crm-note">{wt(ui, 'logNote')}</p>
+      <ul className="wa-log">{log.map((e) => <WaLogItem key={e.id} e={e} ui={ui} />)}</ul>
     </div>
   );
 }

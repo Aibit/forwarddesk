@@ -1,0 +1,61 @@
+/* WhatsApp click-to-chat (step 1). Notion-style, green accent from the existing palette, never error red. */
+.wa-ic { flex: none; color: var(--ok-ink); }
+.btn.wa-btn { display: inline-flex; align-items: center; gap: 0.4rem; }
+.btn.wa-btn.primary .wa-ic, .btn.primary .wa-ic { color: currentColor; }
+
+.wa-modal-bg { position: fixed; inset: 0; background: var(--overlay); z-index: 120; display: grid; place-items: center; padding: 1rem; }
+.wa-modal { width: min(680px, 100%); max-height: calc(100vh - 2rem); overflow: auto; background: var(--panel); color: var(--text); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: 0 12px 40px var(--shadow-c); padding: 1.1rem 1.25rem 1rem; font-family: var(--font); font-size: 16px; display: flex; flex-direction: column; gap: 0.85rem; }
+.wa-modal[lang='fa'] { font-family: var(--font-fa); }
+.wa-modal[lang='ar'] { font-family: var(--font-ar); }
+.wa-head { display: flex; align-items: center; gap: 0.6rem; }
+.wa-head h2 { margin: 0; font-size: 1.25rem; color: var(--ink); flex: 1; }
+.wa-head-ic { display: inline-grid; place-items: center; width: 38px; height: 38px; border-radius: 10px; background: var(--pass-dim); border: 1px solid var(--pass-line); flex: none; }
+.wa-label { display: block; font-size: 0.85rem; color: var(--muted); margin-bottom: 0.3rem; font-weight: 500; }
+.wa-muted { color: var(--muted); font-size: 0.9rem; }
+.wa-muted.sm, .wa-warn.sm { font-size: 0.8rem; }
+.wa-hint { margin: 0; color: var(--muted); }
+.wa-warn { margin: 0.35rem 0 0; color: var(--amber-ink); background: var(--amber-dim); border: 1px solid var(--amber-line); border-radius: var(--radius-sm); padding: 0.4rem 0.6rem; font-size: 0.9rem; }
+.wa-warn.sm { padding: 0.15rem 0.4rem; margin-top: 0.25rem; }
+.wa-recips { display: flex; flex-wrap: wrap; gap: 0.45rem; }
+.wa-recip { display: flex; flex-direction: column; align-items: flex-start; gap: 0.1rem; text-align: start; border: 1px solid var(--border-strong); background: var(--panel); color: var(--text); border-radius: var(--radius-sm); padding: 0.45rem 0.7rem; cursor: pointer; font: inherit; min-width: 9rem; }
+.wa-recip:hover { background: var(--row-hover); }
+.wa-recip.on { border-color: var(--ok-ink); background: var(--pass-dim); box-shadow: inset 0 0 0 1px var(--ok-ink); }
+.wa-recip.bad .wa-recip-num { color: var(--amber-ink); }
+.wa-recip-role { font-size: 0.78rem; color: var(--muted); }
+.wa-recip-name { font-weight: 600; color: var(--ink); font-size: 0.95rem; }
+.wa-recip-num { font-family: var(--mono); font-size: 0.85rem; color: var(--muted); }
+.wa-row { display: grid; grid-template-columns: 1fr auto; gap: 0.75rem; align-items: end; }
+.wa-field { display: flex; flex-direction: column; }
+.wa-select { font-size: 1rem; padding: 0.5rem 0.6rem; }
+.wa-langs button { min-width: 3.2rem; }
+.wa-text { font: inherit; font-size: 1rem; line-height: 1.55; min-height: 12rem; resize: vertical; padding: 0.65rem 0.75rem; }
+.wa-modal[lang] .wa-text[lang='fa'] { font-family: var(--font-fa); }
+.wa-modal[lang] .wa-text[lang='ar'] { font-family: var(--font-ar); }
+.wa-how { margin: 0; font-size: 0.85rem; color: var(--muted); background: var(--soft); border-radius: var(--radius-sm); padding: 0.5rem 0.7rem; }
+.wa-foot { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+.wa-flex { flex: 1; }
+.btn.wa-open { display: inline-flex; align-items: center; gap: 0.45rem; text-decoration: none; }
+.btn.wa-open[disabled] { opacity: 0.5; }
+@media (max-width: 560px) { .wa-row { grid-template-columns: 1fr; } .wa-modal { padding: 0.9rem; } }
+
+.wa-phone-row { display: flex; gap: 0.4rem; }
+.wa-cc { flex: 0 0 auto; max-width: 11rem; }
+.wa-num { flex: 1; min-width: 0; font-family: var(--mono); }
+
+.wa-log { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.5rem; }
+.wa-log-item { display: flex; gap: 0.6rem; align-items: flex-start; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.5rem 0.65rem; background: var(--panel-2); }
+.wa-log-ic { display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 8px; background: var(--pass-dim); flex: none; }
+.wa-log-body { flex: 1; min-width: 0; }
+.wa-log-head { display: flex; flex-wrap: wrap; gap: 0.25rem 0.6rem; align-items: baseline; font-size: 0.95rem; }
+.wa-pill { font-size: 0.78rem; font-weight: 600; color: var(--ok-ink); background: var(--pass-dim); border: 1px solid var(--pass-line); border-radius: 999px; padding: 0.05rem 0.5rem; }
+.wa-log-text summary { cursor: pointer; color: var(--muted); font-size: 0.85rem; margin-top: 0.2rem; }
+.wa-log-text pre { white-space: pre-wrap; font-family: inherit; font-size: 0.9rem; margin: 0.35rem 0 0; background: var(--soft); border-radius: var(--radius-sm); padding: 0.5rem 0.6rem; }
+.wa-log-text pre[lang='fa'] { font-family: var(--font-fa); }
+.wa-log-text pre[lang='ar'] { font-family: var(--font-ar); }
+
+.wa-inbox { display: flex; gap: 0.8rem; align-items: flex-start; border: 1px dashed var(--border-strong); border-radius: var(--radius); padding: 0.8rem 1rem; background: var(--panel-2); margin-top: 0.8rem; }
+.wa-inbox h3 { margin: 0 0 0.25rem; font-size: 1.05rem; color: var(--ink); }
+.wa-inbox p { margin: 0; color: var(--text); font-size: 0.95rem; line-height: 1.5; }
+.wa-soon { font-size: 0.75rem; font-weight: 600; color: var(--blue-ink); background: var(--blue-dim); border: 1px solid var(--blue-line); border-radius: 999px; padding: 0.05rem 0.5rem; margin-inline-start: 0.35rem; vertical-align: middle; }
+.wa-sec-h { display: flex; align-items: center; gap: 0.5rem; justify-content: space-between; flex-wrap: wrap; }
+.c-in.wa-bad { border-color: var(--amber-line); background: var(--amber-dim); }

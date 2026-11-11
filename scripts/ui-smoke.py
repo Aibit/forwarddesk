@@ -4,8 +4,9 @@
 
 Checks every tab, FA/RTL, dark mode, the sign-in dialog, quotes + PDF, portal actions,
 Agent CRM (add / edit / contacts / activity / KYC / filters / sort / CSV export+import / archive / FA),
-quote agent picker, MSDS rules, tariffs/glossary and the phone sidebar.
+quote agent picker, MSDS rules, tariffs, glossary (FA only) and the phone sidebar.
 """
+import re
 import sys
 from playwright.sync_api import sync_playwright
 
@@ -44,7 +45,7 @@ with sync_playwright() as p:
     check('create dialog closes back to demo', tid('signin-dialog').count() == 0)
     check('account page hidden in demo', tid('nav-account').count() == 0)
 
-    check('sidebar has 7 pages (Desk + Pitch replaced by Sales pipeline)', pg.locator('.nd-item').count() == 7 and tid('nav-desk').count() == 0 and tid('nav-pitch').count() == 0)
+    check('sidebar has 7 pages (Desk + Pitch replaced by Sales pipeline)', pg.locator('.nd-nav .nd-item').count() == 7 and tid('nav-desk').count() == 0 and tid('nav-pitch').count() == 0)
     check('demo mode pill', tid('auth-demo').is_visible())
     check('page header with drawing', tid('page-header').locator('svg').count() > 0)
     check('jobs summary tiles', tid('jobs-summary').locator('.j-tile').count() == 6)
@@ -57,9 +58,10 @@ with sync_playwright() as p:
         pg.mouse.click(20, 450); pg.wait_for_timeout(200)
     check('job drawer closes', not tid('job-detail').is_visible())
     check('tariffs panel', tid('tariffs').count() == 1)
-    check('glossary', pg.locator('.j-gloss-list > div').count() >= 20)
+    check('EN: no Persian glossary (FA-only)', pg.locator('.j-gloss-list').count() == 0)
 
     tid('ui-lang-fa').click(); pg.wait_for_timeout(200)
+    check('FA: glossary shown', pg.locator('.j-gloss-list > div').count() >= 20)
     check('FA: app is RTL', pg.get_attribute('.app', 'dir') == 'rtl')
     check('FA: sidebar translated', 'مشتریان' in tid('nav-clients').inner_text())
     check('FA: jobs view RTL', pg.get_attribute('.jobs-view', 'dir') == 'rtl')
@@ -129,10 +131,13 @@ with sync_playwright() as p:
     check('quick status change', 'Preferred' in tid('agent-drawer').locator('.crm-d-kicker').inner_text())
     # contacts
     tid('agent-tab-contacts').click(); pg.wait_for_timeout(150)
-    tid('contact-add').click(); tid('cf-name').fill('Second Person'); tid('cf-role').fill('Pricing'); tid('cf-email').fill('pricing@example.com'); tid('cf-whatsapp').fill('+00 111 222')
+    tid('contact-add').click(); tid('cf-name').fill('Second Person'); tid('cf-role').fill('Pricing'); tid('cf-email').fill('pricing@example.com'); tid('cf-whatsapp').fill('+44 7700 900123')
     tid('cf-save').click(); pg.wait_for_timeout(150)
     check('add contact (2 contacts)', pg.locator('[data-testid=contact-card]').count() == 2 and 'pricing@example.com' in tid('pane-contacts').inner_text())
-    check('WhatsApp link', pg.locator('[data-testid=pane-contacts] a[href^="https://wa.me/"]').count() == 1)
+    check('contact WhatsApp number shown (E.164)', '+44 7700' in tid('pane-contacts').inner_text().replace('\u00a0', ' ') or '447700900123' in re.sub(r'\D', '', tid('pane-contacts').inner_text()))
+    tid('wa-btn-agent').click(); pg.wait_for_timeout(200)
+    check('WhatsApp: new contact is a recipient in the agent message dialog', 'Second Person' in tid('wa-dialog').inner_text())
+    pg.keyboard.press('Escape'); pg.wait_for_timeout(150)
     # activity
     tid('agent-tab-activity').click(); pg.wait_for_timeout(150)
     tid('act-kind').select_option('rate_request'); tid('act-text').fill('Asked rate Port One → Port Two'); tid('act-log').click(); pg.wait_for_timeout(150)
@@ -486,6 +491,200 @@ with sync_playwright() as p:
         cut = ph.evaluate("() => { const e = document.querySelector('.nd-crumb-page'); return e ? e.scrollWidth > e.clientWidth + 1 : true }")
         check(f'phone ({pl}): page title in top bar not cut off', not cut)
         pc.close()
+    # ── WhatsApp click-to-chat (step 1) + no Persian outside the FA UI ──
+    from urllib.parse import urlparse, parse_qs, quote as _q
+    wc = b.new_context(viewport={'width': 1440, 'height': 900})
+    wc.route(re.compile(r'https://(api\.)?wa\.me/.*|https://api\.whatsapp\.com/.*'), lambda r: r.fulfill(status=200, body='wa stub'))
+    w = wc.new_page()
+    w.on('pageerror', lambda e: errs.append(str(e)))
+    w.goto(URL, wait_until='networkidle')
+    SCRIPT = r"""(mode) => { const re = mode === 'ar' ? /[\u067E\u0686\u0698\u06AF\u06A9\u06CC]/ : /[\u0600-\u06FF]/; const out = [];
+      const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+      while (w.nextNode()) { const n = w.currentNode; const el = n.parentElement; const t = n.textContent.trim();
+        if (!t || !el || !el.offsetParent) continue;
+        // excluded: customer-entered data, message text set to the recipient's language, language-switch buttons (native names)
+        if (el.closest('textarea, pre, [data-ud], option, .q-lang, .nd-langs, [data-testid^=ui-lang-], [data-testid^=acc-lang-], [data-testid^=portal-lang-], [data-testid^=wa-lang-]')) continue;
+        if (re.test(t)) out.push(t.slice(0, 80)); }
+      return [...new Set(out)]; }"""
+    def no_script(mode, name):
+        left = w.evaluate(SCRIPT, mode)
+        what = 'no Persian-only letters' if mode == 'ar' else 'no Persian/Arabic script'
+        check(f'{mode.upper()} {name}: {what}' + (f' {left[:4]}' if left else ''), not left)
+    def wtid(t): return w.locator(f'[data-testid="{t}"]')
+    def screens(mode):
+        wtid('job-FD-E-1042').click(); w.wait_for_timeout(300); no_script(mode, 'job drawer')
+        for t in ['docs', 'billing']:
+            wtid(f'job-tab-{t}').click(); w.wait_for_timeout(250); no_script(mode, f'job drawer {t}')
+        w.keyboard.press('Escape'); w.wait_for_timeout(200)
+        if wtid('job-detail').count(): w.mouse.click(20, 450); w.wait_for_timeout(200)
+        no_script(mode, 'jobs')
+        for v in ['finance', 'clients', 'agents', 'pipeline', 'quote', 'portal']:
+            wtid('tab-agents' if v == 'agents' else f'nav-{v}').click(); w.wait_for_timeout(350); no_script(mode, v)
+        wtid('nav-clients').click(); w.wait_for_timeout(250); wtid('client-c-a').click(); w.wait_for_timeout(300); no_script(mode, 'client page')
+        wtid('nav-quote').click(); w.wait_for_timeout(250); w.locator('.q-samples button').first.click(); w.wait_for_timeout(500); no_script(mode, 'quote priced')
+        wtid('tab-agents').click(); w.wait_for_timeout(250); w.locator('[data-testid^=agent-row-]').first.click(); w.wait_for_timeout(300); no_script(mode, 'agent page')
+        wtid('agent-close').click(); w.wait_for_timeout(150)
+        wtid('nav-jobs').click(); w.wait_for_timeout(250)
+    no_script('en', 'start screen')
+    wtid('start-demo').click(); w.wait_for_timeout(400)
+    screens('en')
+    wtid('ui-lang-es').click(); w.wait_for_timeout(200); screens('es')
+    wtid('ui-lang-ar').click(); w.wait_for_timeout(200); screens('ar')
+    wtid('ui-lang-en').click(); w.wait_for_timeout(200)
+
+    # job drawer buttons + dialog
+    wtid('job-FD-E-1042').click(); w.wait_for_timeout(300)
+    check('WA: job drawer has client WhatsApp button', wtid('wa-btn-job-client').is_visible())
+    check('WA: job drawer has overseas-agent WhatsApp button', wtid('wa-btn-job-agent').is_visible())
+    wtid('wa-btn-job-client').click(); w.wait_for_timeout(250)
+    check('WA: dialog opens over the drawer (drawer stays)', wtid('wa-dialog').is_visible() and wtid('job-detail').is_visible())
+    check('WA: client contacts listed as recipients', w.locator('[data-testid^=wa-recipient-c-]').count() >= 2)
+    def href(): return wtid('wa-open').get_attribute('href') or ''
+    def txt(): return wtid('wa-text').input_value()
+    def wellformed():
+        h = href(); u = urlparse(h)
+        return u.scheme == 'https' and u.netloc == 'wa.me' and re.fullmatch(r'/[1-9]\d{7,14}', u.path or '') is not None and h.split('?text=', 1)[1] == _q(txt(), safe="-_.!~*'()")
+    check('WA: link is https://wa.me/<digits>?text=<encoded message>', wellformed())
+    check('WA: default template is the free-time one for this job', wtid('wa-tpl').input_value() == 'freeTime')
+    check('WA: message in the client language (FA, RTL)', wtid('wa-text').get_attribute('dir') == 'rtl' and 'FD-E-1042' in txt())
+    wtid('wa-lang-en').click(); w.wait_for_timeout(150)
+    t0 = txt()
+    check('WA: free-time template filled (job, containers, days, deadline)', 'FD-E-1042' in t0 and re.search(r'[A-Z]{4}\d{7}', t0) is not None and 'days' in t0 and 'return' in t0.lower() or 'terminal' in t0)
+    bad = []
+    for opt in w.locator('[data-testid=wa-tpl] option:not([disabled])').all():
+        v = opt.get_attribute('value'); wtid('wa-tpl').select_option(v); w.wait_for_timeout(80)
+        t = txt()
+        if any(x in t for x in ['{', '}', 'undefined', 'null', 'NaN']) or len(t) < 10: bad.append(v)
+    check('WA: every available template fills with no placeholders/undefined' + (f' {bad}' if bad else ''), not bad)
+    wtid('wa-tpl').select_option('cutoff48'); w.wait_for_timeout(80)
+    check('WA: 48h cut-off template has the vessel and 48 hours', '48' in txt() and 'SAMPLE VESSEL' in txt().upper())
+    wtid('wa-tpl').select_option('payBeforeBl'); w.wait_for_timeout(80)
+    check('WA: pay-before-B/L template has the amount and release', 'USD' in txt() and 'original B/L' in txt())
+    wtid('wa-lang-es').click(); w.wait_for_timeout(80)
+    check('WA: ES message', 'Expediente FD-E-1042' in txt() and 'B/L original' in txt())
+    wtid('wa-lang-ar').click(); w.wait_for_timeout(80)
+    check('WA: AR message is RTL and Arabic', wtid('wa-text').get_attribute('dir') == 'rtl' and 'الشحنة' in txt() and not re.search('[\u067E\u0686\u0698\u06AF\u06A9\u06CC]', txt()))
+    wtid('wa-text').fill('Hello & welcome? 100% ✓\nLine 2'); w.wait_for_timeout(80)
+    check('WA: edited text is URL-encoded in the link', wellformed() and '%26' in href() and '%3F' in href() and '%0A' in href())
+    with wc.expect_page() as pop: wtid('wa-open').click()
+    pop.value.close(); w.wait_for_timeout(250)
+    check('WA: dialog closes after opening WhatsApp', wtid('wa-dialog').count() == 0)
+    log = wtid('job-wa-log')
+    check('WA: job timeline logs "Opened in WhatsApp" (not delivered)', log.count() == 1 and 'Opened in WhatsApp' in log.inner_text() and 'deliver' not in log.locator('.wa-pill').inner_text().lower())
+    check('WA: log has template + text snapshot', 'template' in log.inner_text() and 'Hello & welcome?' in log.locator('pre').first.text_content())
+    wtid('wa-btn-job-agent').click(); w.wait_for_timeout(200)
+    check('WA: agent recipient uses a valid E.164 number', wellformed() and w.locator('[data-testid^=wa-recipient-a-]').count() >= 1)
+    w.keyboard.press('Escape'); w.wait_for_timeout(150)
+    check('WA: Escape closes only the WhatsApp dialog', wtid('wa-dialog').count() == 0 and wtid('job-detail').is_visible())
+    w.keyboard.press('Escape'); w.wait_for_timeout(200)
+    if wtid('job-detail').count(): w.mouse.click(20, 450); w.wait_for_timeout(200)
+
+    # client page: button + log carried over from the job
+    wtid('nav-clients').click(); w.wait_for_timeout(250); wtid('client-c-a').click(); w.wait_for_timeout(300)
+    check('WA: client page button', wtid('wa-btn-client').is_visible())
+    check('WA: client log shows the job message', wtid('client-wa-log').locator('[data-testid=wa-log-item]').count() >= 1)
+    wtid('edit-client').click(); w.wait_for_timeout(200)
+    wtid('cf-whatsapp').fill('12345'); w.wait_for_timeout(80)
+    check('WA: phone field flags a non-international number (amber, not red)', wtid('cf-whatsapp-bad').is_visible() and 'veto' not in (wtid('cf-whatsapp-bad').get_attribute('class') or ''))
+    wtid('cf-whatsapp').fill(''); wtid('cf-whatsapp-cc').select_option('971'); wtid('cf-whatsapp').fill('50 123 4567'); w.wait_for_timeout(80)
+    check('WA: country picker + number = E.164', wtid('cf-whatsapp-bad').count() == 0)
+    w.locator('[data-testid=client-form] .c-form-actions .btn.primary').click(); w.wait_for_timeout(250)
+    check('WA: separate WhatsApp number saved on the client', '+971501234567' in w.locator('.c-info').inner_text().replace(' ', ''))
+    wtid('wa-btn-client').click(); w.wait_for_timeout(200)
+    check('WA: client WhatsApp number is used for the contact', '/971501234567?' in href())
+    w.keyboard.press('Escape'); w.wait_for_timeout(150)
+
+    # agent page
+    wtid('tab-agents').click(); w.wait_for_timeout(250); w.locator('[data-testid^=agent-row-]').first.click(); w.wait_for_timeout(250)
+    check('WA: agent page button', wtid('wa-btn-agent').is_visible())
+    wtid('agent-close').click(); w.wait_for_timeout(150)
+
+    # finance
+    wtid('nav-finance').click(); w.wait_for_timeout(300)
+    fb = w.locator('[data-testid^=wa-btn-inv-]')
+    check('WA: invoice rows have WhatsApp buttons', fb.count() >= 1)
+    inv_no = fb.first.get_attribute('data-testid').replace('wa-btn-inv-', '')
+    fb.first.click(); w.wait_for_timeout(200)
+    check('WA: invoice message names the invoice', wtid('wa-tpl').input_value() in ('invoiceIssued', 'payBeforeBl') and inv_no in txt() and wellformed())
+    w.keyboard.press('Escape'); w.wait_for_timeout(150)
+
+    # quote
+    wtid('nav-quote').click(); w.wait_for_timeout(250); w.locator('.q-samples button').first.click(); w.wait_for_timeout(500)
+    check('WA: quote screen button', wtid('wa-btn-quote').is_visible())
+    wtid('wa-btn-quote').click(); w.wait_for_timeout(200)
+    check('WA: quote template carries the quote text', wtid('wa-tpl').input_value() == 'quoteSent' and wtid('quote-text').text_content().strip()[:30] in txt())
+    if wtid('wa-recipient-manual').count(): wtid('wa-recipient-manual').click()
+    wtid('wa-manual-cc').select_option('34'); wtid('wa-manual').fill('600 112 233'); w.wait_for_timeout(80)
+    check('WA: manual number → wa.me/34600112233', '/34600112233?text=' in href() and wellformed())
+    w.keyboard.press('Escape'); w.wait_for_timeout(150)
+
+    # settings placeholder
+    wtid('nav-clients').click(); w.wait_for_timeout(200)
+    if wtid('clients-back').count(): wtid('clients-back').click(); w.wait_for_timeout(150)
+    wtid('edit-company').click(); w.wait_for_timeout(200)
+    note = wtid('wa-inbox-note')
+    check('WA: settings shows "WhatsApp inbox (coming soon)"', note.is_visible() and 'coming soon' in note.inner_text().lower() and 'Business' in note.inner_text())
+    check('WA: inbox note is region-agnostic (no Iran)', 'iran' not in note.inner_text().lower())
+    w.keyboard.press('Escape'); w.mouse.click(5, 5); w.wait_for_timeout(150)
+
+    # RTL in FA / AR
+    for L2 in ['fa', 'ar']:
+        wtid(f'ui-lang-{L2}').click(); wtid('nav-jobs').click(); w.wait_for_timeout(250)
+        wtid('job-FD-E-1042').click(); w.wait_for_timeout(250)
+        wtid('wa-btn-job-client').click(); w.wait_for_timeout(200)
+        d = wtid('wa-dialog')
+        check(f'WA {L2.upper()}: dialog RTL in the UI language', d.get_attribute('dir') == 'rtl' and d.get_attribute('lang') == L2 and wellformed())
+        if L2 == 'ar': check('WA AR: dialog chrome has no Persian-only letters', not re.search('[\u067E\u0686\u0698\u06AF\u06A9\u06CC]', d.locator('.wa-head, .wa-label, .wa-how, footer').all_inner_texts().__str__()))
+        w.keyboard.press('Escape'); w.wait_for_timeout(120); w.keyboard.press('Escape'); w.wait_for_timeout(150)
+        if wtid('job-detail').count(): w.mouse.click(20, 450); w.wait_for_timeout(150)
+    wtid('ui-lang-en').click()
+    wc.close()
+
+    # ── What's new (release notes) ──
+    nc = b.new_context(viewport={'width': 1440, 'height': 900})
+    n = nc.new_page(); n.on('pageerror', lambda e: errs.append(str(e)))
+    n.goto(URL + ('&' if '?' in URL else '?') + 'demo', wait_until='networkidle')
+    if n.locator('[data-testid=start-demo]').count(): n.click('[data-testid=start-demo]')
+    n.wait_for_timeout(300)
+    ntid = lambda t: n.locator(f'[data-testid="{t}"]')
+    check("What's new: sidebar item in the bottom area", ntid('nav-whatsnew').is_visible() and n.locator('.nd-side-foot [data-testid=nav-whatsnew]').count() == 1)
+    check("What's new: unread dot on first visit", ntid('whatsnew-dot').is_visible())
+    dot_bg = n.evaluate("() => getComputedStyle(document.querySelector('[data-testid=whatsnew-dot]')).backgroundColor")
+    check(f"What's new: dot is not red ({dot_bg})", dot_bg.replace(' ', '') in ('rgb(35,131,226)',))
+    ntid('nav-whatsnew').click(); n.wait_for_timeout(300)
+    rels = n.locator('[data-testid^=wn-rel-]')
+    vers = [e.get_attribute('data-testid').replace('wn-rel-', '') for e in rels.all()]
+    check(f"What's new: releases listed newest first {vers}", len(vers) >= 8 and vers == sorted(vers, key=lambda v: [int(x) for x in v.split('.')], reverse=True))
+    page_txt = ntid('whatsnew').inner_text()
+    check("What's new: dates in day-month-year (Madrid)", '11 November 2026' in page_txt and '25 September 2026' in page_txt)
+    check("What's new: titles + bullets", n.locator('.wn-rel h2').count() == len(vers) and n.locator('.wn-rel li').count() >= 2 * len(vers))
+    check("What's new: latest release covers WhatsApp", 'WhatsApp' in rels.first.inner_text())
+    check("What's new: only the latest marked New on first visit", n.locator('[data-testid=wn-new]').count() == 1)
+    check("What's new: page header + crumb", "What’s new" in ntid('page-header').inner_text() and "What’s new" in n.locator('.nd-crumb-page').inner_text())
+    check("What's new: no error-red on the page", n.locator('.wn-list .red, .wn-list .veto').count() == 0)
+    n.wait_for_timeout(150); n.screenshot(path='/workspace/review-shots/whatsapp/en-whats-new.png') if _os.path.isdir('/workspace/review-shots/whatsapp') else None
+    ntid('nav-jobs').click(); n.wait_for_timeout(200)
+    check("What's new: dot clears after viewing", ntid('whatsnew-dot').count() == 0)
+    n.reload(wait_until='networkidle'); n.wait_for_timeout(300)
+    if n.locator('[data-testid=start-demo]').count(): n.click('[data-testid=start-demo]'); n.wait_for_timeout(200)
+    check("What's new: dot stays cleared after reload (localStorage)", ntid('whatsnew-dot').count() == 0)
+    n.evaluate("() => localStorage.setItem('fd.whatsnew.seen', '0.1')"); n.reload(wait_until='networkidle'); n.wait_for_timeout(300)
+    if n.locator('[data-testid=start-demo]').count(): n.click('[data-testid=start-demo]'); n.wait_for_timeout(200)
+    check("What's new: dot returns when a newer release exists", ntid('whatsnew-dot').is_visible())
+    ntid('nav-whatsnew').click(); n.wait_for_timeout(250)
+    check("What's new: releases newer than last seen are marked New", n.locator('[data-testid=wn-new]').count() == len(vers) - 1)
+    OWN = {'en': 'Arabic', 'es': 'Árabe', 'fa': 'زبان عربی', 'ar': 'اللغة العربية'}
+    for L3 in ['es', 'fa', 'ar', 'en']:
+        ntid(f'ui-lang-{L3}').click(); n.wait_for_timeout(250)
+        t3 = ntid('whatsnew').inner_text()
+        h2s = n.locator('.wn-rel h2').all_inner_texts()
+        others = [v for k, v in OWN.items() if k != L3 and v in h2s]
+        ok = OWN[L3] in h2s and not others
+        if L3 in ('en', 'es'): ok = ok and not re.search('[\u0600-\u06FF]', t3)
+        if L3 == 'ar': ok = ok and not re.search('[\u067E\u0686\u0698\u06AF\u06A9\u06CC]', t3)
+        if L3 in ('fa', 'ar'): ok = ok and ntid('whatsnew').get_attribute('dir') == 'rtl'
+        check(f"What's new {L3.upper()}: only {L3.upper()} text" + (' + RTL' if L3 in ('fa', 'ar') else ''), ok)
+    nc.close()
     b.close()
 
 check('no page errors', not errs)

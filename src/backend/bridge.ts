@@ -1,6 +1,7 @@
 // Bridge between the in-browser stores and the optional Firebase backend.
 // In demo mode `bridge.w` is null and every store keeps using localStorage / IndexedDB.
 // In live mode the stores are hydrated from Firestore snapshots and writes go through `bridge.w`.
+import type { WaLogEntry } from '../whatsapp/log';
 import type { Agent, Client, Company, QuoteRecord, QuoteStatus } from '../clients/store';
 import type { LaneProfile } from '../clients/lanes';
 import type { MsdsMeta, MsdsRule } from '../clients/msds';
@@ -33,6 +34,8 @@ export interface Writer {
   agentReplace(list: DbAgent[]): void;
   activityUpsert(a: AgentActivity): void;
   activityRemove(id: string): void;
+  /** WhatsApp click-to-chat log (staff only). */
+  commLogAdd?(e: WaLogEntry): void;
   setMsdsRules(r: MsdsRule[]): void;
   setTariffs(t: Tariffs): void;
   saveMsds(file: File, clientId: string | null): Promise<MsdsMeta>;

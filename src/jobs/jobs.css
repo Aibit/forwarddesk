@@ -211,3 +211,9 @@
 .jobs-view[dir='rtl'] .j-count-k, .jobs-view[dir='rtl'] .j-row-head, .jobs-view[dir='rtl'] .j-dir, .jobs-view[dir='rtl'] .j-owner { text-transform: none; letter-spacing: 0; }
 .jobs-view[dir='rtl'] .j-row-head { font-size: 0.78rem; }
 .jobs-view[dir='rtl'] .j-sample { letter-spacing: 0; font-family: 'IBM Plex Sans Arabic', var(--mono); }
+
+/* WhatsApp log inside the job drawer */
+.j-wa-log { margin-bottom: 0.75rem; }
+.j-wa-log-h { display: flex; align-items: center; gap: 0.4rem; font-weight: 600; margin-bottom: 0.4rem; flex-wrap: wrap; }
+.j-d-actions { flex-wrap: wrap; }
+.j-d-wa { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0.25rem 0 0.75rem; }

@@ -7,6 +7,11 @@ import { bt, day, li, money, type BKey } from './i18n';
 import { billingStore, useBilling } from './store';
 import { BUCKETS, balanceOf, bucketOf, invDue, invOpen, invState, invTotal, pnl, toBase, type Bucket, type ChargeCode, type Invoice, type Ledger } from './model';
 import { downloadBlob, invoicePdf } from './pdf';
+import { clientForJob, useStore } from '../clients/store';
+import { releaseBlockFor } from './store';
+import { useTariffs } from '../jobs/tariffs';
+import { WaButton } from '../whatsapp/WhatsApp';
+import { clientRecipients, jobCtx } from '../whatsapp/context';
 
 type F = 'all' | 'unpaid' | 'overdue' | 'bills';
 
@@ -123,7 +128,7 @@ export function FinanceView({ onOpenJob }: { onOpenJob: (id: string) => void }) 
                       <td className="num mono">{money(lang, invTotal(l, inv), inv.currency)}</td>
                       <td className="num mono">{money(lang, invOpen(l, inv), inv.currency)}</td>
                       <td><span className={`b-pill ${st}`}>{L(st)}</span></td>
-                      <td>{inv.kind === 'invoice' && <button type="button" className="btn ghost sm" onClick={() => void pdf(l, inv)}>{L('pdf')}</button>}</td>
+                      <td><span className="b-actions">{inv.kind === 'invoice' && <button type="button" className="btn ghost sm" onClick={() => void pdf(l, inv)}>{L('pdf')}</button>}{inv.kind === 'invoice' && inv.status === 'issued' && <InvoiceWa l={l} inv={inv} now={now} />}</span></td>
                     </tr>
                   );
                 })}
@@ -164,5 +169,29 @@ export function FinanceView({ onOpenJob }: { onOpenJob: (id: string) => void }) 
         </section>
       </div>
     </div>
+  );
+}
+
+/** WhatsApp for one customer invoice: "invoice issued", or "pay before B/L release" while the release is blocked. */
+function InvoiceWa({ l, inv, now }: { l: Ledger; inv: Invoice; now: number }) {
+  const { clients, company } = useStore();
+  const tariffs = useTariffs();
+  const job = useJobs().find((j) => j.id === l.jobId);
+  if (!job) return null;
+  const client = clients.find((c) => c.id === l.clientId) ?? clientForJob(clients, l.customer);
+  const blk = releaseBlockFor(job, undefined, now);
+  const base = jobCtx(job, { company, ledger: l, tariffs, now });
+  const ctx = { ...base, invoiceNo: inv.no, invoiceAmount: invTotal(l, inv), amount: invOpen(l, inv), currency: inv.currency, due: invDue(inv) };
+  return (
+    <WaButton
+      className="ghost sm"
+      recipients={clientRecipients(client)}
+      templates={['invoiceIssued', 'payBeforeBl', 'general']}
+      ctx={ctx}
+      defaultTpl={blk.blocking && invOpen(l, inv) > 0.005 ? 'payBeforeBl' : 'invoiceIssued'}
+      link={{ jobId: job.id, clientId: client?.id ?? null }}
+      fallbackLang={client?.lang ?? 'en'}
+      testid={`inv-${inv.no}`}
+    />
   );
 }

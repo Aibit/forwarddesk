@@ -3,6 +3,8 @@ import { newAgent, type Agent, type AgentRank, type AgentType, type CLang } from
 import { ct, type CKey } from './i18n';
 import { isHidden, isListed, pickable, statusOf, useAgentsDb, type DbAgent } from '../agents/db';
 import '../agents/agents.css';
+import { PhoneField } from '../whatsapp/WhatsApp';
+import { wt } from '../whatsapp/i18n';
 
 const TYPES: AgentType[] = ['line', 'overseas', 'clearance'];
 const RANKS: AgentRank[] = ['preferred', 'allowed', 'avoid'];
@@ -57,9 +59,9 @@ export function AgentsEditor({ agents, onChange, lang, testid = 'agents' }: { ag
                     </label>
                     <label className="c-field wide"><span>{L('ports')}</span><input className="c-in" value={a.ports} onChange={(e) => up(a.id, { ports: e.target.value })} placeholder="Nhava Sheva, Mundra" data-testid={`${testid}-ports`} /></label>
                     <label className="c-field"><span>{L('contactName')}</span><input className="c-in" value={a.contactName} onChange={(e) => up(a.id, { contactName: e.target.value })} /></label>
-                    <label className="c-field"><span>{L('phone')}</span><input className="c-in" value={a.phone} onChange={(e) => up(a.id, { phone: e.target.value })} /></label>
+                    <PhoneField label={L('phone')} value={a.phone} onChange={(v) => up(a.id, { phone: v })} testid={`${testid}-phone`} />
                     <label className="c-field"><span>{L('email')}</span><input className="c-in" value={a.email} onChange={(e) => up(a.id, { email: e.target.value })} /></label>
-                    <label className="c-field"><span>{L('whatsapp')}</span><input className="c-in" value={a.whatsapp} onChange={(e) => up(a.id, { whatsapp: e.target.value })} /></label>
+                    <PhoneField label={L('whatsapp')} hint={wt(lang, 'sameAsPhone')} value={a.whatsapp} onChange={(v) => up(a.id, { whatsapp: v })} testid={`${testid}-whatsapp`} />
                     <label className="c-field wide"><span>{L('notes')}</span><input className="c-in" value={a.notes} onChange={(e) => up(a.id, { notes: e.target.value })} /></label>
                   </div>
                   <div className="c-form-actions">

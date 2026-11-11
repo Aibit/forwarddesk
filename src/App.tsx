@@ -20,6 +20,7 @@ import { Sidebar, PageHeader, navLabel, ui, type ViewKey } from './ui/Layout';
 import { Icon } from './ui/Art';
 import { useUiLang } from './ui/lang';
 import { LogoMark } from './ui/Brand';
+import { WhatsNewView } from './WhatsNew';
 
 function App() {
   const [viewMode, setViewMode] = useState<ViewKey>('jobs');
@@ -121,6 +122,7 @@ function App() {
       )}
       {(viewMode === 'portal' || clientOnly) && <PortalView />}
       {!clientOnly && viewMode === 'agents' && <AgentsDbView />}
+      {!clientOnly && viewMode === 'whatsnew' && <WhatsNewView />}
       {!clientOnly && viewMode === 'quote' && <QuoteView seed={quoteSeed} onOpenClient={openClient} />}
       {!clientOnly && viewMode === 'pipeline' && (
         <PipelineView onOpenJob={openJob} onOpenClient={openClient} onNewQuote={() => { setQuoteSeed((q) => ({ text: '', n: (q?.n ?? 0) + 1 })); setViewMode('quote'); }} />

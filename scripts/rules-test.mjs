@@ -189,6 +189,20 @@ await t('staff of another account cannot read agents', assertFails(getDoc(doc(st
 await t('staff of another account cannot read agent CRM', assertFails(getDoc(doc(staffX, `${O}/agentCrm/A1`))));
 await t('staff of another account cannot write agent CRM', assertFails(setDoc(doc(staffX, `${O}/agentCrm/A9`), { status: 'active' })));
 await t('staff of another account cannot read activities', assertFails(getDoc(doc(staffX, `${O}/agentActivities/act1`))));
+
+// ---- WhatsApp click-to-chat log (commLog) ----
+const wa = (extra = {}) => Object.fromEntries(Object.entries({ channel: 'whatsapp', at: 5, by: 'staff1', jobId: 'J1', clientId: 'C', toName: 'Client contact', toNumber: '+34600112233', template: 'freeTime', lang: 'es', text: 'Hola', ...extra }).filter(([, v]) => v !== undefined));
+await t('staff logs a WhatsApp open', assertSucceeds(setDoc(doc(staff, `${O}/commLog/wa1`), wa())));
+await t('staff logs a WhatsApp open to an agent (no job)', assertSucceeds(setDoc(doc(staff, `${O}/commLog/wa2`), wa({ jobId: undefined, clientId: undefined, agentId: 'A1', template: 'general', lang: 'ar' }))));
+await t('staff reads the WhatsApp log', assertSucceeds(getDocs(collection(staff, `${O}/commLog`))));
+await t('WhatsApp log is append-only (no edits)', assertFails(setDoc(doc(staff, `${O}/commLog/wa1`), wa({ text: 'changed' }))));
+await t('cannot log a WhatsApp open as someone else', assertFails(setDoc(doc(staff, `${O}/commLog/wa3`), wa({ by: 'cliC' }))));
+await t('cannot log a non-E.164 number', assertFails(setDoc(doc(staff, `${O}/commLog/wa3`), wa({ toNumber: '0600 112 233' }))));
+await t('cannot log a delivery status (no such field)', assertFails(setDoc(doc(staff, `${O}/commLog/wa3`), wa({ delivered: true }))));
+await t('cannot log an unknown template', assertFails(setDoc(doc(staff, `${O}/commLog/wa3`), wa({ template: 'spam' }))));
+await t('C cannot read the WhatsApp log', assertFails(getDocs(collection(c, `${O}/commLog`))));
+await t('C cannot write the WhatsApp log', assertFails(setDoc(doc(c, `${O}/commLog/wa4`), wa({ by: 'cliC' }))));
+await t('staff of another account cannot read the WhatsApp log', assertFails(getDoc(doc(staffX, `${O}/commLog/wa1`))));
 await t('stranger cannot read agent CRM', assertFails(getDoc(doc(stranger, `${O}/agentCrm/A1`))));
 await t('anon cannot list agents', assertFails(getDocs(collection(anon, `${O}/agents`))));
 
