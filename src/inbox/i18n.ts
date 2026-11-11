@@ -8,7 +8,7 @@ const S = {
   mockServer: ['Your service runs the mock provider: nothing is sent and statuses are simulated.', 'Su servicio usa el proveedor simulado: no se envía nada y los estados son simulados.', 'سرویس شما با ارائه‌دهنده آزمایشی کار می‌کند: چیزی ارسال نمی‌شود و وضعیت‌ها شبیه‌سازی‌اند.', 'تعمل خدمتك بالمزوّد التجريبي: لا يُرسل شيء والحالات محاكاة.'],
   offline: ['Cannot reach the WhatsApp service: {e}', 'No se puede contactar con el servicio de WhatsApp: {e}', 'دسترسی به سرویس واتساپ ممکن نیست: {e}', 'تعذّر الوصول إلى خدمة واتساب: {e}'],
   notConfiguredH: ['Connect a WhatsApp Business number', 'Conecte un número de WhatsApp Business', 'اتصال یک شماره واتساپ بیزینس', 'اربط رقم واتساب للأعمال'],
-  notConfiguredP: ['The two-way inbox needs the ForwardDesk WhatsApp service and an official WhatsApp Business number (Cloud API or 360dialog). Until then, the WhatsApp buttons on jobs, clients, agents, invoices and quotes open your own WhatsApp with the message ready.', 'La bandeja bidireccional necesita el servicio de WhatsApp de ForwardDesk y un número oficial de WhatsApp Business (Cloud API o 360dialog). Mientras tanto, los botones de WhatsApp en expedientes, clientes, agentes, facturas y cotizaciones abren su propio WhatsApp con el mensaje listo.', 'صندوق پیام دوطرفه به سرویس واتساپ ForwardDesk و یک شماره رسمی واتساپ بیزینس (Cloud API یا 360dialog) نیاز دارد. تا آن زمان، دکمه‌های واتساپ در پرونده‌ها، مشتریان، نمایندگان، فاکتورها و قیمت‌ها واتساپ خودتان را با پیام آماده باز می‌کنند.', 'يحتاج صندوق الوارد ثنائي الاتجاه إلى خدمة واتساب من ForwardDesk ورقم واتساب للأعمال رسمي (Cloud API أو 360dialog). وحتى ذلك الحين، تفتح أزرار واتساب في الشحنات والعملاء والوكلاء والفواتير والعروض واتساب الخاص بك والرسالة جاهزة.'],
+  notConfiguredP: ['The two-way inbox needs the ForwardDesk WhatsApp service and an official WhatsApp Business number (Cloud API or 360dialog). Until then, the WhatsApp buttons on bookings, clients, agents, invoices and quotes open your own WhatsApp with the message ready.', 'La bandeja bidireccional necesita el servicio de WhatsApp de ForwardDesk y un número oficial de WhatsApp Business (Cloud API o 360dialog). Mientras tanto, los botones de WhatsApp en reservas, clientes, agentes, facturas y cotizaciones abren su propio WhatsApp con el mensaje listo.', 'صندوق پیام دوطرفه به سرویس واتساپ ForwardDesk و یک شماره رسمی واتساپ بیزینس (Cloud API یا 360dialog) نیاز دارد. تا آن زمان، دکمه‌های واتساپ در بوکینگ‌ها، مشتریان، نمایندگان، فاکتورها و قیمت‌ها واتساپ خودتان را با پیام آماده باز می‌کنند.', 'يحتاج صندوق الوارد ثنائي الاتجاه إلى خدمة واتساب من ForwardDesk ورقم واتساب للأعمال رسمي (Cloud API أو 360dialog). وحتى ذلك الحين، تفتح أزرار واتساب في الحجوزات والعملاء والوكلاء والفواتير والعروض واتساب الخاص بك والرسالة جاهزة.'],
   search: ['Search conversations', 'Buscar conversaciones', 'جست‌وجوی گفت‌وگوها', 'ابحث في المحادثات'],
   fAll: ['All', 'Todas', 'همه', 'الكل'],
   fUnread: ['Unread', 'Sin leer', 'خوانده‌نشده', 'غير مقروءة'],
@@ -18,9 +18,9 @@ const S = {
   client: ['Client', 'Cliente', 'مشتری', 'عميل'],
   agent: ['Agent', 'Agente', 'نماینده', 'وكيل'],
   unlinked: ['Not linked', 'Sin vincular', 'بدون پیوند', 'غير مرتبط'],
-  job: ['Job', 'Expediente', 'پرونده', 'الشحنة'],
-  noJob: ['No job', 'Sin expediente', 'بدون پرونده', 'بلا شحنة'],
-  linkJob: ['Link to job', 'Vincular a expediente', 'پیوند به پرونده', 'ربط بشحنة'],
+  job: ['Booking', 'Reserva', 'بوکینگ', 'الحجز'],
+  noJob: ['No booking', 'Sin reserva', 'بدون بوکینگ', 'بلا حجز'],
+  linkJob: ['Link to booking', 'Vincular a reserva', 'پیوند به بوکینگ', 'ربط بحجز'],
   byText: ['found in a message', 'detectado en un mensaje', 'از متن پیام', 'من نص رسالة'],
   byStaff: ['set by staff', 'elegido por el equipo', 'انتخاب کارمند', 'اختيار الموظف'],
   winOpen: ['Reply window open · {t} left', 'Ventana de respuesta abierta · quedan {t}', 'پنجره پاسخ باز است · {t} مانده', 'نافذة الرد مفتوحة · متبقٍ {t}'],
@@ -33,8 +33,8 @@ const S = {
   send: ['Send', 'Enviar', 'ارسال', 'إرسال'],
   attach: ['Attach PDF', 'Adjuntar PDF', 'پیوست PDF', 'إرفاق PDF'],
   attachFrom: ['Documents from {job}', 'Documentos de {job}', 'اسناد {job}', 'مستندات {job}'],
-  noDocs: ['This job has no invoices or B/L documents yet.', 'Este expediente aún no tiene facturas ni documentos de B/L.', 'این پرونده هنوز فاکتور یا سند بارنامه ندارد.', 'لا توجد فواتير أو مستندات بوليصة لهذه الشحنة بعد.'],
-  linkFirst: ['Link a job to attach its PDFs.', 'Vincule un expediente para adjuntar sus PDF.', 'برای پیوست PDF، گفت‌وگو را به یک پرونده پیوند دهید.', 'اربط المحادثة بشحنة لإرفاق ملفاتها.'],
+  noDocs: ['This booking has no invoices or B/L documents yet.', 'Esta reserva aún no tiene facturas ni documentos de B/L.', 'این بوکینگ هنوز فاکتور یا سند بارنامه ندارد.', 'لا توجد فواتير أو مستندات بوليصة لهذا الحجز بعد.'],
+  linkFirst: ['Link a booking to attach its PDFs.', 'Vincule una reserva para adjuntar sus PDF.', 'برای پیوست PDF، گفت‌وگو را به یک بوکینگ پیوند دهید.', 'اربط المحادثة بحجز لإرفاق ملفاتها.'],
   invoice: ['Invoice', 'Factura', 'فاکتور', 'فاتورة'],
   template: ['Template', 'Plantilla', 'قالب', 'القالب'],
   msgLang: ['Message language', 'Idioma del mensaje', 'زبان پیام', 'لغة الرسالة'],
@@ -88,7 +88,7 @@ export const it = (l: UiLang, k: IKey, vars?: Record<string, string | number>) =
   return s;
 };
 export const I_STRINGS = S;
-const LOC: Record<UiLang, string> = { en: 'en-GB', es: 'es-ES', fa: 'fa-IR', ar: 'ar-EG' };
+const LOC: Record<UiLang, string> = { en: 'en-GB', es: 'es-ES', fa: 'fa-IR-u-ca-gregory', ar: 'ar-EG' };
 export const num = (l: UiLang, n: number) => n.toLocaleString(LOC[l]);
 export const when = (l: UiLang, ms: number, now = Date.now()) => {
   const d = new Date(ms);

@@ -47,7 +47,7 @@ export const TPL_NAME: Record<TplKey, [string, string, string, string]> = {
 const LI: Record<WaLang, 0 | 1 | 2 | 3> = { en: 0, es: 1, fa: 2, ar: 3 };
 export const tplName = (k: TplKey, lang: WaLang) => TPL_NAME[k][LI[lang]] ?? TPL_NAME[k][0];
 
-const LOC: Record<WaLang, string> = { en: 'en-GB', es: 'es-ES', fa: 'fa-IR', ar: 'ar-EG' };
+const LOC: Record<WaLang, string> = { en: 'en-GB', es: 'es-ES', fa: 'fa-IR-u-ca-gregory', ar: 'ar-EG' };
 const nf = (lang: WaLang, n: number, max = 0) => new Intl.NumberFormat(LOC[lang], { maximumFractionDigits: max, minimumFractionDigits: 0 }).format(n);
 const day = (lang: WaLang, ms: number) => new Date(ms).toLocaleDateString(LOC[lang], { day: 'numeric', month: 'long' });
 const when = (lang: WaLang, ms: number) => new Date(ms).toLocaleString(LOC[lang], { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' });
@@ -104,40 +104,40 @@ export function fillTpl(k: TplKey, lang: WaLang, c: TplCtx): string {
   const bye = { en: 'Best regards,', es: 'Saludos cordiales,', fa: 'با احترام،', ar: 'مع خالص التحية،' }[lang] + (co ? `\n${co}` : '');
   const body: Record<TplKey, Record<WaLang, string>> = {
     freeTime: {
-      en: `Shipment ${job}${route}: free time for container(s) ${cn} ends in ${daysText(lang, left)}, on ${fe}.\n${exp ? `Please make sure the container(s) are at the terminal for loading by ${fe} to avoid demurrage charges.` : `Please return the empty container(s) by ${fe} to avoid demurrage charges.`}`,
-      es: `Expediente ${job}${route}: el tiempo libre de los contenedores ${cn} termina en ${daysText(lang, left)}, el ${fe}.\n${exp ? `Por favor, asegúrense de que los contenedores estén en la terminal para la carga antes del ${fe} para evitar cargos de demora.` : `Por favor, devuelvan los contenedores vacíos antes del ${fe} para evitar cargos de demora.`}`,
-      fa: `پرونده ${job}${route}: فری‌تایم کانتینر(های) ${cn} تا ${daysText(lang, left)} دیگر، در تاریخ ${fe}، تمام می‌شود.\n${exp ? `لطفاً تا ${fe} کانتینر(ها) را برای بارگیری به ترمینال برسانید تا مشمول حق توقف (دموراژ) نشوید.` : `لطفاً کانتینر(های) خالی را تا ${fe} عودت دهید تا مشمول حق توقف (دموراژ) نشوید.`}`,
-      ar: `الشحنة ${job}${route}: تنتهي الفترة المجانية للحاوية/الحاويات ${cn} خلال ${daysText(lang, left)}، في ${fe}.\n${exp ? `يُرجى التأكد من وصول الحاويات إلى المحطة للتحميل قبل ${fe} لتجنّب غرامات التأخير.` : `يُرجى إعادة الحاويات الفارغة قبل ${fe} لتجنّب غرامات التأخير.`}`,
+      en: `Booking ${job}${route}: free time for container(s) ${cn} ends in ${daysText(lang, left)}, on ${fe}.\n${exp ? `Please make sure the container(s) are at the terminal for loading by ${fe} to avoid demurrage charges.` : `Please return the empty container(s) by ${fe} to avoid demurrage charges.`}`,
+      es: `Reserva ${job}${route}: el tiempo libre de los contenedores ${cn} termina en ${daysText(lang, left)}, el ${fe}.\n${exp ? `Por favor, asegúrense de que los contenedores estén en la terminal para la carga antes del ${fe} para evitar cargos de demora.` : `Por favor, devuelvan los contenedores vacíos antes del ${fe} para evitar cargos de demora.`}`,
+      fa: `بوکینگ ${job}${route}: فری‌تایم کانتینر(های) ${cn} تا ${daysText(lang, left)} دیگر، در تاریخ ${fe}، تمام می‌شود.\n${exp ? `لطفاً تا ${fe} کانتینر(ها) را برای بارگیری به ترمینال برسانید تا مشمول حق توقف (دموراژ) نشوید.` : `لطفاً کانتینر(های) خالی را تا ${fe} عودت دهید تا مشمول حق توقف (دموراژ) نشوید.`}`,
+      ar: `الحجز ${job}${route}: تنتهي الفترة المجانية للحاوية/الحاويات ${cn} خلال ${daysText(lang, left)}، في ${fe}.\n${exp ? `يُرجى التأكد من وصول الحاويات إلى المحطة للتحميل قبل ${fe} لتجنّب غرامات التأخير.` : `يُرجى إعادة الحاويات الفارغة قبل ${fe} لتجنّب غرامات التأخير.`}`,
     },
     cutoff48: {
-      en: `Reminder for shipment ${job}${route}: the document cut-off for vessel ${c.vessel ?? ''} is ${c.cutoff != null ? when(lang, c.cutoff) : ''}, within the next 48 hours.\nPlease send any outstanding documents (shipping instructions, VGM, export declaration) before then.`,
-      es: `Recordatorio del expediente ${job}${route}: el cut-off documental del buque ${c.vessel ?? ''} es el ${c.cutoff != null ? when(lang, c.cutoff) : ''}, dentro de las próximas 48 horas.\nPor favor, envíen la documentación pendiente (instrucciones de embarque, VGM, declaración de exportación) antes de esa hora.`,
-      fa: `یادآوری پرونده ${job}${route}: کات‌آف مدارک کشتی ${c.vessel ?? ''} در ${c.cutoff != null ? when(lang, c.cutoff) : ''} است (کمتر از ۴۸ ساعت دیگر).\nلطفاً مدارک باقی‌مانده (دستور حمل، VGM، اظهارنامه صادراتی) را پیش از آن ارسال کنید.`,
-      ar: `تذكير بخصوص الشحنة ${job}${route}: الموعد النهائي لتسليم المستندات للسفينة ${c.vessel ?? ''} هو ${c.cutoff != null ? when(lang, c.cutoff) : ''}، أي خلال الـ٤٨ ساعة القادمة.\nيُرجى إرسال المستندات المتبقية (تعليمات الشحن، VGM، بيان التصدير الجمركي) قبل ذلك.`,
+      en: `Reminder for booking ${job}${route}: the document cut-off for vessel ${c.vessel ?? ''} is ${c.cutoff != null ? when(lang, c.cutoff) : ''}, within the next 48 hours.\nPlease send any outstanding documents (shipping instructions, VGM, export declaration) before then.`,
+      es: `Recordatorio de la reserva ${job}${route}: el cut-off documental del buque ${c.vessel ?? ''} es el ${c.cutoff != null ? when(lang, c.cutoff) : ''}, dentro de las próximas 48 horas.\nPor favor, envíen la documentación pendiente (instrucciones de embarque, VGM, declaración de exportación) antes de esa hora.`,
+      fa: `یادآوری بوکینگ ${job}${route}: کات‌آف مدارک کشتی ${c.vessel ?? ''} در ${c.cutoff != null ? when(lang, c.cutoff) : ''} است (کمتر از ۴۸ ساعت دیگر).\nلطفاً مدارک باقی‌مانده (دستور حمل، VGM، اظهارنامه صادراتی) را پیش از آن ارسال کنید.`,
+      ar: `تذكير بخصوص الحجز ${job}${route}: الموعد النهائي لتسليم المستندات للسفينة ${c.vessel ?? ''} هو ${c.cutoff != null ? when(lang, c.cutoff) : ''}، أي خلال الـ٤٨ ساعة القادمة.\nيُرجى إرسال المستندات المتبقية (تعليمات الشحن، VGM، بيان التصدير الجمركي) قبل ذلك.`,
     },
     payBeforeBl: {
-      en: `Shipment ${job}${route}: ${c.invoiceNo ? `invoice ${c.invoiceNo} has` : 'there is'} an open balance of ${amt}.\nWe will release ${rel} as soon as payment is received.`,
-      es: `Expediente ${job}${route}: ${c.invoiceNo ? `la factura ${c.invoiceNo} tiene` : 'hay'} un saldo pendiente de ${amt}.\nLiberaremos ${rel} en cuanto recibamos el pago.`,
-      fa: `پرونده ${job}${route}: ${c.invoiceNo ? `مانده فاکتور ${c.invoiceNo}` : 'مانده حساب'} به مبلغ ${amt} هنوز پرداخت نشده است.\nپس از دریافت وجه، ${rel} بلافاصله صادر می‌شود.`,
-      ar: `الشحنة ${job}${route}: يوجد رصيد مستحق${c.invoiceNo ? ` على الفاتورة ${c.invoiceNo}` : ''} بقيمة ${amt}.\nسنُفرج عن ${rel} فور استلام الدفعة.`,
+      en: `Booking ${job}${route}: ${c.invoiceNo ? `invoice ${c.invoiceNo} has` : 'there is'} an open balance of ${amt}.\nWe will release ${rel} as soon as payment is received.`,
+      es: `Reserva ${job}${route}: ${c.invoiceNo ? `la factura ${c.invoiceNo} tiene` : 'hay'} un saldo pendiente de ${amt}.\nLiberaremos ${rel} en cuanto recibamos el pago.`,
+      fa: `بوکینگ ${job}${route}: ${c.invoiceNo ? `مانده فاکتور ${c.invoiceNo}` : 'مانده حساب'} به مبلغ ${amt} هنوز پرداخت نشده است.\nپس از دریافت وجه، ${rel} بلافاصله صادر می‌شود.`,
+      ar: `الحجز ${job}${route}: يوجد رصيد مستحق${c.invoiceNo ? ` على الفاتورة ${c.invoiceNo}` : ''} بقيمة ${amt}.\nسنُفرج عن ${rel} فور استلام الدفعة.`,
     },
     draftBl: {
-      en: `The draft B/L for shipment ${job}${route} is ready for your approval.\nPlease check all details and reply with your approval or any corrections.`,
-      es: `El borrador del B/L del expediente ${job}${route} está listo para su aprobación.\nPor favor, revisen todos los datos y respondan con su aprobación o las correcciones necesarias.`,
-      fa: `درفت بارنامه پرونده ${job}${route} برای تأیید شما آماده است.\nلطفاً همه مشخصات را بررسی کنید و تأیید یا اصلاحات را اعلام فرمایید.`,
-      ar: `مسودة بوليصة الشحن للشحنة ${job}${route} جاهزة لموافقتكم.\nيُرجى مراجعة جميع البيانات والرد بالموافقة أو بالتعديلات المطلوبة.`,
+      en: `The draft B/L for booking ${job}${route} is ready for your approval.\nPlease check all details and reply with your approval or any corrections.`,
+      es: `El borrador del B/L de la reserva ${job}${route} está listo para su aprobación.\nPor favor, revisen todos los datos y respondan con su aprobación o las correcciones necesarias.`,
+      fa: `درفت بارنامه بوکینگ ${job}${route} برای تأیید شما آماده است.\nلطفاً همه مشخصات را بررسی کنید و تأیید یا اصلاحات را اعلام فرمایید.`,
+      ar: `مسودة بوليصة الشحن للحجز ${job}${route} جاهزة لموافقتكم.\nيُرجى مراجعة جميع البيانات والرد بالموافقة أو بالتعديلات المطلوبة.`,
     },
     invoiceIssued: {
-      en: `We have issued invoice ${c.invoiceNo ?? ''} for shipment ${job}: ${invAmt}${c.due != null ? `, due ${day(lang, c.due)}` : ''}.\nThank you for your business.`,
-      es: `Hemos emitido la factura ${c.invoiceNo ?? ''} del expediente ${job}: ${invAmt}${c.due != null ? `, con vencimiento el ${day(lang, c.due)}` : ''}.\nGracias por su confianza.`,
-      fa: `فاکتور ${c.invoiceNo ?? ''} برای پرونده ${job} صادر شد: مبلغ ${invAmt}${c.due != null ? `، سررسید ${day(lang, c.due)}` : ''}.\nاز همکاری شما سپاسگزاریم.`,
-      ar: `أصدرنا الفاتورة ${c.invoiceNo ?? ''} للشحنة ${job}: بقيمة ${invAmt}${c.due != null ? `، تاريخ الاستحقاق ${day(lang, c.due)}` : ''}.\nشكرًا لتعاملكم معنا.`,
+      en: `We have issued invoice ${c.invoiceNo ?? ''} for booking ${job}: ${invAmt}${c.due != null ? `, due ${day(lang, c.due)}` : ''}.\nThank you for your business.`,
+      es: `Hemos emitido la factura ${c.invoiceNo ?? ''} de la reserva ${job}: ${invAmt}${c.due != null ? `, con vencimiento el ${day(lang, c.due)}` : ''}.\nGracias por su confianza.`,
+      fa: `فاکتور ${c.invoiceNo ?? ''} برای بوکینگ ${job} صادر شد: مبلغ ${invAmt}${c.due != null ? `، سررسید ${day(lang, c.due)}` : ''}.\nاز همکاری شما سپاسگزاریم.`,
+      ar: `أصدرنا الفاتورة ${c.invoiceNo ?? ''} للحجز ${job}: بقيمة ${invAmt}${c.due != null ? `، تاريخ الاستحقاق ${day(lang, c.due)}` : ''}.\nشكرًا لتعاملكم معنا.`,
     },
     arrival: {
-      en: `Arrival notice, shipment ${job}: vessel ${c.vessel ?? ''} is expected at ${c.pod ?? ''} on ${c.eta != null ? day(lang, c.eta) : ''}${cn ? `, with container(s) ${cn}` : ''}.\nPlease prepare the documents for customs clearance and delivery.`,
-      es: `Aviso de llegada, expediente ${job}: el buque ${c.vessel ?? ''} tiene llegada prevista a ${c.pod ?? ''} el ${c.eta != null ? day(lang, c.eta) : ''}${cn ? `, con los contenedores ${cn}` : ''}.\nPor favor, preparen la documentación para el despacho de aduanas y la entrega.`,
-      fa: `آرایوال نوتیس پرونده ${job}: کشتی ${c.vessel ?? ''}${cn ? ` با کانتینر(های) ${cn}` : ''} در تاریخ ${c.eta != null ? day(lang, c.eta) : ''} به ${c.pod ?? ''} می‌رسد.\nلطفاً مدارک ترخیص و تحویل را آماده کنید.`,
-      ar: `إشعار وصول، الشحنة ${job}: من المتوقع وصول السفينة ${c.vessel ?? ''} إلى ${c.pod ?? ''} في ${c.eta != null ? day(lang, c.eta) : ''}${cn ? `، وعليها الحاوية/الحاويات ${cn}` : ''}.\nيُرجى تجهيز مستندات التخليص الجمركي والتسليم.`,
+      en: `Arrival notice, booking ${job}: vessel ${c.vessel ?? ''} is expected at ${c.pod ?? ''} on ${c.eta != null ? day(lang, c.eta) : ''}${cn ? `, with container(s) ${cn}` : ''}.\nPlease prepare the documents for customs clearance and delivery.`,
+      es: `Aviso de llegada, reserva ${job}: el buque ${c.vessel ?? ''} tiene llegada prevista a ${c.pod ?? ''} el ${c.eta != null ? day(lang, c.eta) : ''}${cn ? `, con los contenedores ${cn}` : ''}.\nPor favor, preparen la documentación para el despacho de aduanas y la entrega.`,
+      fa: `آرایوال نوتیس بوکینگ ${job}: کشتی ${c.vessel ?? ''}${cn ? ` با کانتینر(های) ${cn}` : ''} در تاریخ ${c.eta != null ? day(lang, c.eta) : ''} به ${c.pod ?? ''} می‌رسد.\nلطفاً مدارک ترخیص و تحویل را آماده کنید.`,
+      ar: `إشعار وصول، الحجز ${job}: من المتوقع وصول السفينة ${c.vessel ?? ''} إلى ${c.pod ?? ''} في ${c.eta != null ? day(lang, c.eta) : ''}${cn ? `، وعليها الحاوية/الحاويات ${cn}` : ''}.\nيُرجى تجهيز مستندات التخليص الجمركي والتسليم.`,
     },
     quoteSent: {
       en: `As requested, here is our quotation${ref}:\n\n${c.quoteText ?? ''}\n\nPlease let us know if you would like to go ahead.`,

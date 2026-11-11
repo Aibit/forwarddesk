@@ -25,10 +25,19 @@ export interface RateRow {
   freeDays?: number | null;
   /** Sailing weekday (Mon–Sun) or 'daily'. */
   sails?: string;
+  /** Free time at origin (detention/demurrage at the loading end), days. */
+  freeDaysOrigin?: number | null;
+  /** Overseas agent offering this option (imports), when it is not the line itself. */
+  agent?: string;
+  /** Where the rate came from ('Line rate sheet', 'Agent email', …) and when it was received (yyyy-mm-dd). */
+  source?: string;
+  rateDate?: string;
+  /** Freight payment terms for this option, when the rate sheet says so. */
+  payment?: 'prepaid' | 'collect';
 }
 
 export const CSV_COLUMNS = [
-  'mode', 'origin', 'destination', 'equipment', 'charge', 'side', 'basis', 'currency', 'buy', 'min', 'valid_until', 'transit_days', 'carrier', 'routing', 'free_days', 'sails',
+  'mode', 'origin', 'destination', 'equipment', 'charge', 'side', 'basis', 'currency', 'buy', 'min', 'valid_until', 'transit_days', 'carrier', 'routing', 'free_days', 'sails', 'free_days_origin', 'agent', 'source', 'rate_date', 'payment',
 ] as const;
 
 const MODES: QMode[] = ['fcl', 'lcl', 'air', 'road'];
@@ -141,25 +150,27 @@ const SAMPLE: SampleSpec[] = [
 ];
 
 /** SAMPLE per-line option data (routing, free time, sailing day), keyed by carrier + lane. */
-const LINE_META: Record<string, { routing: string; freeDays: number | null; sails: string }> = {
-  'Sample Line A|Shanghai (Yangshan)|Barcelona': { routing: 'Direct', freeDays: 10, sails: 'Thu' },
-  'Sample Line C|Shanghai (Yangshan)|Barcelona': { routing: 'via Port Klang', freeDays: 21, sails: 'Mon' },
-  'Sample Line D|Shanghai (Yangshan)|Barcelona': { routing: 'Direct (express)', freeDays: 14, sails: 'Sat' },
-  'Sample Line B|Shanghai (Waigaoqiao)|Barcelona': { routing: 'Direct', freeDays: 14, sails: 'Wed' },
-  'Sample Line A|Bandar Abbas|Nhava Sheva': { routing: 'Direct', freeDays: 10, sails: 'Tue' },
-  'Sample Line B|Bandar Abbas|Nhava Sheva': { routing: 'via Jebel Ali', freeDays: 14, sails: 'Sat' },
-  'Sample Line C|Bandar Abbas|Nhava Sheva': { routing: 'Direct', freeDays: 21, sails: 'Thu' },
-  'Sample Line A|Bandar Abbas|Jebel Ali': { routing: 'Direct', freeDays: 10, sails: 'Sun' },
-  'Sample Line A|Nhava Sheva|Bandar Abbas': { routing: 'Direct', freeDays: 14, sails: 'Fri' },
-  'Sample Line B|Nhava Sheva|Bandar Abbas': { routing: 'via Jebel Ali', freeDays: 21, sails: 'Mon' },
-  'Sample Line A|Shanghai (Yangshan)|Bandar Abbas': { routing: 'Direct', freeDays: 10, sails: 'Wed' },
-  'Sample Line C|Shanghai (Yangshan)|Bandar Abbas': { routing: 'via Jebel Ali', freeDays: 14, sails: 'Sat' },
-  'Sample Consol|Ningbo|Valencia': { routing: 'Direct consol', freeDays: null, sails: 'Fri' },
-  'Sample Consol B|Ningbo|Valencia': { routing: 'via Singapore', freeDays: null, sails: 'Tue' },
-  'Sample Airline|Dubai (DXB)|Madrid (MAD)': { routing: 'Direct flight', freeDays: null, sails: 'daily' },
-  'Sample Airline B|Dubai (DXB)|Madrid (MAD)': { routing: 'via Doha', freeDays: null, sails: 'daily' },
-  'Sample Haulier|Jebel Ali|Riyadh': { routing: 'Direct via Batha', freeDays: null, sails: 'daily' },
-  'Sample Haulier B|Jebel Ali|Riyadh': { routing: 'Direct via Batha (groupage wait)', freeDays: null, sails: 'daily' },
+type LineMeta = { routing: string; freeDays: number | null; sails: string; freeOrigin?: number | null; agent?: string; age?: number };
+/** freeOrigin = origin free days, agent = overseas agent (imports), age = days since the SAMPLE rate was received. */
+const LINE_META: Record<string, LineMeta> = {
+  'Sample Line A|Shanghai (Yangshan)|Barcelona': { routing: 'Direct', freeDays: 10, sails: 'Thu', freeOrigin: 5, age: 3 },
+  'Sample Line C|Shanghai (Yangshan)|Barcelona': { routing: 'via Port Klang', freeDays: 21, sails: 'Mon', freeOrigin: 7, age: 9 },
+  'Sample Line D|Shanghai (Yangshan)|Barcelona': { routing: 'Direct (express)', freeDays: 14, sails: 'Sat', freeOrigin: 4, age: 1 },
+  'Sample Line B|Shanghai (Waigaoqiao)|Barcelona': { routing: 'Direct', freeDays: 14, sails: 'Wed', freeOrigin: 5, age: 6 },
+  'Sample Line A|Bandar Abbas|Nhava Sheva': { routing: 'Direct', freeDays: 10, sails: 'Tue', freeOrigin: 7, age: 2 },
+  'Sample Line B|Bandar Abbas|Nhava Sheva': { routing: 'via Jebel Ali', freeDays: 14, sails: 'Sat', freeOrigin: 7, age: 5 },
+  'Sample Line C|Bandar Abbas|Nhava Sheva': { routing: 'Direct', freeDays: 21, sails: 'Thu', freeOrigin: 10, age: 12 },
+  'Sample Line A|Bandar Abbas|Jebel Ali': { routing: 'Direct', freeDays: 10, sails: 'Sun', freeOrigin: 7, age: 2 },
+  'Sample Line A|Nhava Sheva|Bandar Abbas': { routing: 'Direct', freeDays: 14, sails: 'Fri', freeOrigin: 5, agent: 'Sample Agent Nhava Sheva', age: 4 },
+  'Sample Line B|Nhava Sheva|Bandar Abbas': { routing: 'via Jebel Ali', freeDays: 21, sails: 'Mon', freeOrigin: 7, agent: 'Sample Agent Nhava Sheva', age: 8 },
+  'Sample Line A|Shanghai (Yangshan)|Bandar Abbas': { routing: 'Direct', freeDays: 10, sails: 'Wed', freeOrigin: 5, agent: 'Sample Agent Shanghai', age: 3 },
+  'Sample Line C|Shanghai (Yangshan)|Bandar Abbas': { routing: 'via Jebel Ali', freeDays: 14, sails: 'Sat', freeOrigin: 7, agent: 'Sample Agent Shanghai', age: 6 },
+  'Sample Consol|Ningbo|Valencia': { routing: 'Direct consol', freeDays: null, sails: 'Fri', age: 4 },
+  'Sample Consol B|Ningbo|Valencia': { routing: 'via Singapore', freeDays: null, sails: 'Tue', age: 10 },
+  'Sample Airline|Dubai (DXB)|Madrid (MAD)': { routing: 'Direct flight', freeDays: null, sails: 'daily', age: 1 },
+  'Sample Airline B|Dubai (DXB)|Madrid (MAD)': { routing: 'via Doha', freeDays: null, sails: 'daily', age: 2 },
+  'Sample Haulier|Jebel Ali|Riyadh': { routing: 'Direct via Batha', freeDays: null, sails: 'daily', age: 3 },
+  'Sample Haulier B|Jebel Ali|Riyadh': { routing: 'Direct via Batha (groupage wait)', freeDays: null, sails: 'daily', age: 5 },
 };
 
 export function sampleRates(today = new Date()): RateRow[] {
@@ -167,7 +178,13 @@ export function sampleRates(today = new Date()): RateRow[] {
     const meta = side === 'freight' ? LINE_META[`${carrier}|${origin}|${destination}`] : undefined;
     return {
       mode, origin, destination, equipment, charge, side, basis, currency: 'USD', buy, min, validUntil: day(valid, today), transitDays: transit, carrier,
-      ...(meta ? { routing: meta.routing, freeDays: meta.freeDays, sails: meta.sails } : {}),
+      ...(meta
+        ? {
+            routing: meta.routing, freeDays: meta.freeDays, sails: meta.sails, freeDaysOrigin: meta.freeOrigin ?? null,
+            ...(meta.agent ? { agent: meta.agent } : {}),
+            source: meta.agent ? 'Sample agent quote' : 'Sample rate sheet', rateDate: day(-(meta.age ?? 0), today),
+          }
+        : {}),
     };
   });
 }
@@ -176,7 +193,7 @@ export function rowsToCsv(rows: RateRow[]): string {
   const esc = (v: string) => (/[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v);
   const lines = [CSV_COLUMNS.join(',')];
   for (const r of rows) {
-    lines.push([r.mode, r.origin, r.destination, r.equipment, r.charge, r.side, r.basis, r.currency, String(r.buy), String(r.min || ''), r.validUntil, r.transitDays == null ? '' : String(r.transitDays), r.carrier, r.routing ?? '', r.freeDays == null ? '' : String(r.freeDays), r.sails ?? ''].map(esc).join(','));
+    lines.push([r.mode, r.origin, r.destination, r.equipment, r.charge, r.side, r.basis, r.currency, String(r.buy), String(r.min || ''), r.validUntil, r.transitDays == null ? '' : String(r.transitDays), r.carrier, r.routing ?? '', r.freeDays == null ? '' : String(r.freeDays), r.sails ?? '', r.freeDaysOrigin == null ? '' : String(r.freeDaysOrigin), r.agent ?? '', r.source ?? '', r.rateDate ?? '', r.payment ?? ''].map(esc).join(','));
   }
   return lines.join('\n') + '\n';
 }
@@ -277,6 +294,11 @@ export function loadRateCsv(text: string): CsvLoad {
       routing: get('routing') || undefined,
       freeDays: get('free_days') ? parseNum(get('free_days')) || null : null,
       sails: get('sails') || undefined,
+      freeDaysOrigin: get('free_days_origin') ? parseNum(get('free_days_origin')) || null : null,
+      agent: get('agent') || undefined,
+      source: get('source') || undefined,
+      rateDate: normDate(get('rate_date')) ?? undefined,
+      payment: /^collect$/i.test(get('payment')) ? 'collect' : /^prepaid$/i.test(get('payment')) ? 'prepaid' : undefined,
     });
     return undefined;
   });
@@ -343,6 +365,11 @@ export interface Quote {
   sails: string | null;
   etd: string | null;
   eta: string | null;
+  freeDaysOrigin: number | null;
+  agent: string | null;
+  rateSource: string | null;
+  rateDate: string | null;
+  payment: 'prepaid' | 'collect' | null;
 }
 
 export type Badge = 'recommended' | 'cheapest' | 'fastest' | 'mostFree';
@@ -485,5 +512,10 @@ export function buildQuote(f: QuoteFields, rates: RateRow[], marginPct: number, 
     sails,
     etd,
     eta,
+    freeDaysOrigin: freightRow?.freeDaysOrigin ?? null,
+    agent: freightRow?.agent ?? null,
+    rateSource: freightRow?.source ?? null,
+    rateDate: freightRow?.rateDate ?? null,
+    payment: freightRow?.payment ?? null,
   };
 }

@@ -41,7 +41,7 @@ const S = {
   prepaid: ['Prepaid', 'Prepagado', 'پیش‌پرداخت', 'مدفوعة مسبقًا'],
   collect: ['Collect', 'A cobrar', 'پس‌کرایه', 'تُحصَّل عند الوصول'],
   place: ['Place of issue', 'Lugar de emisión', 'محل صدور', 'مكان الإصدار'],
-  files: ['Files on this job', 'Archivos del expediente', 'فایل‌های پرونده', 'ملفات هذه الشحنة'],
+  files: ['Files on this booking', 'Archivos de la reserva', 'فایل‌های بوکینگ', 'ملفات هذا الحجز'],
   attach: ['+ Attach file', '+ Adjuntar archivo', '+ پیوست فایل', '+ إرفاق ملف'],
   noFiles: ['No files yet. Attach signed B/Ls, invoices from agents, photos…', 'Sin archivos. Adjunta B/L firmados, facturas de agentes, fotos…', 'هنوز فایلی نیست. بارنامه امضاشده، فاکتور نماینده، عکس…', 'لا توجد ملفات بعد. أرفق بوالص الشحن الموقّعة، وفواتير الوكلاء، والصور…'],
   tooBig: ['File is over 640 KB — too large to store here', 'El archivo supera 640 KB — demasiado grande', 'فایل بیش از ۶۴۰ کیلوبایت است', 'الملف أكبر من ٦٤٠ كيلوبايت — كبير جدًا لتخزينه هنا'],
@@ -61,7 +61,7 @@ const S = {
   revenue: ['Revenue', 'Ingresos', 'درآمد', 'الإيراد'],
   cost: ['Cost', 'Coste', 'هزینه', 'التكلفة'],
   margin: ['Margin', 'Margen', 'حاشیه سود', 'الهامش'],
-  pnl: ['Job profit (P&L)', 'Beneficio del expediente (P&L)', 'سود و زیان پرونده', 'ربح الشحنة (الأرباح والخسائر)'],
+  pnl: ['Booking profit (P&L)', 'Beneficio de la reserva (P&L)', 'سود و زیان بوکینگ', 'ربح الحجز (الأرباح والخسائر)'],
   invoices: ['Invoices to clients', 'Facturas a clientes', 'فاکتورهای مشتری', 'فواتير العملاء'],
   bills: ['Bills from agents & vendors', 'Facturas de agentes y proveedores', 'صورتحساب نمایندگان و تأمین‌کنندگان', 'فواتير الوكلاء والموردين'],
   newInvoice: ['+ Invoice uninvoiced sell lines', '+ Facturar cargos de venta pendientes', '+ فاکتور هزینه‌های فروش باقیمانده', '+ فوترة بنود البيع غير المفوترة'],
@@ -74,7 +74,7 @@ const S = {
   due: ['Due', 'Vence', 'سررسید', 'الاستحقاق'],
   no: ['No.', 'Nº', 'شماره', 'رقم'],
   party: ['Party', 'Parte', 'طرف حساب', 'الطرف'],
-  job: ['Job', 'Expediente', 'پرونده', 'الشحنة'],
+  job: ['Booking', 'Reserva', 'بوکینگ', 'الحجز'],
   status: ['Status', 'Estado', 'وضعیت', 'الحالة'],
   fx: ['Exchange rates (entered by you)', 'Tipos de cambio (los introduces tú)', 'نرخ ارز (ورود دستی)', 'أسعار الصرف (تُدخلها أنت)'],
   enterRate: ['enter rate', 'introduce tipo', 'نرخ را وارد کنید', 'أدخل السعر'],
@@ -109,17 +109,17 @@ const S = {
   byClient: ['Balance by client', 'Saldo por cliente', 'مانده به تفکیک مشتری', 'الرصيد حسب العميل'],
   receivable: ['To collect', 'Por cobrar', 'قابل دریافت', 'للتحصيل'],
   payable: ['To pay', 'Por pagar', 'قابل پرداخت', 'للدفع'],
-  jobsProfit: ['Profit on open jobs', 'Beneficio de expedientes', 'سود پرونده‌ها', 'الربح على الشحنات المفتوحة'],
+  jobsProfit: ['Profit on open bookings', 'Beneficio de reservas', 'سود بوکینگ‌ها', 'الربح على الحجوزات المفتوحة'],
   catalog: ['Charge codes', 'Códigos de cargo', 'کدهای هزینه', 'رموز الرسوم'],
-  catalogNote: ['Used on every job’s charge lines and invoices.', 'Se usan en los cargos y facturas de cada expediente.', 'در ردیف‌های هزینه و فاکتور همه پرونده‌ها استفاده می‌شود.', 'تُستخدم في بنود الرسوم والفواتير لكل شحنة.'],
+  catalogNote: ['Used on every booking’s charge lines and invoices.', 'Se usan en los cargos y facturas de cada reserva.', 'در ردیف‌های هزینه و فاکتور همه بوکینگ‌ها استفاده می‌شود.', 'تُستخدم في بنود الرسوم والفواتير لكل حجز.'],
   newCode: ['New code', 'Nuevo código', 'کد جدید', 'رمز جديد'],
   name: ['Name', 'Nombre', 'نام', 'الاسم'],
   sample: ['SAMPLE', 'EJEMPLO', 'نمونه', 'عيّنة'],
   sampleNote: ['Sample invoices and amounts — illustrative only.', 'Facturas e importes de ejemplo — solo ilustrativo.', 'فاکتورها و مبالغ نمونه — فقط برای نمایش.', 'فواتير ومبالغ عيّنة — للتوضيح فقط.'],
   noInvoices: ['No invoices match.', 'Ninguna factura coincide.', 'فاکتوری پیدا نشد.', 'لا توجد فواتير مطابقة.'],
   noLines: ['No charges yet. Add the sell and buy side of each charge.', 'Sin cargos. Añade venta y compra de cada cargo.', 'هنوز هزینه‌ای نیست. فروش و خرید هر هزینه را وارد کنید.', 'لا توجد رسوم بعد. أضف جانبي البيع والشراء لكل رسم.'],
-  openJob: ['Open job', 'Abrir expediente', 'باز کردن پرونده', 'فتح الشحنة'],
-  docsNote: ['Generated from the job. Edit the details, issue, then release once paid.', 'Generados desde el expediente. Edita, emite y libera una vez pagado.', 'از داده‌های پرونده ساخته می‌شود. ویرایش، صدور، و آزادسازی پس از پرداخت.', 'مُولَّد من الشحنة. عدّل التفاصيل، ثم أصدره، ثم أفرج عنه بعد الدفع.'],
+  openJob: ['Open booking', 'Abrir reserva', 'باز کردن بوکینگ', 'فتح الحجز'],
+  docsNote: ['Generated from the booking. Edit the details, issue, then release once paid.', 'Generados desde la reserva. Edita, emite y libera una vez pagado.', 'از داده‌های بوکینگ ساخته می‌شود. ویرایش، صدور، و آزادسازی پس از پرداخت.', 'مُولَّد من الحجز. عدّل التفاصيل، ثم أصدره، ثم أفرج عنه بعد الدفع.'],
   notYet: ['Not created', 'Sin crear', 'ایجاد نشده', 'غير منشأ'],
   create: ['Create draft', 'Crear borrador', 'ایجاد پیش‌نویس', 'إنشاء مسودة'],
   base: ['Base currency', 'Moneda base', 'ارز پایه', 'العملة الأساسية'],
@@ -131,9 +131,9 @@ export const bt = (l: UiLang, k: BKey): string => S[k][I[l]];
 export const li = (l: UiLang) => I[l];
 
 export function money(l: UiLang, n: number, ccy: string): string {
-  const s = new Intl.NumberFormat(l === 'fa' ? 'fa-IR' : l === 'ar' ? 'ar-EG' : l === 'es' ? 'es-ES' : 'en-US', { minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: 2 }).format(n);
+  const s = new Intl.NumberFormat(l === 'fa' ? 'fa-IR-u-ca-gregory' : l === 'ar' ? 'ar-EG' : l === 'es' ? 'es-ES' : 'en-US', { minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: 2 }).format(n);
   return l === 'fa' || l === 'ar' ? `${s} ${ccy}` : `${ccy} ${s}`;
 }
 export function day(l: UiLang, ms: number): string {
-  return new Date(ms).toLocaleDateString(l === 'fa' ? 'fa-IR' : l === 'ar' ? 'ar-EG' : l === 'es' ? 'es-ES' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  return new Date(ms).toLocaleDateString(l === 'fa' ? 'fa-IR-u-ca-gregory' : l === 'ar' ? 'ar-EG' : l === 'es' ? 'es-ES' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 }

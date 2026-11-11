@@ -474,7 +474,7 @@ with sync_playwright() as p:
     check('ar: Arabic font (IBM Plex Sans Arabic)', 'IBM Plex Sans Arabic' in a.evaluate("() => getComputedStyle(document.querySelector('.app')).fontFamily"))
     summ = a.locator('.j-summary').inner_text()
     check('ar: Arabic-Indic digits like FA (no Western digits in tiles)', any(ch in summ for ch in '٠١٢٣٤٥٦٧٨٩') and not any(ch in summ for ch in '0123456789'))
-    check('ar: sidebar labels in Arabic', 'الشحنات' in a.locator('[data-testid=sidebar]').inner_text())
+    check('ar: sidebar labels in Arabic (Bookings = الحجوزات)', 'الحجوزات' in a.locator('[data-testid=sidebar]').inner_text())
     a.locator('button.j-row').first.click(); ar_page('job drawer'); a.keyboard.press('Escape')
     for v in ['finance', 'clients', 'agents', 'pipeline']:
         ar_page(v, lambda v=v: a.click(f"[data-testid={'tab-agents' if v == 'agents' else 'nav-' + v}]"))
@@ -561,9 +561,9 @@ with sync_playwright() as p:
     wtid('wa-tpl').select_option('payBeforeBl'); w.wait_for_timeout(80)
     check('WA: pay-before-B/L template has the amount and release', 'USD' in txt() and 'original B/L' in txt())
     wtid('wa-lang-es').click(); w.wait_for_timeout(80)
-    check('WA: ES message', 'Expediente FD-E-1042' in txt() and 'B/L original' in txt())
+    check('WA: ES message', 'Reserva FD-E-1042' in txt() and 'B/L original' in txt())
     wtid('wa-lang-ar').click(); w.wait_for_timeout(80)
-    check('WA: AR message is RTL and Arabic', wtid('wa-text').get_attribute('dir') == 'rtl' and 'الشحنة' in txt() and not re.search('[\u067E\u0686\u0698\u06AF\u06A9\u06CC]', txt()))
+    check('WA: AR message is RTL and Arabic', wtid('wa-text').get_attribute('dir') == 'rtl' and 'الحجز' in txt() and not re.search('[\u067E\u0686\u0698\u06AF\u06A9\u06CC]', txt()))
     wtid('wa-text').fill('Hello & welcome? 100% ✓\nLine 2'); w.wait_for_timeout(80)
     check('WA: edited text is URL-encoded in the link', wellformed() and '%26' in href() and '%3F' in href() and '%0A' in href())
     with wc.expect_page() as pop: wtid('wa-open').click()
@@ -779,6 +779,37 @@ with sync_playwright() as p:
         if L3 == 'ar': ok = ok and not re.search('[\u067E\u0686\u0698\u06AF\u06A9\u06CC]', t3)
         if L3 in ('fa', 'ar'): ok = ok and ntid('whatsnew').get_attribute('dir') == 'rtl'
         check(f"What's new {L3.upper()}: only {L3.upper()} text" + (' + RTL' if L3 in ('fa', 'ar') else ''), ok)
+
+    # ── Bookings (not "Jobs") in every language; Gregorian dates in FA/AR; no right-to-left / calendar wording ──
+    JAL = re.compile(r'(فروردین|اردیبهشت|خرداد|مرداد|شهریور|آبان|آذر|بهمن|اسفند|[0-9۰-۹٠-٩]+ (?:تیر|مهر|دی)(?!\u200c)\b|۱۴۰[0-9])')
+    GREG_FA = re.compile(r'(ژانویه|فوریه|مارس|آوریل|مه|ژوئن|ژوئیه|اوت|سپتامبر|اکتبر|نوامبر|دسامبر)')
+    WORD = {'en': ('Bookings', 'Booking', 'New booking'), 'es': ('Reservas', 'Reserva', 'Nueva reserva'), 'fa': ('بوکینگ‌ها', 'بوکینگ', 'بوکینگ جدید'), 'ar': ('الحجوزات', 'الحجز', 'حجز جديد')}
+    OLD = {'en': r'\bJobs?\b', 'es': r'[Ee]xpedientes?', 'fa': r'پرونده', 'ar': r'الشحنات'}
+    for L4 in ['en', 'es', 'fa', 'ar']:
+        ntid(f'ui-lang-{L4}').click(); n.wait_for_timeout(200)
+        ntid('nav-jobs').click(); n.wait_for_timeout(300)
+        side = ntid('sidebar').inner_text(); head = ntid('page-header').inner_text(); newb = ntid('job-new').inner_text()
+        ntid('job-FD-E-1042').click(); n.wait_for_timeout(300)
+        drawer = ntid('job-detail').inner_text()
+        page = n.inner_text('.nd-main')
+        n.keyboard.press('Escape'); n.wait_for_timeout(150)
+        if ntid('job-detail').count(): n.mouse.click(20, 450); n.wait_for_timeout(150)
+        pl, sg, nb = WORD[L4]
+        check(f'{L4.upper()}: "{pl}" in sidebar + page header, "{nb}" button, drawer says {sg}', pl in side and pl in head and nb in newb and sg in drawer)
+        check(f'{L4.upper()}: no old "Jobs" wording on the bookings page / drawer', not re.search(OLD[L4], side + head + newb + drawer))
+        if L4 in ('fa', 'ar'):
+            jal = JAL.findall(page + drawer)
+            check(f'{L4.upper()}: Gregorian calendar only (no Jalali month names / 140x years) {jal[:3]}', not jal)
+            if L4 == 'fa': check('FA: dates show Gregorian month names', bool(GREG_FA.search(page + drawer)))
+        ntid('nav-whatsnew').click(); n.wait_for_timeout(200)
+        wn = ntid('whatsnew').inner_text()
+        check(f"{L4.upper()}: What's new has no right-to-left / Persian calendar wording", not re.search(r'right-to-left|derecha a izquierda|راست‌به‌چپ|اليمين إلى اليسار|calendar|calendario|تقویم|التقويم|Jalali', wn, re.I))
+        if L4 == 'fa': check("FA: What's new dates are Gregorian", bool(GREG_FA.search(wn)) and not JAL.search(wn))
+    ntid('ui-lang-en').click(); n.wait_for_timeout(150)
+    ntid('nav-inbox').click(); n.wait_for_timeout(300)
+    n.locator('[data-testid^=inbox-conv-]').first.click(); n.wait_for_timeout(300)
+    ib = n.inner_text('.nd-main')
+    check('Inbox: "Link to booking" wording', 'Link to booking' in ib and 'Link to job' not in ib)
     nc.close()
     b.close()
 

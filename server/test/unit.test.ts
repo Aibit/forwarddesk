@@ -133,7 +133,7 @@ test('templates: message payload + rendered copy', () => {
   const v = ['Ana', 'MSKU1234567', 'FD-E-1042', '14 Nov'];
   const msg = templateMessage(t, 'es', v);
   assert.deepEqual(msg, { name: 'fd_free_time_ending', language: { code: 'es' }, components: [{ type: 'body', parameters: v.map((text) => ({ type: 'text', text })) }] });
-  assert.ok(renderTemplate(t, 'en', v).startsWith('Hello Ana, free time for container(s) MSKU1234567 on shipment FD-E-1042 ends on 14 Nov.'));
+  assert.ok(renderTemplate(t, 'en', v).startsWith('Hello Ana, free time for container(s) MSKU1234567 on booking FD-E-1042 ends on 14 Nov.'));
   assert.throws(() => templateMessage(t, 'en', ['Ana']), /needs 4 values/);
   assert.throws(() => templateMessage(t, 'en', ['Ana', '', 'x', 'y']), /empty variable/);
   const inv = templateMessage(tplByKey('invoiceIssued')!, 'ar', ['INV-1', 'FD-E-1', 'USD 1', '1 Dec'], { id: 'M1', filename: 'inv.pdf' });

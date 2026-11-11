@@ -5,7 +5,7 @@ ForwardDesk's two-way WhatsApp inbox has two parts:
 1. **The ForwardDesk WhatsApp service** (`/server` in this repo). It is a small Node service that receives WhatsApp webhooks, stores conversations (SQLite) and sends messages through the official **WhatsApp Cloud API (Meta)** or **360dialog** (same API shape).
 2. **The Inbox page** in the app. It talks to the service with an API key.
 
-Without a service, the app shows **sample conversations** in the demo, and the WhatsApp buttons (job, client, agent, invoice, quote) keep opening your own WhatsApp with the message ready (step 1). Nothing is ever sent automatically.
+Without a service, the app shows **sample conversations** in the demo, and the WhatsApp buttons (booking, client, agent, invoice, quote) keep opening your own WhatsApp with the message ready (step 1). Nothing is ever sent automatically.
 
 > **A public HTTPS address is required.** WhatsApp delivers incoming messages and delivery statuses by calling your service over the internet (a "webhook"). Meta only calls `https://` URLs with a valid certificate, so the service must run on a server that is reachable from the internet. Your laptop behind a home router is not reachable. The app on GitHub Pages is also HTTPS, so browsers will only talk to an HTTPS service anyway.
 
@@ -103,10 +103,10 @@ Then connect the app to `http://localhost:8080` with key `dev`, running the app 
 ---
 
 ## How the inbox behaves
-- **24-hour window:** free text and documents (PDF up to 100 MB) can be sent for 24 hours after the contact's last message. Outside that window the service refuses free text (HTTP 409) and the Inbox shows the template picker. Staff choose an approved template in the recipient's language; the values are filled from the job and can be edited.
+- **24-hour window:** free text and documents (PDF up to 100 MB) can be sent for 24 hours after the contact's last message. Outside that window the service refuses free text (HTTP 409) and the Inbox shows the template picker. Staff choose an approved template in the recipient's language; the values are filled from the booking and can be edited.
 - **Linking:**
   - **Client or agent:** matched by phone number. The app sends its client and agent numbers to the service. An exact international match wins; otherwise a unique match on the last 9 digits is used.
-  - **Job:** linked by a job reference in the message text (e.g. `FD-E-1042`), or by staff choice. Staff choice always wins.
+  - **Booking:** linked by a booking reference in the message text (e.g. `FD-E-1042`), or by staff choice. Staff choice always wins.
 - **Media:** incoming photos and documents are downloaded right away into `WA_MEDIA_DIR` (Meta's download links expire after a few minutes).
 - **Statuses** never go backwards (read stays read); "failed" is shown in amber with the WhatsApp error code.
 - **Security:**

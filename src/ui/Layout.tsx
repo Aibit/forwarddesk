@@ -11,18 +11,18 @@ export type ViewKey = 'jobs' | 'finance' | 'clients' | 'agents' | 'portal' | 'qu
 
 const NAV: Record<ViewKey, { label: [string, string, string, string]; sub: [string, string, string, string]; art: ArtName; icon: NavIcon }> = {
   jobs: {
-    label: ['Jobs', 'Expedientes', 'پرونده‌ها', 'الشحنات'],
-    sub: ['Deadlines, free time and money at risk across every shipment.', 'Plazos, días libres y dinero en riesgo en cada envío.', 'مهلت‌ها، روزهای آزاد و پول در خطر در همه محموله‌ها.', 'المواعيد النهائية والفترة المجانية والأموال المعرّضة للخطر في كل شحنة.'],
+    label: ['Bookings', 'Reservas', 'بوکینگ‌ها', 'الحجوزات'],
+    sub: ['Deadlines, free time and money at risk across every shipment.', 'Plazos, días libres y dinero en riesgo en cada envío.', 'مهلت‌ها، روزهای آزاد و پول در خطر در همه محموله‌ها.', 'المواعيد النهائية والفترة المجانية والأموال المعرّضة للخطر في كل حجز.'],
     art: 'crane', icon: 'jobs',
   },
   inbox: {
     label: ['Inbox', 'Bandeja', 'صندوق پیام', 'صندوق الوارد'],
-    sub: ['WhatsApp conversations with clients and agents, linked to their jobs.', 'Conversaciones de WhatsApp con clientes y agentes, vinculadas a sus expedientes.', 'گفت‌وگوهای واتساپ با مشتریان و نمایندگان، پیوندخورده به پرونده‌ها.', 'محادثات واتساب مع العملاء والوكلاء، مرتبطة بشحناتهم.'],
+    sub: ['WhatsApp conversations with clients and agents, linked to their bookings.', 'Conversaciones de WhatsApp con clientes y agentes, vinculadas a sus reservas.', 'گفت‌وگوهای واتساپ با مشتریان و نمایندگان، پیوندخورده به بوکینگ‌ها.', 'محادثات واتساب مع العملاء والوكلاء، مرتبطة بحجوزاتهم.'],
     art: 'map', icon: 'inbox',
   },
   finance: {
     label: ['Finance', 'Finanzas', 'مالی', 'المالية'],
-    sub: ['Invoices, vendor bills, payments, ageing and job profit.', 'Facturas, proveedores, cobros, antigüedad y beneficio por expediente.', 'فاکتورها، صورتحساب تأمین‌کنندگان، پرداخت‌ها، سنی‌بندی و سود پرونده.', 'الفواتير وفواتير الموردين والمدفوعات وأعمار الديون وربح الشحنات.'],
+    sub: ['Invoices, vendor bills, payments, ageing and booking profit.', 'Facturas, proveedores, cobros, antigüedad y beneficio por reserva.', 'فاکتورها، صورتحساب تأمین‌کنندگان، پرداخت‌ها، سنی‌بندی و سود بوکینگ.', 'الفواتير وفواتير الموردين والمدفوعات وأعمار الديون وربح الحجوزات.'],
     art: 'ship', icon: 'finance',
   },
   clients: {
@@ -47,7 +47,7 @@ const NAV: Record<ViewKey, { label: [string, string, string, string]; sub: [stri
   },
   pipeline: {
     label: ['Sales pipeline', 'Embudo de ventas', 'قیف فروش', 'مسار المبيعات'],
-    sub: ['Every inquiry, quote and booking by stage — with value and margin from your quotes and jobs.', 'Cada consulta, cotización y reserva por etapa, con valor y margen de tus cotizaciones y expedientes.', 'هر استعلام، پیشنهاد قیمت و رزرو به تفکیک مرحله — با ارزش و حاشیه سود از قیمت‌ها و پرونده‌ها.', 'كل استفسار وعرض وحجز حسب المرحلة — مع القيمة والهامش من عروضك وشحناتك.'],
+    sub: ['Every inquiry, quote and booking by stage — with value and margin from your quotes and bookings.', 'Cada consulta, cotización y reserva por etapa, con valor y margen de tus cotizaciones y reservas.', 'هر استعلام، پیشنهاد قیمت و رزرو به تفکیک مرحله — با ارزش و حاشیه سود از قیمت‌ها و بوکینگ‌ها.', 'كل استفسار وعرض وحجز حسب المرحلة — مع القيمة والهامش من عروضك وحجوزاتك.'],
     art: 'map', icon: 'pipeline',
   },
   account: {

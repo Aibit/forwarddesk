@@ -19,7 +19,7 @@ const T = {
   demoD: ['Explore with SAMPLE shipments, clients and agents. Nothing to sign up for; it stays in this browser.', 'Explora con envíos, clientes y agentes de EJEMPLO. Sin registro; se queda en este navegador.', 'با محموله، مشتری و نماینده نمونه کار کنید. ثبت‌نام لازم نیست؛ فقط در همین مرورگر می‌ماند.', 'استكشف بشحنات وعملاء ووكلاء عيّنة. لا حاجة للتسجيل؛ كل شيء يبقى في هذا المتصفح.'],
   demoB: ['Open the demo', 'Abrir la demo', 'باز کردن نسخه نمایشی', 'افتح النسخة التجريبية'],
   realT: ['Your own account', 'Tu propia cuenta', 'حساب خودتان', 'حسابك الخاص'],
-  realD: ['Create your company account, add your agents, clients and jobs, and invite your team. Starts empty — your data only.', 'Crea la cuenta de tu empresa, añade tus agentes, clientes y expedientes e invita a tu equipo. Empieza vacía: solo tus datos.', 'حساب شرکت خود را بسازید، نمایندگان، مشتریان و پرونده‌ها را اضافه کنید و تیم را دعوت کنید. خالی شروع می‌شود — فقط داده‌های شما.', 'أنشئ حساب شركتك، وأضف وكلاءك وعملاءك وشحناتك، وادعُ فريقك. يبدأ فارغًا — بياناتك فقط.'],
+  realD: ['Create your company account, add your agents, clients and bookings, and invite your team. Starts empty — your data only.', 'Crea la cuenta de tu empresa, añade tus agentes, clientes y reservas e invita a tu equipo. Empieza vacía: solo tus datos.', 'حساب شرکت خود را بسازید، نمایندگان، مشتریان و بوکینگ‌ها را اضافه کنید و تیم را دعوت کنید. خالی شروع می‌شود — فقط داده‌های شما.', 'أنشئ حساب شركتك، وأضف وكلاءك وعملاءك وحجوزاتك، وادعُ فريقك. يبدأ فارغًا — بياناتك فقط.'],
   create: ['Create account', 'Crear cuenta', 'ساخت حساب', 'إنشاء حساب'],
   signIn: ['Sign in', 'Iniciar sesión', 'ورود', 'تسجيل الدخول'],
   soon: ['Accounts open shortly — try the demo in the meantime.', 'Las cuentas abren muy pronto — mientras tanto, prueba la demo.', 'حساب‌ها به‌زودی باز می‌شوند — فعلاً نسخه نمایشی را امتحان کنید.', 'الحسابات ستُفتح قريبًا — جرّب النسخة التجريبية في الأثناء.'],
@@ -73,7 +73,7 @@ const T = {
   gsAgents: ['Add your first agents', 'Añade tus primeros agentes', 'اولین نمایندگان را اضافه کنید', 'أضف وكلاءك الأوائل'],
   gsAgentsD: ['Type them in or import a CSV.', 'Escríbelos o importa un CSV.', 'دستی وارد کنید یا CSV وارد کنید.', 'اكتبهم أو استورد ملف CSV.'],
   gsClients: ['Add a client', 'Añade un cliente', 'یک مشتری اضافه کنید', 'إضافة عميل'],
-  gsJob: ['Open your first job', 'Abre tu primer expediente', 'اولین پرونده را باز کنید', 'افتح أول شحنة'],
+  gsJob: ['Open your first booking', 'Abre tu primer reserva', 'اولین بوکینگ را باز کنید', 'افتح أول حجز'],
   gsTeam: ['Invite your team', 'Invita a tu equipo', 'تیم را دعوت کنید', 'ادعُ فريقك'],
   open: ['Open', 'Abrir', 'باز کردن', 'فتح'],
   done: ['Done', 'Hecho', 'انجام شد', 'تم'],
@@ -498,7 +498,7 @@ export function AccountView() {
               const url = joinUrl(i.join.split('.')[0], i.code);
               return (
                 <li key={i.code} data-testid={`invite-${i.email}`}>
-                  <div><bdi dir="ltr">{i.email}</bdi> · {lbl(i.role)} <span className="fd-muted fd-small">· {t('expires')} {new Date(i.expiresAt).toLocaleDateString(lang === 'fa' ? 'fa-IR' : lang === 'ar' ? 'ar-EG' : lang)}</span></div>
+                  <div><bdi dir="ltr">{i.email}</bdi> · {lbl(i.role)} <span className="fd-muted fd-small">· {t('expires')} {new Date(i.expiresAt).toLocaleDateString(lang === 'fa' ? 'fa-IR-u-ca-gregory' : lang === 'ar' ? 'ar-EG' : lang)}</span></div>
                   <code dir="ltr" data-testid="invite-link">{url}</code>
                   <div className="fd-entry-btns">
                     <button type="button" className="btn sm" onClick={() => copy(url, i.code)} data-testid="invite-copy">{copied === i.code ? t('copied') : t('copy')}</button>

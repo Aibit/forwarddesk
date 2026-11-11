@@ -154,7 +154,7 @@ export function WaLogList({ entries, testid, compact }: { entries: WaLogEntry[];
   );
 }
 export function WaLogItem({ e, ui }: { e: WaLogEntry; ui: UiLang }) {
-  const loc = ui === 'fa' ? 'fa-IR' : ui === 'ar' ? 'ar-EG' : ui === 'es' ? 'es-ES' : 'en-GB';
+  const loc = ui === 'fa' ? 'fa-IR-u-ca-gregory' : ui === 'ar' ? 'ar-EG' : ui === 'es' ? 'es-ES' : 'en-GB';
   return (
     <li className="wa-log-item" data-testid="wa-log-item">
       <span className="wa-log-ic"><WaIcon size={16} /></span>

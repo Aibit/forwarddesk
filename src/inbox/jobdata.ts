@@ -10,7 +10,7 @@ import { waMoney } from '../whatsapp/templates';
 import type { WaTemplate, TplLang } from '../../server/src/templates';
 import type { Conv } from './backend';
 
-const LOC: Record<TplLang, string> = { en: 'en-GB', es: 'es-ES', fa: 'fa-IR', ar: 'ar-EG' };
+const LOC: Record<TplLang, string> = { en: 'en-GB', es: 'es-ES', fa: 'fa-IR-u-ca-gregory', ar: 'ar-EG' };
 const day = (l: TplLang, ms: number) => new Date(ms).toLocaleDateString(LOC[l], { day: 'numeric', month: 'long' });
 const dayTime = (l: TplLang, ms: number) => new Date(ms).toLocaleString(LOC[l], { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' });
 

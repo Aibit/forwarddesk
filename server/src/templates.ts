@@ -30,10 +30,10 @@ export const WA_TEMPLATES: WaTemplate[] = [
     example: ['Ana', 'MSKU1234567', 'FD-E-1042', '14 Nov'],
     label: { en: 'Free time ending', es: 'Fin del tiempo libre', fa: 'پایان فری‌تایم', ar: 'انتهاء الفترة المجانية' },
     body: {
-      en: 'Hello {{1}}, free time for container(s) {{2}} on shipment {{3}} ends on {{4}}. Please arrange collection or return in time to avoid demurrage charges.',
-      es: 'Hola {{1}}, el tiempo libre del contenedor o contenedores {{2}} del envío {{3}} termina el {{4}}. Organice la recogida o devolución a tiempo para evitar cargos por demora.',
-      fa: 'سلام {{1}}، فری‌تایم کانتینر(های) {{2}} در محموله {{3}} در تاریخ {{4}} تمام می‌شود. لطفاً برای جلوگیری از هزینه دموراژ، تخلیه یا عودت را به‌موقع انجام دهید.',
-      ar: 'مرحبًا {{1}}، تنتهي الفترة المجانية للحاوية أو الحاويات {{2}} في الشحنة {{3}} بتاريخ {{4}}. يُرجى ترتيب الاستلام أو الإرجاع في الوقت المناسب لتجنّب رسوم التأخير.',
+      en: 'Hello {{1}}, free time for container(s) {{2}} on booking {{3}} ends on {{4}}. Please arrange collection or return in time to avoid demurrage charges.',
+      es: 'Hola {{1}}, el tiempo libre del contenedor o contenedores {{2}} de la reserva {{3}} termina el {{4}}. Organice la recogida o devolución a tiempo para evitar cargos por demora.',
+      fa: 'سلام {{1}}، فری‌تایم کانتینر(های) {{2}} در بوکینگ {{3}} در تاریخ {{4}} تمام می‌شود. لطفاً برای جلوگیری از هزینه دموراژ، تخلیه یا عودت را به‌موقع انجام دهید.',
+      ar: 'مرحبًا {{1}}، تنتهي الفترة المجانية للحاوية أو الحاويات {{2}} في الحجز {{3}} بتاريخ {{4}}. يُرجى ترتيب الاستلام أو الإرجاع في الوقت المناسب لتجنّب رسوم التأخير.',
     },
   },
   {
@@ -42,10 +42,10 @@ export const WA_TEMPLATES: WaTemplate[] = [
     example: ['FD-E-1042', 'SAMPLE VESSEL', '12 Nov 14:00'],
     label: { en: 'Cut-off reminder (48 h)', es: 'Recordatorio de cut-off (48 h)', fa: 'یادآوری کات‌آف (۴۸ ساعت)', ar: 'تذكير بالموعد النهائي (٤٨ ساعة)' },
     body: {
-      en: 'Reminder for shipment {{1}}: the document cut-off for vessel {{2}} is {{3}}. Please send the shipping instructions and any missing documents before then.',
-      es: 'Recordatorio del envío {{1}}: el cut-off documental del buque {{2}} es el {{3}}. Envíe las instrucciones de embarque y los documentos pendientes antes de esa hora.',
-      fa: 'یادآوری محموله {{1}}: کات‌آف اسناد کشتی {{2}} در {{3}} است. لطفاً دستور حمل و مدارک باقی‌مانده را پیش از آن ارسال کنید.',
-      ar: 'تذكير بالشحنة {{1}}: الموعد النهائي لمستندات السفينة {{2}} هو {{3}}. يُرجى إرسال تعليمات الشحن وأي مستندات ناقصة قبل ذلك.',
+      en: 'Reminder for booking {{1}}: the document cut-off for vessel {{2}} is {{3}}. Please send the shipping instructions and any missing documents before then.',
+      es: 'Recordatorio de la reserva {{1}}: el cut-off documental del buque {{2}} es el {{3}}. Envíe las instrucciones de embarque y los documentos pendientes antes de esa hora.',
+      fa: 'یادآوری بوکینگ {{1}}: کات‌آف اسناد کشتی {{2}} در {{3}} است. لطفاً دستور حمل و مدارک باقی‌مانده را پیش از آن ارسال کنید.',
+      ar: 'تذكير بالحجز {{1}}: الموعد النهائي لمستندات السفينة {{2}} هو {{3}}. يُرجى إرسال تعليمات الشحن وأي مستندات ناقصة قبل ذلك.',
     },
   },
   {
@@ -54,10 +54,10 @@ export const WA_TEMPLATES: WaTemplate[] = [
     example: ['FD-E-1042', 'USD 1,420'],
     label: { en: 'Pay before B/L release', es: 'Pago antes de liberar el B/L', fa: 'پرداخت پیش از صدور بارنامه', ar: 'الدفع قبل الإفراج عن البوليصة' },
     body: {
-      en: 'Shipment {{1}}: the original B/L will be released once payment of {{2}} is received. Please share the payment confirmation when done.',
-      es: 'Envío {{1}}: el B/L original se liberará cuando recibamos el pago de {{2}}. Envíenos el justificante de pago cuando lo haya realizado.',
-      fa: 'محموله {{1}}: بارنامه اصلی پس از دریافت مبلغ {{2}} صادر می‌شود. لطفاً پس از پرداخت، رسید آن را ارسال کنید.',
-      ar: 'الشحنة {{1}}: سيتم الإفراج عن البوليصة الأصلية فور استلام دفعة بقيمة {{2}}. يُرجى إرسال تأكيد الدفع بعد إتمامه.',
+      en: 'Booking {{1}}: the original B/L will be released once payment of {{2}} is received. Please share the payment confirmation when done.',
+      es: 'Reserva {{1}}: el B/L original se liberará cuando recibamos el pago de {{2}}. Envíenos el justificante de pago cuando lo haya realizado.',
+      fa: 'بوکینگ {{1}}: بارنامه اصلی پس از دریافت مبلغ {{2}} صادر می‌شود. لطفاً پس از پرداخت، رسید آن را ارسال کنید.',
+      ar: 'الحجز {{1}}: سيتم الإفراج عن البوليصة الأصلية فور استلام دفعة بقيمة {{2}}. يُرجى إرسال تأكيد الدفع بعد إتمامه.',
     },
   },
   {
@@ -66,10 +66,10 @@ export const WA_TEMPLATES: WaTemplate[] = [
     example: ['FD-E-1042', '13 Nov'],
     label: { en: 'Draft B/L ready', es: 'Borrador de B/L listo', fa: 'پیش‌نویس بارنامه آماده است', ar: 'مسودة البوليصة جاهزة' },
     body: {
-      en: 'The draft B/L for shipment {{1}} is ready. Please review it and confirm or send corrections by {{2}}.',
-      es: 'El borrador del B/L del envío {{1}} está listo. Revíselo y confírmelo o envíe correcciones antes del {{2}}.',
-      fa: 'پیش‌نویس بارنامه محموله {{1}} آماده است. لطفاً آن را بررسی کنید و تا {{2}} تأیید یا اصلاحات را ارسال کنید.',
-      ar: 'مسودة البوليصة للشحنة {{1}} جاهزة. يُرجى مراجعتها وتأكيدها أو إرسال التصحيحات قبل {{2}}.',
+      en: 'The draft B/L for booking {{1}} is ready. Please review it and confirm or send corrections by {{2}}.',
+      es: 'El borrador del B/L de la reserva {{1}} está listo. Revíselo y confírmelo o envíe correcciones antes del {{2}}.',
+      fa: 'پیش‌نویس بارنامه بوکینگ {{1}} آماده است. لطفاً آن را بررسی کنید و تا {{2}} تأیید یا اصلاحات را ارسال کنید.',
+      ar: 'مسودة البوليصة للحجز {{1}} جاهزة. يُرجى مراجعتها وتأكيدها أو إرسال التصحيحات قبل {{2}}.',
     },
   },
   {
@@ -78,10 +78,10 @@ export const WA_TEMPLATES: WaTemplate[] = [
     example: ['INV-1042', 'FD-E-1042', 'USD 1,420', '20 Nov'],
     label: { en: 'Invoice issued', es: 'Factura emitida', fa: 'صدور فاکتور', ar: 'إصدار فاتورة' },
     body: {
-      en: 'Invoice {{1}} for shipment {{2}} has been issued for {{3}}, due on {{4}}. Thank you.',
-      es: 'Se ha emitido la factura {{1}} del envío {{2}} por {{3}}, con vencimiento el {{4}}. Gracias.',
-      fa: 'فاکتور {{1}} برای محموله {{2}} به مبلغ {{3}} با سررسید {{4}} صادر شد. سپاس.',
-      ar: 'صدرت الفاتورة {{1}} للشحنة {{2}} بقيمة {{3}} وتستحق في {{4}}. شكرًا لكم.',
+      en: 'Invoice {{1}} for booking {{2}} has been issued for {{3}}, due on {{4}}. Thank you.',
+      es: 'Se ha emitido la factura {{1}} de la reserva {{2}} por {{3}}, con vencimiento el {{4}}. Gracias.',
+      fa: 'فاکتور {{1}} برای بوکینگ {{2}} به مبلغ {{3}} با سررسید {{4}} صادر شد. سپاس.',
+      ar: 'صدرت الفاتورة {{1}} للحجز {{2}} بقيمة {{3}} وتستحق في {{4}}. شكرًا لكم.',
     },
   },
   {
@@ -90,10 +90,10 @@ export const WA_TEMPLATES: WaTemplate[] = [
     example: ['FD-I-0877', 'SAMPLE VESSEL', 'Port Two', '18 Nov'],
     label: { en: 'Arrival notice', es: 'Aviso de llegada', fa: 'اعلام ورود کالا', ar: 'إشعار وصول' },
     body: {
-      en: 'Arrival notice for shipment {{1}}: vessel {{2}} is expected at {{3}} on {{4}}. Please prepare the documents needed for customs clearance.',
-      es: 'Aviso de llegada del envío {{1}}: el buque {{2}} llegará a {{3}} el {{4}}. Prepare los documentos necesarios para el despacho de aduanas.',
-      fa: 'اعلام ورود محموله {{1}}: کشتی {{2}} به {{3}} در تاریخ {{4}} می‌رسد. لطفاً مدارک لازم برای ترخیص را آماده کنید.',
-      ar: 'إشعار وصول للشحنة {{1}}: من المتوقع وصول السفينة {{2}} إلى {{3}} في {{4}}. يُرجى تجهيز المستندات اللازمة للتخليص الجمركي.',
+      en: 'Arrival notice for booking {{1}}: vessel {{2}} is expected at {{3}} on {{4}}. Please prepare the documents needed for customs clearance.',
+      es: 'Aviso de llegada de la reserva {{1}}: el buque {{2}} llegará a {{3}} el {{4}}. Prepare los documentos necesarios para el despacho de aduanas.',
+      fa: 'اعلام ورود بوکینگ {{1}}: کشتی {{2}} به {{3}} در تاریخ {{4}} می‌رسد. لطفاً مدارک لازم برای ترخیص را آماده کنید.',
+      ar: 'إشعار وصول للحجز {{1}}: من المتوقع وصول السفينة {{2}} إلى {{3}} في {{4}}. يُرجى تجهيز المستندات اللازمة للتخليص الجمركي.',
     },
   },
 ];

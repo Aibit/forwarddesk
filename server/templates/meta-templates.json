@@ -6,7 +6,7 @@
     "components": [
       {
         "type": "BODY",
-        "text": "Hello {{1}}, free time for container(s) {{2}} on shipment {{3}} ends on {{4}}. Please arrange collection or return in time to avoid demurrage charges.",
+        "text": "Hello {{1}}, free time for container(s) {{2}} on booking {{3}} ends on {{4}}. Please arrange collection or return in time to avoid demurrage charges.",
         "example": {
           "body_text": [
             [
@@ -27,7 +27,7 @@
     "components": [
       {
         "type": "BODY",
-        "text": "Hola {{1}}, el tiempo libre del contenedor o contenedores {{2}} del envío {{3}} termina el {{4}}. Organice la recogida o devolución a tiempo para evitar cargos por demora.",
+        "text": "Hola {{1}}, el tiempo libre del contenedor o contenedores {{2}} de la reserva {{3}} termina el {{4}}. Organice la recogida o devolución a tiempo para evitar cargos por demora.",
         "example": {
           "body_text": [
             [
@@ -48,7 +48,7 @@
     "components": [
       {
         "type": "BODY",
-        "text": "سلام {{1}}، فری‌تایم کانتینر(های) {{2}} در محموله {{3}} در تاریخ {{4}} تمام می‌شود. لطفاً برای جلوگیری از هزینه دموراژ، تخلیه یا عودت را به‌موقع انجام دهید.",
+        "text": "سلام {{1}}، فری‌تایم کانتینر(های) {{2}} در بوکینگ {{3}} در تاریخ {{4}} تمام می‌شود. لطفاً برای جلوگیری از هزینه دموراژ، تخلیه یا عودت را به‌موقع انجام دهید.",
         "example": {
           "body_text": [
             [
@@ -69,7 +69,7 @@
     "components": [
       {
         "type": "BODY",
-        "text": "مرحبًا {{1}}، تنتهي الفترة المجانية للحاوية أو الحاويات {{2}} في الشحنة {{3}} بتاريخ {{4}}. يُرجى ترتيب الاستلام أو الإرجاع في الوقت المناسب لتجنّب رسوم التأخير.",
+        "text": "مرحبًا {{1}}، تنتهي الفترة المجانية للحاوية أو الحاويات {{2}} في الحجز {{3}} بتاريخ {{4}}. يُرجى ترتيب الاستلام أو الإرجاع في الوقت المناسب لتجنّب رسوم التأخير.",
         "example": {
           "body_text": [
             [
@@ -90,7 +90,7 @@
     "components": [
       {
         "type": "BODY",
-        "text": "Reminder for shipment {{1}}: the document cut-off for vessel {{2}} is {{3}}. Please send the shipping instructions and any missing documents before then.",
+        "text": "Reminder for booking {{1}}: the document cut-off for vessel {{2}} is {{3}}. Please send the shipping instructions and any missing documents before then.",
         "example": {
           "body_text": [
             [
@@ -110,7 +110,7 @@
     "components": [
       {
         "type": "BODY",
-        "text": "Recordatorio del envío {{1}}: el cut-off documental del buque {{2}} es el {{3}}. Envíe las instrucciones de embarque y los documentos pendientes antes de esa hora.",
+        "text": "Recordatorio de la reserva {{1}}: el cut-off documental del buque {{2}} es el {{3}}. Envíe las instrucciones de embarque y los documentos pendientes antes de esa hora.",
         "example": {
           "body_text": [
             [
@@ -130,7 +130,7 @@
     "components": [
       {
         "type": "BODY",
-        "text": "یادآوری محموله {{1}}: کات‌آف اسناد کشتی {{2}} در {{3}} است. لطفاً دستور حمل و مدارک باقی‌مانده را پیش از آن ارسال کنید.",
+        "text": "یادآوری بوکینگ {{1}}: کات‌آف اسناد کشتی {{2}} در {{3}} است. لطفاً دستور حمل و مدارک باقی‌مانده را پیش از آن ارسال کنید.",
         "example": {
           "body_text": [
             [
@@ -150,7 +150,7 @@
     "components": [
       {
         "type": "BODY",
-        "text": "تذكير بالشحنة {{1}}: الموعد النهائي لمستندات السفينة {{2}} هو {{3}}. يُرجى إرسال تعليمات الشحن وأي مستندات ناقصة قبل ذلك.",
+        "text": "تذكير بالحجز {{1}}: الموعد النهائي لمستندات السفينة {{2}} هو {{3}}. يُرجى إرسال تعليمات الشحن وأي مستندات ناقصة قبل ذلك.",
         "example": {
           "body_text": [
             [
@@ -170,7 +170,7 @@
     "components": [
       {
         "type": "BODY",
-        "text": "Shipment {{1}}: the original B/L will be released once payment of {{2}} is received. Please share the payment confirmation when done.",
+        "text": "Booking {{1}}: the original B/L will be released once payment of {{2}} is received. Please share the payment confirmation when done.",
         "example": {
           "body_text": [
             [
@@ -189,7 +189,7 @@
     "components": [
       {
         "type": "BODY",
-        "text": "Envío {{1}}: el B/L original se liberará cuando recibamos el pago de {{2}}. Envíenos el justificante de pago cuando lo haya realizado.",
+        "text": "Reserva {{1}}: el B/L original se liberará cuando recibamos el pago de {{2}}. Envíenos el justificante de pago cuando lo haya realizado.",
         "example": {
           "body_text": [
             [
@@ -208,7 +208,7 @@
     "components": [
       {
         "type": "BODY",
-        "text": "محموله {{1}}: بارنامه اصلی پس از دریافت مبلغ {{2}} صادر می‌شود. لطفاً پس از پرداخت، رسید آن را ارسال کنید.",
+        "text": "بوکینگ {{1}}: بارنامه اصلی پس از دریافت مبلغ {{2}} صادر می‌شود. لطفاً پس از پرداخت، رسید آن را ارسال کنید.",
         "example": {
           "body_text": [
             [
@@ -227,7 +227,7 @@
     "components": [
       {
         "type": "BODY",
-        "text": "الشحنة {{1}}: سيتم الإفراج عن البوليصة الأصلية فور استلام دفعة بقيمة {{2}}. يُرجى إرسال تأكيد الدفع بعد إتمامه.",
+        "text": "الحجز {{1}}: سيتم الإفراج عن البوليصة الأصلية فور استلام دفعة بقيمة {{2}}. يُرجى إرسال تأكيد الدفع بعد إتمامه.",
         "example": {
           "body_text": [
             [
@@ -255,7 +255,7 @@
       },
       {
         "type": "BODY",
-        "text": "The draft B/L for shipment {{1}} is ready. Please review it and confirm or send corrections by {{2}}.",
+        "text": "The draft B/L for booking {{1}} is ready. Please review it and confirm or send corrections by {{2}}.",
         "example": {
           "body_text": [
             [
@@ -283,7 +283,7 @@
       },
       {
         "type": "BODY",
-        "text": "El borrador del B/L del envío {{1}} está listo. Revíselo y confírmelo o envíe correcciones antes del {{2}}.",
+        "text": "El borrador del B/L de la reserva {{1}} está listo. Revíselo y confírmelo o envíe correcciones antes del {{2}}.",
         "example": {
           "body_text": [
             [
@@ -311,7 +311,7 @@
       },
       {
         "type": "BODY",
-        "text": "پیش‌نویس بارنامه محموله {{1}} آماده است. لطفاً آن را بررسی کنید و تا {{2}} تأیید یا اصلاحات را ارسال کنید.",
+        "text": "پیش‌نویس بارنامه بوکینگ {{1}} آماده است. لطفاً آن را بررسی کنید و تا {{2}} تأیید یا اصلاحات را ارسال کنید.",
         "example": {
           "body_text": [
             [
@@ -339,7 +339,7 @@
       },
       {
         "type": "BODY",
-        "text": "مسودة البوليصة للشحنة {{1}} جاهزة. يُرجى مراجعتها وتأكيدها أو إرسال التصحيحات قبل {{2}}.",
+        "text": "مسودة البوليصة للحجز {{1}} جاهزة. يُرجى مراجعتها وتأكيدها أو إرسال التصحيحات قبل {{2}}.",
         "example": {
           "body_text": [
             [
@@ -367,7 +367,7 @@
       },
       {
         "type": "BODY",
-        "text": "Invoice {{1}} for shipment {{2}} has been issued for {{3}}, due on {{4}}. Thank you.",
+        "text": "Invoice {{1}} for booking {{2}} has been issued for {{3}}, due on {{4}}. Thank you.",
         "example": {
           "body_text": [
             [
@@ -397,7 +397,7 @@
       },
       {
         "type": "BODY",
-        "text": "Se ha emitido la factura {{1}} del envío {{2}} por {{3}}, con vencimiento el {{4}}. Gracias.",
+        "text": "Se ha emitido la factura {{1}} de la reserva {{2}} por {{3}}, con vencimiento el {{4}}. Gracias.",
         "example": {
           "body_text": [
             [
@@ -427,7 +427,7 @@
       },
       {
         "type": "BODY",
-        "text": "فاکتور {{1}} برای محموله {{2}} به مبلغ {{3}} با سررسید {{4}} صادر شد. سپاس.",
+        "text": "فاکتور {{1}} برای بوکینگ {{2}} به مبلغ {{3}} با سررسید {{4}} صادر شد. سپاس.",
         "example": {
           "body_text": [
             [
@@ -457,7 +457,7 @@
       },
       {
         "type": "BODY",
-        "text": "صدرت الفاتورة {{1}} للشحنة {{2}} بقيمة {{3}} وتستحق في {{4}}. شكرًا لكم.",
+        "text": "صدرت الفاتورة {{1}} للحجز {{2}} بقيمة {{3}} وتستحق في {{4}}. شكرًا لكم.",
         "example": {
           "body_text": [
             [
@@ -478,7 +478,7 @@
     "components": [
       {
         "type": "BODY",
-        "text": "Arrival notice for shipment {{1}}: vessel {{2}} is expected at {{3}} on {{4}}. Please prepare the documents needed for customs clearance.",
+        "text": "Arrival notice for booking {{1}}: vessel {{2}} is expected at {{3}} on {{4}}. Please prepare the documents needed for customs clearance.",
         "example": {
           "body_text": [
             [
@@ -499,7 +499,7 @@
     "components": [
       {
         "type": "BODY",
-        "text": "Aviso de llegada del envío {{1}}: el buque {{2}} llegará a {{3}} el {{4}}. Prepare los documentos necesarios para el despacho de aduanas.",
+        "text": "Aviso de llegada de la reserva {{1}}: el buque {{2}} llegará a {{3}} el {{4}}. Prepare los documentos necesarios para el despacho de aduanas.",
         "example": {
           "body_text": [
             [
@@ -520,7 +520,7 @@
     "components": [
       {
         "type": "BODY",
-        "text": "اعلام ورود محموله {{1}}: کشتی {{2}} به {{3}} در تاریخ {{4}} می‌رسد. لطفاً مدارک لازم برای ترخیص را آماده کنید.",
+        "text": "اعلام ورود بوکینگ {{1}}: کشتی {{2}} به {{3}} در تاریخ {{4}} می‌رسد. لطفاً مدارک لازم برای ترخیص را آماده کنید.",
         "example": {
           "body_text": [
             [
@@ -541,7 +541,7 @@
     "components": [
       {
         "type": "BODY",
-        "text": "إشعار وصول للشحنة {{1}}: من المتوقع وصول السفينة {{2}} إلى {{3}} في {{4}}. يُرجى تجهيز المستندات اللازمة للتخليص الجمركي.",
+        "text": "إشعار وصول للحجز {{1}}: من المتوقع وصول السفينة {{2}} إلى {{3}} في {{4}}. يُرجى تجهيز المستندات اللازمة للتخليص الجمركي.",
         "example": {
           "body_text": [
             [

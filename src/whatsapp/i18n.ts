@@ -44,10 +44,10 @@ const T = {
   // settings placeholder
   inboxH: ['WhatsApp inbox (coming soon)', 'Bandeja de WhatsApp (próximamente)', 'صندوق واتساپ (به‌زودی)', 'صندوق واتساب (قريبًا)'],
   inboxP: [
-    'Today ForwardDesk opens messages in your own WhatsApp and logs them on the job, client or agent. Planned next: a two-way WhatsApp inbox through an official WhatsApp Business provider, so client replies appear on the job. It will start with Gulf and EU business numbers.',
-    'Hoy ForwardDesk abre los mensajes en su propio WhatsApp y los registra en el expediente, el cliente o el agente. Próximo paso: una bandeja de WhatsApp bidireccional a través de un proveedor oficial de WhatsApp Business, para que las respuestas del cliente aparezcan en el expediente. Empezará con números de empresa del Golfo y de la UE.',
-    'ForwardDesk امروز پیام‌ها را در واتساپ خودتان باز می‌کند و آن‌ها را روی پرونده، مشتری یا نماینده ثبت می‌کند. گام بعدی: صندوق دوطرفه واتساپ از طریق یک ارائه‌دهنده رسمی WhatsApp Business تا پاسخ مشتری روی پرونده دیده شود. شروع آن با شماره‌های تجاری کشورهای خلیج فارس و اتحادیه اروپا خواهد بود.',
-    'يفتح ForwardDesk اليوم الرسائل في واتساب الخاص بك ويسجّلها على الشحنة أو العميل أو الوكيل. الخطوة التالية: صندوق واتساب ثنائي الاتجاه عبر مزوّد رسمي لـ WhatsApp Business، لتظهر ردود العملاء على الشحنة. سيبدأ مع أرقام الأعمال في دول الخليج والاتحاد الأوروبي.',
+    'Today ForwardDesk opens messages in your own WhatsApp and logs them on the booking, client or agent. Planned next: a two-way WhatsApp inbox through an official WhatsApp Business provider, so client replies appear on the booking. It will start with Gulf and EU business numbers.',
+    'Hoy ForwardDesk abre los mensajes en su propio WhatsApp y los registra en la reserva, el cliente o el agente. Próximo paso: una bandeja de WhatsApp bidireccional a través de un proveedor oficial de WhatsApp Business, para que las respuestas del cliente aparezcan en la reserva. Empezará con números de empresa del Golfo y de la UE.',
+    'ForwardDesk امروز پیام‌ها را در واتساپ خودتان باز می‌کند و آن‌ها را روی بوکینگ، مشتری یا نماینده ثبت می‌کند. گام بعدی: صندوق دوطرفه واتساپ از طریق یک ارائه‌دهنده رسمی WhatsApp Business تا پاسخ مشتری روی بوکینگ دیده شود. شروع آن با شماره‌های تجاری کشورهای خلیج فارس و اتحادیه اروپا خواهد بود.',
+    'يفتح ForwardDesk اليوم الرسائل في واتساب الخاص بك ويسجّلها على الحجز أو العميل أو الوكيل. الخطوة التالية: صندوق واتساب ثنائي الاتجاه عبر مزوّد رسمي لـ WhatsApp Business، لتظهر ردود العملاء على الحجز. سيبدأ مع أرقام الأعمال في دول الخليج والاتحاد الأوروبي.',
   ],
   soon: ['Coming soon', 'Próximamente', 'به‌زودی', 'قريبًا'],
 } satisfies Record<string, [string, string, string, string]>;

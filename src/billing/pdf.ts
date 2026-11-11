@@ -12,7 +12,7 @@ const C = { ink: [25, 25, 24] as RGB, text: [55, 53, 47] as RGB, muted: [120, 11
 const T = {
   en: {
     hbl: 'HOUSE BILL OF LADING', an: 'ARRIVAL NOTICE', do: 'DELIVERY ORDER', bc: 'BOOKING CONFIRMATION', invoice: 'INVOICE',
-    no: 'No.', date: 'Date', job: 'Job', shipper: 'Shipper', consignee: 'Consignee', notify: 'Notify party', vessel: 'Vessel', pol: 'Port of loading', pod: 'Port of discharge',
+    no: 'No.', date: 'Date', job: 'Booking', shipper: 'Shipper', consignee: 'Consignee', notify: 'Notify party', vessel: 'Vessel', pol: 'Port of loading', pod: 'Port of discharge',
     eta: 'ETA', line: 'Carrier', containers: 'Container no.', seal: 'Seal', size: 'Size', goods: 'Description of goods', marks: 'Marks & numbers', packages: 'Packages',
     gross: 'Gross weight (kg)', cbm: 'Volume (m³)', freight: 'Freight', prepaid: 'PREPAID', collect: 'COLLECT', place: 'Place and date of issue', draft: 'DRAFT', released: 'RELEASED', issued: 'ISSUED',
     sample: 'SAMPLE — illustrative data, not a valid document', billTo: 'Bill to', due: 'Due date', desc: 'Description', qty: 'Qty', unit: 'Unit price', amount: 'Amount', total: 'Total',
@@ -22,7 +22,7 @@ const T = {
   },
   es: {
     hbl: 'CONOCIMIENTO DE EMBARQUE HOUSE', an: 'AVISO DE LLEGADA', do: 'ORDEN DE ENTREGA', bc: 'CONFIRMACIÓN DE RESERVA', invoice: 'FACTURA',
-    no: 'Nº', date: 'Fecha', job: 'Expediente', shipper: 'Cargador', consignee: 'Consignatario', notify: 'Notificar a', vessel: 'Buque', pol: 'Puerto de carga', pod: 'Puerto de descarga',
+    no: 'Nº', date: 'Fecha', job: 'Reserva', shipper: 'Cargador', consignee: 'Consignatario', notify: 'Notificar a', vessel: 'Buque', pol: 'Puerto de carga', pod: 'Puerto de descarga',
     eta: 'ETA', line: 'Naviera', containers: 'Contenedor', seal: 'Precinto', size: 'Tamaño', goods: 'Descripción de la mercancía', marks: 'Marcas y números', packages: 'Bultos',
     gross: 'Peso bruto (kg)', cbm: 'Volumen (m³)', freight: 'Flete', prepaid: 'PREPAGADO', collect: 'A COBRAR', place: 'Lugar y fecha de emisión', draft: 'BORRADOR', released: 'LIBERADO', issued: 'EMITIDO',
     sample: 'EJEMPLO — datos ilustrativos, documento no válido', billTo: 'Facturar a', due: 'Vencimiento', desc: 'Descripción', qty: 'Cant.', unit: 'Precio ud.', amount: 'Importe', total: 'Total',

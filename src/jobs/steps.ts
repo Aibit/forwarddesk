@@ -26,7 +26,7 @@ export const EXPORT_STEPS: StepDef[] = [
   { code: 'E7', en: 'Confirms booking', es: 'Confirma la reserva', fa: 'تأیید بوکینگ', ar: 'يؤكّد الحجز', who: 'customer', holder: 'sales' },
   { code: 'E8', en: 'Fix free time', es: 'Fijar free time', fa: 'تعیین فری‌تایم', ar: 'تثبيت الفترة المجانية', who: 'sales', holder: 'sales', critical: true },
   { code: 'E9', en: 'Asks for release order', es: 'Pide orden de entrega', fa: 'درخواست حواله تحویل کانتینر', ar: 'يطلب أمر الإفراج', who: 'customer', holder: 'sales' },
-  { code: 'E10', en: 'Job to Ops', es: 'Pasa a Operaciones', fa: 'ارجاع به قسمت عملیات', ar: 'الشحنة إلى العمليات', who: 'sales', holder: 'ops' },
+  { code: 'E10', en: 'Booking to Ops', es: 'Pasa a Operaciones', fa: 'ارجاع به قسمت عملیات', ar: 'الحجز إلى العمليات', who: 'sales', holder: 'ops' },
   { code: 'E11', en: 'Release order', es: 'Orden de entrega', fa: 'دریافت حواله از خط', ar: 'أمر الإفراج', who: 'ops', holder: 'ops' },
   { code: 'E12', en: 'Agent collects order and seals', es: 'Agente recoge orden y precintos', fa: 'تحویل حواله و پلمپ به ترخیص‌کار', ar: 'الوكيل يستلم الأمر والأختام', who: 'customer', holder: 'ops' },
   { code: 'E13', en: 'Empty container set down at terminal', es: 'Vacío en terminal', fa: 'کانتینر خالی در ترمینال', ar: 'إنزال الحاوية الفارغة في المحطة', who: 'customer', holder: 'ops' },
@@ -63,14 +63,14 @@ export const IMPORT_STEPS: StepDef[] = [
 
 export const PHASES: Record<Dir, { from: number; to: number; en: string; es: string; fa: string; ar: string }[]> = {
   export: [
-    { from: 1, to: 4, en: 'Win the job', es: 'Ganar el trabajo', fa: 'گرفتن کار', ar: 'كسب الشحنة' },
+    { from: 1, to: 4, en: 'Win the booking', es: 'Conseguir la reserva', fa: 'گرفتن بوکینگ', ar: 'كسب الحجز' },
     { from: 5, to: 12, en: 'Book and release', es: 'Reservar y liberar', fa: 'بوکینگ و حواله', ar: 'الحجز والإفراج' },
     { from: 13, to: 17, en: 'Load at terminal', es: 'Carga en terminal', fa: 'بارگیری در ترمینال', ar: 'التحميل في المحطة' },
     { from: 18, to: 22, en: 'Bill of lading', es: 'Conocimiento de embarque', fa: 'بارنامه', ar: 'بوليصة الشحن' },
-    { from: 23, to: 23, en: 'Close', es: 'Cierre', fa: 'بستن پرونده', ar: 'إغلاق' },
+    { from: 23, to: 23, en: 'Close', es: 'Cierre', fa: 'بستن بوکینگ', ar: 'إغلاق' },
   ],
   import: [
-    { from: 1, to: 4, en: 'Win the job', es: 'Ganar el trabajo', fa: 'گرفتن کار', ar: 'كسب الشحنة' },
+    { from: 1, to: 4, en: 'Win the booking', es: 'Conseguir la reserva', fa: 'گرفتن بوکینگ', ar: 'كسب الحجز' },
     { from: 5, to: 9, en: 'Origin', es: 'Origen', fa: 'مبدأ', ar: 'المنشأ' },
     { from: 10, to: 13, en: 'Arrival', es: 'Llegada', fa: 'رسیدن', ar: 'الوصول' },
     { from: 14, to: 16, en: 'Return and close', es: 'Devolución y cierre', fa: 'برگشت و بستن', ar: 'الإرجاع والإغلاق' },

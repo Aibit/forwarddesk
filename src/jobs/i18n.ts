@@ -1,15 +1,15 @@
 import type { Lang } from './steps';
 
 const S = {
-  jobs: ['Jobs', 'Expedientes', 'پرونده‌ها', 'الشحنات'],
+  jobs: ['Bookings', 'Reservas', 'بوکینگ‌ها', 'الحجوزات'],
   sampleData: ['SAMPLE DATA', 'DATOS DE EJEMPLO', 'داده نمونه', 'بيانات عيّنة'],
   sampleNote: [
-    'Sample jobs, lines, containers and tariffs — illustrative only. Steps E1–E23 (export) and I1–I16 (import).',
-    'Expedientes, navieras, contenedores y tarifas de ejemplo — solo ilustrativo. Pasos E1–E23 (exportación) e I1–I16 (importación).',
-    'پرونده‌ها، خطوط، کانتینرها و تعرفه‌ها نمونه هستند. مراحل E1–E23 (صادرات) و I1–I16 (واردات).', 'شحنات وخطوط وحاويات وتعرفات عيّنة — للتوضيح فقط. الخطوات E1–E23 (تصدير) وI1–I16 (استيراد).',
+    'Sample bookings, lines, containers and tariffs — illustrative only. Steps E1–E23 (export) and I1–I16 (import).',
+    'Reservas, navieras, contenedores y tarifas de ejemplo — solo ilustrativo. Pasos E1–E23 (exportación) e I1–I16 (importación).',
+    'بوکینگ‌ها، خطوط، کانتینرها و تعرفه‌ها نمونه هستند. مراحل E1–E23 (صادرات) و I1–I16 (واردات).', 'حجوزات وخطوط وحاويات وتعرفات عيّنة — للتوضيح فقط. الخطوات E1–E23 (تصدير) وI1–I16 (استيراد).',
   ],
-  newJob: ['+ New job', '+ Nuevo expediente', '+ پرونده جدید', '+ شحنة جديدة'],
-  createJob: ['Create job', 'Crear expediente', 'ایجاد پرونده', 'إنشاء شحنة'],
+  newJob: ['+ New booking', '+ Nueva reserva', '+ بوکینگ جدید', '+ حجز جديد'],
+  createJob: ['Create booking', 'Crear reserva', 'ایجاد بوکینگ', 'إنشاء حجز'],
   cancelJ: ['Cancel', 'Cancelar', 'انصراف', 'إلغاء'],
   pol: ['Port of loading', 'Puerto de carga', 'بندر بارگیری', 'ميناء التحميل'],
   pod: ['Port of discharge', 'Puerto de descarga', 'بندر تخلیه', 'ميناء التفريغ'],
@@ -18,23 +18,23 @@ const S = {
   equipment: ['Equipment (planned)', 'Equipo (previsto)', 'تجهیزات (برنامه)', 'المعدّات (المخطّطة)'],
   dirJ: ['Direction', 'Dirección', 'جهت', 'الاتجاه'],
   startStep: ['Current step', 'Paso actual', 'مرحله فعلی', 'الخطوة الحالية'],
-  newJobNote: ['Containers, charges and documents are added as the job moves. Saved', 'Contenedores, cargos y documentos se añaden según avanza. Guardado', 'کانتینرها، هزینه‌ها و اسناد با پیشرفت پرونده اضافه می‌شوند. ذخیره', 'تُضاف الحاويات والرسوم والمستندات مع تقدّم الشحنة. محفوظة'],
+  newJobNote: ['Containers, charges and documents are added as the booking moves. Saved', 'Contenedores, cargos y documentos se añaden según avanza. Guardado', 'کانتینرها، هزینه‌ها و اسناد با پیشرفت بوکینگ اضافه می‌شوند. ذخیره', 'تُضاف الحاويات والرسوم والمستندات مع تقدّم الحجز. محفوظة'],
   savedLive: ['online (staff of this org + this client only)', 'en línea (personal de la empresa + este cliente)', 'آنلاین (کارکنان و همین مشتری)', 'عبر الإنترنت (موظفو هذه المؤسسة + هذا العميل فقط)'],
   savedLocal: ['in this browser only', 'solo en este navegador', 'فقط در همین مرورگر', 'في هذا المتصفح فقط'],
   portalApproved: ['Client approved the draft B/L in the portal', 'El cliente aprobó el borrador de B/L en el portal', 'مشتری پیش‌نویس بارنامه را در پورتال تأیید کرد', 'وافق العميل على مسودة بوليصة الشحن في البوابة'],
-  jobsLive: ['Jobs live', 'Expedientes activos', 'پرونده‌های فعال', 'الشحنات النشطة'],
+  jobsLive: ['Live bookings', 'Reservas activas', 'بوکینگ‌های فعال', 'الحجوزات النشطة'],
   inFreeTime: ['Containers in free time', 'Contenedores en free time', 'کانتینر در فری‌تایم', 'حاويات ضمن الفترة المجانية'],
   atRisk: ['At demurrage risk', 'Riesgo de demora', 'در خطر حق توقف', 'معرّضة لغرامة التأخير'],
   cutoffs72: ['Cut-offs next 72 h', 'Cut-offs próximas 72 h', 'کات‌آف ۷۲ ساعت آینده', 'مواعيد Cut-off خلال ٧٢ ساعة'],
   unpaidBl: ['Unpaid, blocks release', 'Impagado, bloquea la entrega', 'پرداخت‌نشده، مانع ترخیص اسناد', 'غير مدفوع، يحجب الإفراج'],
   chequesHeld: ['Guarantee cheques held', 'Cheques de garantía retenidos', 'چک‌های تضمین نزد خط', 'شيكات ضمان محتجزة'],
-  board: ['Job board', 'Tablero de expedientes', 'تابلوی پرونده‌ها', 'لوحة الشحنات'],
+  board: ['Booking board', 'Tablero de reservas', 'تابلوی بوکینگ‌ها', 'لوحة الحجوزات'],
   deadlines: ['Deadline tracker', 'Control de plazos', 'پیگیری مهلت‌ها', 'متتبّع المواعيد النهائية'],
   money: ['Money at risk', 'Dinero en riesgo', 'پول در معرض خطر', 'أموال معرّضة للخطر'],
   export: ['Export', 'Exportación', 'صادرات', 'تصدير'],
   import: ['Import', 'Importación', 'واردات', 'استيراد'],
   all: ['All', 'Todos', 'همه', 'الكل'],
-  job: ['Job', 'Expediente', 'پرونده', 'الشحنة'],
+  job: ['Booking', 'Reserva', 'بوکینگ', 'الحجز'],
   customer: ['Customer', 'Cliente', 'صاحب‌کالا', 'العميل'],
   route: ['Route', 'Ruta', 'مسیر', 'المسار'],
   line: ['Shipping line', 'Naviera', 'خط کشتیرانی', 'خط ملاحي'],
@@ -163,7 +163,7 @@ export const GLOSSARY: [string, string, string][] = [
   ['سازمان بنادر', 'Ports Organization', 'هيئة الموانئ'],
 ];
 
-const nf = (lang: Lang, opts?: Intl.NumberFormatOptions) => new Intl.NumberFormat(lang === 'fa' ? 'fa-IR' : lang === 'ar' ? 'ar-EG' : 'en-US', opts);
+const nf = (lang: Lang, opts?: Intl.NumberFormatOptions) => new Intl.NumberFormat(lang === 'fa' ? 'fa-IR-u-ca-gregory' : lang === 'ar' ? 'ar-EG' : 'en-US', opts);
 export const num = (lang: Lang, n: number) => nf(lang, { maximumFractionDigits: 0 }).format(n);
 export const usd = (lang: Lang, n: number) => (lang === 'fa' ? `${num(lang, n)} دلار` : lang === 'ar' ? `${num(lang, n)} دولار` : `$${num(lang, n)}`);
 
@@ -177,7 +177,7 @@ export function dur(lang: Lang, ms: number, withSeconds = true): string {
   const p = (n: number) => String(n).padStart(2, '0');
   if (lang === 'fa' || lang === 'ar') {
     if (d >= 2) return lang === 'fa' ? `${num(lang, d)} روز ${num(lang, h)} ساعت` : `${num(lang, d)} يوم ${num(lang, h)} ساعة`;
-    const p2 = (n: number) => n.toLocaleString(lang === 'fa' ? 'fa-IR' : 'ar-EG', { minimumIntegerDigits: 2 });
+    const p2 = (n: number) => n.toLocaleString(lang === 'fa' ? 'fa-IR-u-ca-gregory' : 'ar-EG', { minimumIntegerDigits: 2 });
     return `${p2(d * 24 + h)}:${p2(m)}${withSeconds ? `:${p2(s)}` : ''}`;
   }
   if (d >= 2) return `${d}d ${h}h`;
@@ -185,11 +185,11 @@ export function dur(lang: Lang, ms: number, withSeconds = true): string {
 }
 
 export function fmtDay(lang: Lang, ms: number): string {
-  const loc = lang === 'fa' ? 'fa-IR' : lang === 'ar' ? 'ar-EG' : lang === 'es' ? 'es-ES' : 'en-GB';
+  const loc = lang === 'fa' ? 'fa-IR-u-ca-gregory' : lang === 'ar' ? 'ar-EG' : lang === 'es' ? 'es-ES' : 'en-GB';
   return new Date(ms).toLocaleDateString(loc, { day: 'numeric', month: 'short' });
 }
 export function fmtWhen(lang: Lang, ms: number): string {
-  const loc = lang === 'fa' ? 'fa-IR' : lang === 'ar' ? 'ar-EG' : lang === 'es' ? 'es-ES' : 'en-GB';
+  const loc = lang === 'fa' ? 'fa-IR-u-ca-gregory' : lang === 'ar' ? 'ar-EG' : lang === 'es' ? 'es-ES' : 'en-GB';
   return new Date(ms).toLocaleString(loc, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 }
 

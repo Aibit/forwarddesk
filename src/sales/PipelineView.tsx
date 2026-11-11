@@ -22,9 +22,9 @@ const T = {
   quoted: ['Quoted', 'Cotizado', 'قیمت داده شده', 'تم التسعير'],
   won: ['Won / Booked', 'Ganado / Reservado', 'برنده / رزرو شده', 'فاز / محجوز'],
   lost: ['Lost', 'Perdido', 'از دست رفته', 'خاسر'],
-  inquiryHint: ['Jobs still finding a rate (E1–E3, I1–I2).', 'Expedientes aún buscando tarifa (E1–E3, I1–I2).', 'پرونده‌هایی که هنوز دنبال نرخ هستند (E1–E3، I1–I2).', 'شحنات ما زالت تبحث عن سعر (E1–E3، I1–I2).'],
+  inquiryHint: ['Bookings still finding a rate (E1–E3, I1–I2).', 'Reservas aún buscando tarifa (E1–E3, I1–I2).', 'بوکینگ‌هایی که هنوز دنبال نرخ هستند (E1–E3، I1–I2).', 'حجوزات ما زالت تبحث عن سعر (E1–E3، I1–I2).'],
   quotedHint: ['Quotes sent, waiting for the customer.', 'Cotizaciones enviadas, esperando al cliente.', 'قیمت‌های ارسال‌شده، در انتظار مشتری.', 'عروض مُرسلة، بانتظار العميل.'],
-  wonHint: ['Accepted quotes and booked jobs. Job figures come from its billing.', 'Cotizaciones aceptadas y expedientes reservados. Las cifras del expediente vienen de su facturación.', 'قیمت‌های پذیرفته‌شده و پرونده‌های رزروشده. ارقام پرونده از صورتحساب آن است.', 'عروض مقبولة وشحنات محجوزة. أرقام الشحنة تأتي من فوترتها.'],
+  wonHint: ['Accepted quotes and confirmed bookings. Booking figures come from its billing.', 'Cotizaciones aceptadas y reservas confirmadas. Las cifras de la reserva vienen de su facturación.', 'قیمت‌های پذیرفته‌شده و بوکینگ‌های قطعی. ارقام بوکینگ از صورتحساب آن است.', 'عروض مقبولة وحجوزات مؤكدة. أرقام الحجز تأتي من فوترته.'],
   lostHint: ['Quotes the customer turned down.', 'Cotizaciones rechazadas por el cliente.', 'قیمت‌هایی که مشتری نپذیرفت.', 'عروض رفضها العميل.'],
   value: ['Value', 'Valor', 'ارزش', 'القيمة'],
   margin: ['Margin', 'Margen', 'حاشیه سود', 'الهامش'],
@@ -34,9 +34,9 @@ const T = {
   of: ['of', 'de', 'از', 'من'],
   empty: ['Nothing here yet.', 'Nada todavía.', 'هنوز موردی نیست.', 'لا شيء هنا بعد.'],
   sample: ['SAMPLE', 'EJEMPLO', 'نمونه', 'عيّنة'],
-  sampleNote: ['Sample jobs and quotes — illustrative only. New quotes from the Quote page and new jobs appear here automatically.', 'Expedientes y cotizaciones de ejemplo, solo ilustrativos. Las nuevas cotizaciones y expedientes aparecen aquí automáticamente.', 'پرونده‌ها و قیمت‌های نمونه — فقط برای نمایش. قیمت‌ها و پرونده‌های جدید خودکار اینجا می‌آیند.', 'شحنات وعروض عيّنة — للتوضيح فقط. العروض الجديدة من صفحة التسعير والشحنات الجديدة تظهر هنا تلقائيًا.'],
+  sampleNote: ['Sample bookings and quotes — illustrative only. New quotes from the Quote page and new bookings appear here automatically.', 'Reservas y cotizaciones de ejemplo, solo ilustrativos. Las nuevas cotizaciones y reservas aparecen aquí automáticamente.', 'بوکینگ‌ها و قیمت‌های نمونه — فقط برای نمایش. قیمت‌ها و بوکینگ‌های جدید خودکار اینجا می‌آیند.', 'حجوزات وعروض عيّنة — للتوضيح فقط. العروض الجديدة من صفحة التسعير والحجوزات الجديدة تظهر هنا تلقائيًا.'],
   quote: ['Quote', 'Cotización', 'پیشنهاد قیمت', 'عرض سعر'],
-  job: ['Job', 'Expediente', 'پرونده', 'الشحنة'],
+  job: ['Booking', 'Reserva', 'بوکینگ', 'الحجز'],
   fromQuote: ['from quote', 'de la cotización', 'از پیشنهاد', 'من العرض'],
   options: ['options', 'opciones', 'گزینه', 'خيارات'],
   transit: ['transit', 'tránsito', 'ترانزیت', 'العبور'],
@@ -75,7 +75,7 @@ interface Card {
   at: number;
 }
 
-const fmt = (lang: UiLang, n: number) => n.toLocaleString(lang === 'fa' ? 'fa-IR' : lang === 'ar' ? 'ar-EG' : lang === 'es' ? 'es-ES' : 'en-US', { maximumFractionDigits: 0 });
+const fmt = (lang: UiLang, n: number) => n.toLocaleString(lang === 'fa' ? 'fa-IR-u-ca-gregory' : lang === 'ar' ? 'ar-EG' : lang === 'es' ? 'es-ES' : 'en-US', { maximumFractionDigits: 0 });
 const isInquiry = (j: Job) => stepIndex(j.step) <= (j.dir === 'export' ? 3 : 2);
 const split = (route: string) => {
   const [a, b] = route.split('→').map((x) => x.trim());

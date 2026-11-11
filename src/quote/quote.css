@@ -205,3 +205,9 @@
 
 /* Farsi: Persian script in the mono face reads badly; use the UI font for prose bits that are mono in Latin. */
 [dir='rtl'] .quote-view :is(.q-client-defs, .q-summary > .mono, .q-summary-tag, .q-summary-meta, .q-timer, .q-muted, .q-issue-tag, .q-stale-tag, .q-totals span) { font-family: inherit; letter-spacing: 0; }
+/* full-width options comparison row under both columns */
+.q-wide { grid-column: 1 / -1; min-width: 0; background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.4rem 0.9rem 0.8rem; scroll-margin-top: 0.75rem; }
+.q-opts-pointer { display: flex; gap: 0.4rem; align-items: baseline; }
+@media (min-width: 1001px) {
+  .quote-view.has-wide .q-right, .app.nd .quote-view.has-wide .q-right { position: static; max-height: none; overflow: visible; }
+}

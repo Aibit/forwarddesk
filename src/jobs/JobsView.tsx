@@ -429,7 +429,7 @@ function BalanceTable({ b, lang }: { b: JobBalance; lang: Lang }) {
         {b.invoices.map((x) => (
           <tr key={x.no}>
             <td><bdi className="mono">{x.no}</bdi></td>
-            <td className="mono num"><bdi>{x.currency} {x.open.toLocaleString(lang === 'fa' ? 'fa-IR' : lang === 'ar' ? 'ar-EG' : lang === 'es' ? 'es-ES' : 'en-US', { maximumFractionDigits: 2 })}</bdi></td>
+            <td className="mono num"><bdi>{x.currency} {x.open.toLocaleString(lang === 'fa' ? 'fa-IR-u-ca-gregory' : lang === 'ar' ? 'ar-EG' : lang === 'es' ? 'es-ES' : 'en-US', { maximumFractionDigits: 2 })}</bdi></td>
             <td className={`st ${x.overdue ? 'red' : 'amber'}`}>{tr(lang, 'unpaid')}</td>
           </tr>
         ))}

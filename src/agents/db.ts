@@ -135,7 +135,7 @@ export function sampleDb(): DbAgent[] {
     S('Sample Forwarder Barcelona', 'forwarder', 'Spain', 'Barcelona', 'Barcelona, Valencia', 'Med – Far East', 'FCL, LCL, customs', true, '',
       { status: 'prospect', svc: ['FCL', 'LCL', 'customs'], lanePairs: [{ from: 'Shanghai', to: 'Barcelona' }], currency: 'EUR' }),
     S('Sample Clearance BND', 'clearance', 'Iran', 'Bandar Abbas', 'Bandar Abbas (Shahid Rajaee)', '—', 'Customs clearance, E1/E10 docs', false, '',
-      { status: 'active', svc: ['customs'], rating: 4, paymentTerms: 'Per job', currency: 'USD' }),
+      { status: 'active', svc: ['customs'], rating: 4, paymentTerms: 'Per booking', currency: 'USD' }),
     S('Sample Trucker Gulf', 'trucker', 'United Arab Emirates', 'Dubai', 'Jebel Ali', '—', 'FTL, container haulage', false, '',
       { status: 'prospect', svc: ['road'], currency: 'AED' }),
     S('Sample Broker Mumbai', 'clearance', 'India', 'Mumbai', 'Nhava Sheva', '—', 'Customs clearance (CHA)', false, '',

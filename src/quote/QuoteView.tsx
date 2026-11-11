@@ -13,6 +13,8 @@ import {
 } from './parser';
 import { CSV_COLUMNS, buildOptions, buildQuote, loadRateCsv, optionBadges, sampleRates, type Badge, type Quote, type RateRow, type Side } from './rates';
 import { BADGE_L, MODE_L, ol, type QLang } from './optlabels';
+import { OptionsTable } from './OptionsTable';
+import { exportDetailsFor, type History } from './optdetails';
 import { DEFAULT_CATALOG } from '../billing/model';
 import { WaButton } from '../whatsapp/WhatsApp';
 import { clientRecipients } from '../whatsapp/context';
@@ -23,7 +25,8 @@ import { quoteForText, type QuoteFor } from './quotefor';
 import { HOME_PORT, autoDir, tl3, tradeBlock, tradeText, type TradeBlock, type TradeDir } from './trade';
 import { useTariffs } from '../jobs/tariffs';
 import { listedNames, pickable, rid, sanctionsLevel, statusOf as agentStatus, useAgentsDb } from '../agents/db';
-import { activities } from '../agents/crm';
+import { activities, agentStats, normName, useActivities } from '../agents/crm';
+import { useJobs } from '../jobs/store';
 import { hsCheck, laneToRequest, sameLane, targetUnits, type LaneProfile } from '../clients/lanes';
 import { TargetDelta, fmtTarget, fmtVolume } from '../clients/Lanes';
 import { ct } from '../clients/i18n';
@@ -60,15 +63,12 @@ function fmtElapsed(ms: number): string {
   return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
 }
 
-function fmtShort(iso: string, lang: QLang): string {
-  return new Date(iso + 'T12:00:00').toLocaleDateString(lang === 'es' ? 'es-ES' : lang === 'fa' ? 'fa-IR' : lang === 'ar' ? 'ar-EG' : 'en-GB', { day: 'numeric', month: 'short' });
-}
 
 function fmtDate(iso: string | null, lang: QLang): string {
   if (!iso) return '—';
   if (iso === 'ASAP') return lang === 'es' ? 'lo antes posible' : lang === 'fa' ? 'در اسرع وقت' : lang === 'ar' ? 'في أقرب وقت' : 'ASAP';
   const d = new Date(iso + 'T12:00:00');
-  return d.toLocaleDateString(lang === 'es' ? 'es-ES' : lang === 'fa' ? 'fa-IR' : lang === 'ar' ? 'ar-EG' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  return d.toLocaleDateString(lang === 'es' ? 'es-ES' : lang === 'fa' ? 'fa-IR-u-ca-gregory' : lang === 'ar' ? 'ar-EG' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
 function equipmentText(eq: Record<string, number>): string {
@@ -265,7 +265,9 @@ function Chip({ label, value, status, evidence, editing, onEdit, editor }: ChipP
 }
 
 export function QuoteView({ seed, onOpenClient }: { seed?: { text: string; n: number; clientId?: string | null; laneId?: string | null } | null; onOpenClient?: (id: string) => void } = {}) {
-  const { clients, company } = useStore();
+  const { clients, company, quotes: quoteRecords } = useStore();
+  const jobsAll = useJobs();
+  const actsAll = useActivities();
   const [clientId, setClientId] = useState<string | null>(null);
   const client = clients.find((c) => c.id === clientId) ?? null;
   const [savedTo, setSavedTo] = useState<string | null>(null);
@@ -433,6 +435,14 @@ export function QuoteView({ seed, onOpenClient }: { seed?: { text: string; n: nu
   const recIdx = Math.max(0, badges.findIndex((b) => b.includes('recommended')));
   const activeIdx = options.findIndex((o) => o.carrier === activeCarrier) >= 0 ? options.findIndex((o) => o.carrier === activeCarrier) : recIdx;
   const quote: Quote | null = options.length ? options[activeIdx] : rawQuote;
+  // agent / line history from the agent CRM (past quotes, bookings, win rate), matched by name
+  const historyOf = useMemo(() => (name: string): History | null => {
+    const a = agentDb.find((x) => normName(x.name) && normName(x.name) === normName(name));
+    if (!a) return null;
+    const st = agentStats(a, quoteRecords, jobsAll, actsAll);
+    return { quotes: st.quoted, bookings: st.jobs.length, winRate: st.winRate };
+  }, [agentDb, quoteRecords, jobsAll, actsAll]);
+  const exportDetails = (l: QLang, cur: string, fxText: string) => exportDetailsFor(l, { ref: quoteNumber(text), fields, client: client?.name ?? null, margin, cur, fxText, count: options.length });
   // the client's lane profile for this request: the one picked, else one matching POL/POD
   const laneProfile = client ? client.lanes.find((l) => l.id === laneId) ?? client.lanes.find((l) => sameLane(l, fields.origin, fields.destination)) ?? null : null;
   // MSDS: needed by HS code (sample rule list) or DG; attached to the lane profile when there is one
@@ -656,7 +666,7 @@ export function QuoteView({ seed, onOpenClient }: { seed?: { text: string; n: nu
   const numOrNull = (v: string) => (v.trim() === '' ? null : Number(v.replace(',', '.')));
 
   return (
-    <div className="quote-view">
+    <div className={`quote-view ${options.length > 1 && quote ? 'has-wide' : ''}`}>
       <section className="q-left" aria-label="Customer request">
         <div className="q-panel">
           <div className="q-head">
@@ -997,74 +1007,9 @@ export function QuoteView({ seed, onOpenClient }: { seed?: { text: string; n: nu
                 </div>
               )}
               {options.length > 1 && (
-                <div className="q-opts-wrap" dir={(ui === 'fa' || ui === 'ar') ? 'rtl' : 'ltr'} lang={ui} data-testid="quote-options">
-                  <div className="q-opts-head">
-                    <strong>{ol(ui, 'options')} · {options.length}</strong>
-                    <span className="q-muted">{ol(ui, 'optionsSub')}</span>
-                  </div>
-                  <div className="q-opts" style={{ gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` }}>
-                    {options.map((o, i) => {
-                      const cheapest = options.reduce((a, b) => (b.sellTotal < a.sellTotal ? b : a));
-                      const dSell = o.sellTotal - cheapest.sellTotal;
-                      const dT = o.transitDays != null && cheapest.transitDays != null ? o.transitDays - cheapest.transitDays : null;
-                      const dF = o.freeDays != null && cheapest.freeDays != null ? o.freeDays - cheapest.freeDays : null;
-                      const on = !offCarriers.includes(o.carrier ?? '');
-                      const D = ol(ui, 'd');
-                      return (
-                        <div key={o.carrier ?? i} className={`q-opt ${i === activeIdx ? 'active' : ''} ${on ? 'on' : 'off'}`} onClick={() => setActiveCarrier(o.carrier)} data-testid={`option-${i}`}>
-                          <div className="q-opt-top">
-                            <label className="q-opt-pick" onClick={(e) => e.stopPropagation()}>
-                              <input
-                                type="checkbox"
-                                checked={on}
-                                data-testid={`option-pick-${i}`}
-                                onChange={() => setOffCarriers((off) => (on ? [...off, o.carrier ?? ''] : off.filter((c) => c !== (o.carrier ?? ''))))}
-                              />
-                              {ol(ui, 'inQuote')}
-                            </label>
-                          </div>
-                          <div className="q-opt-badges">
-                            {rankOf(o.carrier) === 'preferred' && <span className="q-badge pref">{ui === 'es' ? 'Preferida del cliente' : ui === 'fa' ? 'ترجیح مشتری' : ui === 'ar' ? 'مفضّل لدى العميل' : 'Client preferred'}</span>}
-                            {rankOf(o.carrier) === 'avoid' && <span className="q-badge">{ui === 'es' ? 'El cliente la evita' : ui === 'fa' ? 'مشتری پرهیز می‌کند' : ui === 'ar' ? 'العميل يتجنّبه' : 'Client avoids'}</span>}
-                            {(badges[i] ?? []).map((b) => (
-                              <span key={b} className={`q-badge ${b}`}>{BADGE_L[ui][b]}</span>
-                            ))}
-                          </div>
-                          <div className="q-opt-name">{o.carrier ?? '—'}</div>
-                          <div className="q-opt-route">{o.routing ?? '—'}</div>
-                          <div className="q-opt-sell">
-                            <bdi dir="ltr" className="mono">${money(o.sellTotal)}</bdi>
-                            <span className={`q-delta ${dSell === 0 ? 'best' : ''}`}>{dSell === 0 ? ol(ui, 'cheapest') : <bdi dir="ltr">+${money(dSell)}</bdi>}</span>
-                          </div>
-                          {targetDiff(o) && <div className="q-opt-target" data-testid={`option-target-${i}`}><TargetDelta diff={targetDiff(o)!.diff} lang={ui} /> <span className="q-muted"><bdi dir="ltr">${money(Math.round(targetDiff(o)!.perUnit))}</bdi> / {laneProfile!.target.per} · {ct(ui, 'target').toLowerCase()} <bdi dir="ltr">{laneProfile!.target.amount}</bdi></span></div>}
-                          <div className="q-opt-bm mono">
-                            {ol(ui, 'buy')} <bdi dir="ltr">${money(o.buyTotal)}</bdi> · {ol(ui, 'margin')} <bdi dir="ltr">${money(o.marginUsd)} ({o.marginPct}%)</bdi>
-                          </div>
-                          <dl className="q-opt-facts">
-                            <div><dt>{ol(ui, 'transit')}</dt><dd>{o.transitDays ?? '?'} {D}{dT ? <bdi className={`q-delta ${dT < 0 ? 'best' : ''}`}><bdi dir="ltr">{dT > 0 ? '+' : '−'}{Math.abs(dT)}</bdi> {D}</bdi> : null}</dd></div>
-                            <div><dt>{ol(ui, 'sailing')}</dt><dd className="mono"><bdi dir={(ui === 'fa' || ui === 'ar') ? 'rtl' : 'ltr'}>{o.etd ? fmtShort(o.etd, ui) : '—'}{o.eta ? `${(ui === 'fa' || ui === 'ar') ? ' ← ' : ' → '}${fmtShort(o.eta, ui)}` : ''}</bdi></dd></div>
-                            <div><dt>{ol(ui, 'freeTime')}</dt><dd>{o.freeDays != null ? `${o.freeDays} ${D}` : ol(ui, 'na')}{client?.freeTimeRequest && o.freeDays != null && o.freeDays < client.freeTimeRequest ? <bdi className="q-delta q-amber" title={`${client.name} asks for ${client.freeTimeRequest} days`}>&lt; {client.freeTimeRequest}</bdi> : null}{dF ? <bdi className={`q-delta ${dF > 0 ? 'best' : ''}`}><bdi dir="ltr">{dF > 0 ? '+' : '−'}{Math.abs(dF)}</bdi> {D}</bdi> : null}</dd></div>
-                            <div><dt>{ol(ui, 'validTo')}</dt><dd className="mono">{o.validUntil ?? '—'}</dd></div>
-                          </dl>
-                          {o.staleCount > 0 && <div className="q-opt-stale">{ol(ui, 'recheck')}: {o.lines.filter((l) => l.stale).map((l) => l.charge).join(', ')}</div>}
-                          <div className="q-opt-incl">
-                            <span>{ol(ui, 'included')}:</span> {o.lines.filter((l) => l.side === 'freight').map((l) => l.charge).join(', ')} + {o.lines.filter((l) => l.side !== 'freight').length} {ol(ui, 'common')}
-                            {o.excluded.length > 0 && (
-                              <>
-                                <br />
-                                <span>{ol(ui, 'excluded')}:</span> {o.excluded.map((l) => l.charge).join(', ')}
-                              </>
-                            )}
-                          </div>
-                          <div className="q-opt-foot">{i === activeIdx ? `▼ ${ol(ui, 'breakdown')}` : ol(ui, 'breakdown')}</div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                  <div className="q-muted q-opts-note">
-                    {custOpts.length ? `${custOpts.length} ${ol(ui, 'nSelected')} · ` : ''}
-                    {custOpts.length === 0 ? <span className="q-amber">{ol(ui, 'pickOne')}</span> : null} {ol(ui, 'recRule')}
-                  </div>
+                <div className="q-scope q-opts-pointer" data-testid="options-pointer">
+                  <a href="#quote-options-table" className="q-linklike" onClick={(e) => { e.preventDefault(); document.getElementById('quote-options-table')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }}>{ol(ui, 'options')} · {options.length} ↓</a>
+                  {' '}<span className="q-muted">{options[activeIdx]?.carrier ?? ''}</span>
                 </div>
               )}
               <table className="q-table">
@@ -1175,6 +1120,33 @@ export function QuoteView({ seed, onOpenClient }: { seed?: { text: string; n: nu
           </>
         )}
       </section>
+      {options.length > 1 && quote && (
+        <section className="q-wide" id="quote-options-table" aria-label="Options">
+                <>
+                  <OptionsTable
+                    options={options}
+                    ui={ui}
+                    mode={fields.mode ?? 'fcl'}
+                    incoterm={fields.incoterm}
+                    activeIdx={activeIdx}
+                    recommendedIdx={recIdx}
+                    offCarriers={offCarriers}
+                    onSelect={(i) => { const c = options[i].carrier; setActiveCarrier(c); setOffCarriers((off) => off.filter((x) => x !== (c ?? ''))); }}
+                    onToggleQuote={(i) => { const c = options[i].carrier ?? ''; setOffCarriers((off) => (off.includes(c) ? off.filter((x) => x !== c) : [...off, c])); }}
+                    rank={rankOf}
+                    freeTimeRequest={client?.freeTimeRequest ?? null}
+                    history={historyOf}
+                    quoteRef={quoteNumber(text)}
+                    details={exportDetails}
+                    extraNote={(i) => { const t = targetDiff(options[i]); return t ? `${ct(ui, 'target')}: ${t.diff > 0 ? '+' : t.diff < 0 ? '−' : '±'}${money(Math.abs(t.diff))} USD / ${laneProfile!.target.per}` : null; }}
+                  />
+                  <div className="q-muted q-opts-note">
+                    {custOpts.length ? `${custOpts.length} ${ol(ui, 'nSelected')} · ` : ''}
+                    {custOpts.length === 0 ? <span className="q-amber">{ol(ui, 'pickOne')}</span> : null} {ol(ui, 'recRule')}
+                  </div>
+                </>
+        </section>
+      )}
     </div>
   );
 }
