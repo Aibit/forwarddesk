@@ -9,8 +9,9 @@ the staff live bar and Company settings.
 
 ## Data model (`orgs/demo/...`)
 See the header of `firestore.rules`. Staff-only: `clients/*` (margin), `quotes/*/private/costs` (buy rates/margins),
-`jobInternal/*` (line rebate status), `settings/tariffsPrivate` (rebate %). Client-readable (own `clientId` only):
-`clientPublic`, `lanes`, `agentPrefs`, `jobs`, `quotes`, `msds`; any member: `agents`, `settings/tariffs`, `settings/msdsRules`.
+`jobInternal/*` (line rebate status), `settings/tariffsPrivate` (rebate %), `agentCrm/*` (agent CRM: status, contacts,
+payment terms, credit, rating, KYC, notes, tags) and `agentActivities/*` (agent timeline). Client-readable (own `clientId` only):
+`clientPublic`, `lanes`, `agentPrefs`, `jobs`, `quotes`, `msds`; any member: `agents` (directory fields only — the rules refuse CRM fields there), `settings/tariffs`, `settings/msdsRules`.
 MSDS files are stored as base64 in Firestore (max 640 KB in live mode) because Cloud Storage needs the paid Blaze plan.
 
 ## Local (no project needed)

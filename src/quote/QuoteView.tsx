@@ -19,7 +19,8 @@ import { SAMPLE_REQUESTS } from './samples';
 import { quoteForText, type QuoteFor } from './quotefor';
 import { HOME_PORT, autoDir, tl3, tradeBlock, tradeText, type TradeBlock, type TradeDir } from './trade';
 import { useTariffs } from '../jobs/tariffs';
-import { isListed, sanctionsLevel, useAgentsDb } from '../agents/db';
+import { listedNames, pickable, rid, sanctionsLevel, statusOf as agentStatus, useAgentsDb } from '../agents/db';
+import { activities } from '../agents/crm';
 import { hsCheck, laneToRequest, sameLane, targetUnits, type LaneProfile } from '../clients/lanes';
 import { TargetDelta, fmtTarget, fmtVolume } from '../clients/Lanes';
 import { ct } from '../clients/i18n';
@@ -258,6 +259,7 @@ export function QuoteView({ seed, onOpenClient }: { seed?: { text: string; n: nu
   const [laneId, setLaneId] = useState<string | null>(null);
   const [quoteMsds, setQuoteMsds] = useState<MsdsMeta | null>(null);
   const [dirOverride, setDirOverride] = useState<TradeDir | null>(null);
+  const [rateAsked, setRateAsked] = useState<string[]>([]);
   const tariffs = useTariffs();
   const { list: agentDb } = useAgentsDb();
   const msdsRules = useMsdsRules();
@@ -517,12 +519,22 @@ export function QuoteView({ seed, onOpenClient }: { seed?: { text: string; n: nu
   const dir: TradeDir = dirOverride ?? autoD ?? 'export';
   const tradeFor = (l: QLang) => (custOpts.length && fields.mode === 'fcl' ? tradeBlock(dir, fields, custOpts[0], tariffs, l, laneProfile?.payment ?? client?.paymentTerms ?? null) : null);
   const tb = tradeFor(lang);
-  // import: candidate overseas agents at the POL — client's own list first, then the Agents DB (sanctions-listed excluded)
-  const polBase = (fields.origin ?? '').toLowerCase().replace(/\s*\(.*\)$/, '');
-  const originAgents = dir === 'import' && polBase ? [
-    ...(client?.agents ?? []).filter((a) => a.type === 'overseas' && a.rank !== 'avoid' && a.ports.toLowerCase().includes(polBase)).map((a) => ({ name: a.name, tag: a.rank === 'preferred' ? 'Client preferred' : 'Client allowed', note: a.contactName || a.email, sanc: '' })),
-    ...agentDb.filter((d) => (d.type === 'overseas' || d.type === 'forwarder') && !isListed(d) && `${d.ports} ${d.city}`.toLowerCase().includes(polBase) && !(client?.agents ?? []).some((a) => a.name.toLowerCase() === d.name.toLowerCase())).slice(0, 6).map((d) => ({ name: d.name, tag: d.sample ? 'Agents DB · sample' : 'Agents DB · public info, verify', note: d.services, sanc: sanctionsLevel(d.sanctions) ?? '' })),
+  // Agent picker: import → agents at the POL, export → agents at the POD. Client's own list first, then the Agent CRM
+  // (preferred → active → prospect → on hold; blacklisted, archived and sanctions-listed agents are never offered).
+  const agentPort = dir === 'import' ? fields.origin : fields.destination;
+  const polBase = (agentPort ?? '').toLowerCase().replace(/\s*\(.*\)$/, '');
+  const hiddenNames = listedNames();
+  const crmUsable = pickable(agentDb);
+  const ST_LABEL: Record<string, string> = { preferred: 'Preferred', active: 'Active', prospect: 'Prospect', on_hold: 'On hold' };
+  const originAgents = polBase ? [
+    ...(client?.agents ?? []).filter((a) => a.type === 'overseas' && a.rank !== 'avoid' && a.ports.toLowerCase().includes(polBase) && !hiddenNames.has(a.name.trim().toLowerCase()) && !agentDb.some((d) => d.archived && d.name.toLowerCase() === a.name.toLowerCase())).map((a) => ({ id: agentDb.find((d) => d.id === a.dbId || d.name.toLowerCase() === a.name.toLowerCase())?.id ?? null, name: a.name, tag: a.rank === 'preferred' ? 'Client preferred' : 'Client allowed', note: a.contactName || a.email, sanc: '', st: '' })),
+    ...crmUsable.filter((d) => d.type !== 'line' && d.type !== 'network' && (`${d.ports} ${d.city}`.toLowerCase().includes(polBase) || (d.lanePairs ?? []).some((p) => p.from.toLowerCase().includes(polBase) || p.to.toLowerCase().includes(polBase))) && !(client?.agents ?? []).some((a) => a.name.toLowerCase() === d.name.toLowerCase())).slice(0, 8).map((d) => ({ id: d.id, name: d.name, tag: `Agent CRM · ${ST_LABEL[agentStatus(d)] ?? agentStatus(d)}${d.sample ? ' · sample' : d.publicInfo ? ' · public info, verify' : ''}`, note: d.contacts?.[0] ? `${d.contacts[0].name}${d.contacts[0].email ? ` · ${d.contacts[0].email}` : ''}` : d.services, sanc: sanctionsLevel(d.sanctions) ?? '', st: agentStatus(d) })),
   ] : [];
+  const otherCrm = crmUsable.filter((d) => d.type !== 'network' && !originAgents.some((a) => a.id === d.id));
+  const logRateRequest = (agentId: string, name: string) => {
+    activities.add({ id: rid('act'), agentId, kind: 'rate_request', at: Date.now(), text: `Rate request from Quote: ${fields.origin ?? '?'} → ${fields.destination ?? '?'}${fields.mode ? ` · ${fields.mode.toUpperCase()}` : ''}`, by: 'demo' });
+    setRateAsked((x) => [...x, name]);
+  };
   const quoteFor = (forInternal: boolean): QuoteFor | null => {
     if (!client && !laneProfile && !text.trim()) return null;
     return {
@@ -948,15 +960,27 @@ export function QuoteView({ seed, onOpenClient }: { seed?: { text: string; n: nu
                     </tbody>
                   </table>
                   <ul className="q-trade-notes">{tb.notes.map((x) => <li key={x}>{x}</li>)}</ul>
-                  {dir === 'import' && (
-                    <div className="q-trade-agents" data-testid="import-agents">
-                      <strong>{tl3(lang, 'agentAt')} · {fields.origin}</strong>
-                      {originAgents.length ? (
-                        <ul>{originAgents.map((a) => <li key={a.name}><span className={`q-badge ${a.tag.startsWith('Client preferred') ? 'pref' : ''}`}>{a.tag}</span> {a.name}{a.note ? <span className="q-muted"> · {a.note.length > 70 ? `${a.note.slice(0, 68)}…` : a.note}</span> : null}{a.sanc === 'note' ? <span className="q-muted"> · screened, see Agents tab</span> : null}</li>)}</ul>
-                      ) : <span className="q-muted"> — none on file for this port (add in Agents tab or client setup)</span>}
-                      <div className="q-muted">Agent buy rates are not in the sample rate sheet: option prices above are line-based; request the agent's rate and add the margin.</div>
-                    </div>
-                  )}
+                  <div className="q-trade-agents" data-testid={dir === 'import' ? 'import-agents' : 'export-agents'}>
+                    <strong>{dir === 'import' ? tl3(lang, 'agentAt') : 'Agent at destination'} · {agentPort}</strong>
+                    {originAgents.length ? (
+                      <ul data-testid="quote-agent-list">{originAgents.map((a) => (
+                        <li key={a.name} data-testid="quote-agent">
+                          <span className={`q-badge ${a.tag.startsWith('Client preferred') || a.st === 'preferred' ? 'pref' : ''}`}>{a.tag}</span> {a.name}{a.note ? <span className="q-muted"> · {a.note.length > 70 ? `${a.note.slice(0, 68)}…` : a.note}</span> : null}{a.sanc === 'note' ? <span className="q-muted"> · screened, see Agents</span> : null}
+                          {a.id && (rateAsked.includes(a.name) ? <span className="q-ok"> · ✓ rate request logged</span> : <> · <button type="button" className="q-linklike" onClick={() => logRateRequest(a.id!, a.name)} data-testid="quote-agent-ask">log rate request</button></>)}
+                        </li>
+                      ))}</ul>
+                    ) : <span className="q-muted"> — none on file for this port (add in Agents or client setup)</span>}
+                    {otherCrm.length > 0 && (
+                      <div className="q-agent-pick">
+                        <select className="c-in" value="" onChange={(e) => { const d = otherCrm.find((x) => x.id === e.target.value); if (d) logRateRequest(d.id, d.name); }} data-testid="quote-agent-picker" aria-label="Ask another agent from the Agent CRM">
+                          <option value="">Ask another CRM agent (logs a rate request)…</option>
+                          {otherCrm.map((d) => <option key={d.id} value={d.id}>{ST_LABEL[agentStatus(d)] ?? agentStatus(d)} · {d.name}{d.city && d.city !== '—' ? ` · ${d.city}` : ''}{d.sample ? ' (sample)' : ''}</option>)}
+                        </select>
+                        {rateAsked.filter((n) => !originAgents.some((a) => a.name === n)).map((n) => <span key={n} className="q-ok"> ✓ {n}</span>)}
+                      </div>
+                    )}
+                    <div className="q-muted">Agent buy rates are not in the sample rate sheet: option prices above are line-based; request the agent's rate and add the margin. Blacklisted and archived CRM agents are not offered.</div>
+                  </div>
                 </div>
               )}
               {clientAgent && (

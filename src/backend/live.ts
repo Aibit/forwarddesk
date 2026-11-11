@@ -11,7 +11,8 @@ import { getSession, resetSession, setSession, friendly } from './session';
 import { EMPTY_COMPANY, store, getStore, type Agent, type Client, type Company, type QuoteRecord } from '../clients/store';
 import type { LaneProfile } from '../clients/lanes';
 import { hydrateMsdsRules, reloadMsdsRules, type MsdsMeta } from '../clients/msds';
-import { agentsDb, type DbAgent } from '../agents/db';
+import { agentsDb, joinAgent, splitAgent } from '../agents/db';
+import { activities, type AgentActivity } from '../agents/crm';
 import { jobsStore } from '../jobs/store';
 import type { Job } from '../jobs/data';
 import { hydrateTariffs, reloadTariffs, type Tariffs } from '../jobs/tariffs';
@@ -129,7 +130,20 @@ function subscribe(role: 'staff' | 'client', clientId: string | null) {
       composeJobs();
     }, err));
   }
-  unsubs.push(onSnapshot(c('agents'), (s) => agentsDb.hydrate(s.docs.map((x) => ({ ...(x.data() as DbAgent), id: x.id })).sort((a, b) => a.name.localeCompare(b.name))), err));
+  // Agents: directory doc (members) + CRM doc (staff only), joined by id.
+  let agPub = new Map<string, DocumentData>();
+  let agCrm = new Map<string, DocumentData>();
+  const composeAgents = () => agentsDb.hydrate([...agPub.entries()]
+    .filter(([id, p]) => role === 'staff' || (!p.hidden && id))
+    .map(([id, p]) => joinAgent(p, agCrm.get(id), id)).sort((a, b) => a.name.localeCompare(b.name)));
+  unsubs.push(onSnapshot(c('agents'), (s) => { agPub = new Map(s.docs.map((x) => [x.id, x.data()])); composeAgents(); }, err));
+  if (role === 'staff') {
+    unsubs.push(onSnapshot(c('agentCrm'), (s) => { agCrm = new Map(s.docs.map((x) => [x.id, x.data()])); composeAgents(); }, err));
+    unsubs.push(onSnapshot(c('agentActivities'), (s) => activities.hydrate(s.docs.map((x) => {
+      const a = x.data();
+      return { ...(a as AgentActivity), id: x.id };
+    })), err));
+  }
   let pubT: Partial<Tariffs> = {};
   let privT: Partial<Tariffs> = {};
   unsubs.push(onSnapshot(d('settings/tariffs'), (s) => { pubT = (s.data()?.data as Partial<Tariffs>) ?? {}; hydrateTariffs({ ...pubT, ...privT }); }, err));
@@ -210,22 +224,40 @@ function writer(user: User, role: 'staff' | 'client', clientId: string | null): 
       }));
     },
     agentUpsert(a) {
-      if (staffOnly('agents')) run(setDoc(d(`agents/${a.id}`), a));
+      if (!staffOnly('agents')) return;
+      const { pub, crm } = splitAgent(a);
+      const b = writeBatch(db!);
+      b.set(d(`agents/${a.id}`), pub);
+      b.set(d(`agentCrm/${a.id}`), crm);
+      run(b.commit());
     },
     agentRemove(id) {
-      if (staffOnly('agents')) run(deleteDoc(d(`agents/${id}`)));
+      if (!staffOnly('agents')) return;
+      const b = writeBatch(db!);
+      b.delete(d(`agents/${id}`));
+      b.delete(d(`agentCrm/${id}`));
+      run(b.commit());
     },
     agentReplace(list) {
       if (!staffOnly('agents')) return;
-      const ops: ((b: ReturnType<typeof writeBatch>) => void)[] = [
-        ...list.map((a) => (b: ReturnType<typeof writeBatch>) => b.set(d(`agents/${a.id}`), a)),
-        ...agentsDb.get().list.filter((x) => !list.some((a) => a.id === x.id)).map((x) => (b: ReturnType<typeof writeBatch>) => b.delete(d(`agents/${x.id}`))),
+      type B = ReturnType<typeof writeBatch>;
+      const ops: ((b: B) => void)[] = [
+        ...list.flatMap((a) => { const { pub, crm } = splitAgent(a); return [(b: B) => b.set(d(`agents/${a.id}`), pub), (b: B) => b.set(d(`agentCrm/${a.id}`), crm)]; }),
+        ...agentsDb.get().list.filter((x) => !list.some((a) => a.id === x.id)).flatMap((x) => [(b: B) => b.delete(d(`agents/${x.id}`)), (b: B) => b.delete(d(`agentCrm/${x.id}`))]),
       ];
       for (let i = 0; i < ops.length; i += 400) {
         const b = writeBatch(db!);
         ops.slice(i, i + 400).forEach((f) => f(b));
         run(b.commit());
       }
+    },
+    activityUpsert(a) {
+      if (!staffOnly('agentActivities')) return;
+      const { id, sample: _s, ...rest } = a;
+      run(setDoc(d(`agentActivities/${id}`), { ...rest, by: user.uid }));
+    },
+    activityRemove(id) {
+      if (staffOnly('agentActivities')) run(deleteDoc(d(`agentActivities/${id}`)));
     },
     setMsdsRules(r) {
       if (staffOnly('msdsRules')) run(setDoc(d('settings/msdsRules'), { rules: r }));
@@ -285,6 +317,7 @@ function stop() {
   store.reload();
   jobsStore.reload();
   agentsDb.reload();
+  activities.reload();
   reloadTariffs();
   reloadMsdsRules();
 }

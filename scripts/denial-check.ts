@@ -30,6 +30,8 @@ const as = async (clientId: string | null) => {
 await as(null);
 await expect('staff reads buy rates (quotes/…/private/costs)', true, () => getDoc(doc(db, `${O}/quotes/FD-Q-SAMPLE-101/private/costs`)));
 await expect('staff reads client margin record', true, () => getDoc(doc(db, `${O}/clients/c-c`)));
+await expect('staff lists agent CRM', true, () => getDocs(collection(db, `${O}/agentCrm`)));
+await expect('staff lists agent activities', true, () => getDocs(collection(db, `${O}/agentActivities`)));
 await as('c-c');
 await expect('client C reads own job FD-E-1047', true, () => getDoc(doc(db, `${O}/jobs/FD-E-1047`)));
 await expect('client C lists own jobs (clientId == c-c)', true, () => getDocs(query(collection(db, `${O}/jobs`), where('clientId', '==', 'c-c'))));
@@ -43,6 +45,11 @@ await expect('client C reads Customer F profile', false, () => getDoc(doc(db, `$
 await expect('client C reads line-rebate % (settings/tariffsPrivate)', false, () => getDoc(doc(db, `${O}/settings/tariffsPrivate`)));
 await expect('client C reads rebate status (jobInternal)', false, () => getDoc(doc(db, `${O}/jobInternal/FD-E-1047`)));
 await expect('client C reads customer-facing tariffs', true, () => getDoc(doc(db, `${O}/settings/tariffs`)));
+await expect('client C reads agent directory', true, () => getDocs(collection(db, `${O}/agents`)));
+await expect('client C reads agent CRM (contacts, credit, notes)', false, () => getDoc(doc(db, `${O}/agentCrm/db-s0`)));
+await expect('client C lists agent CRM', false, () => getDocs(collection(db, `${O}/agentCrm`)));
+await expect('client C reads agent activities', false, () => getDocs(collection(db, `${O}/agentActivities`)));
+await expect('client C blacklists an agent', false, () => setDoc(doc(db, `${O}/agentCrm/db-s0`), { status: 'blacklisted' }));
 await expect('client C changes job step', false, () => updateDoc(doc(db, `${O}/jobs/FD-E-1047`), { step: 'E23' }));
 await expect('client C promotes self to staff', false, async () => setDoc(doc(db, `${O}/members/${auth.currentUser!.uid}`), { role: 'staff' }));
 await as('c-f');

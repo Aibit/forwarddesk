@@ -3,7 +3,8 @@
   python3 scripts/ui-smoke.py [url]      # default http://localhost:5199/forwarddesk/
 
 Checks every tab, FA/RTL, dark mode, the sign-in dialog, quotes + PDF, portal actions,
-agents filter + empty state, MSDS rules, tariffs/glossary and the phone sidebar.
+Agent CRM (add / edit / contacts / activity / KYC / filters / sort / CSV export+import / archive / FA),
+quote agent picker, MSDS rules, tariffs/glossary and the phone sidebar.
 """
 import sys
 from playwright.sync_api import sync_playwright
@@ -54,12 +55,121 @@ with sync_playwright() as p:
     check('MSDS rules panel', tid('msds-rules').is_visible())
     tid('edit-msds-rules').click()
 
+    # ── Agent CRM ──
     tid('tab-agents').click(); pg.wait_for_timeout(300)
-    check('agents seeded (57)', '57' in tid('agents-count').inner_text())
+    check('agents seeded (13 SAMPLE + 57 public = 70)', tid('agents-count').inner_text().startswith('70 / 70'))
+    check('SAMPLE label on sample agents', tid('agents-sample').is_visible() and pg.locator('.crm-mini.sample').count() >= 10)
     check('sanctions-listed badges (9)', pg.locator('[data-testid=sanctions-listed]').count() == 9)
+    check('CRM summary tiles (5)', tid('crm-tiles').locator('.crm-tile').count() == 5)
+    tw = pg.evaluate("(()=>{const t=document.querySelector('[data-testid=agents-table]');return [t.scrollWidth,t.parentElement.clientWidth]})()")
+    check('agents table fits at 1440 (no horizontal scroll)', tw[0] <= tw[1])
+    check('no red status chips (blacklisted is grey)', pg.locator('.crm-status.st-blacklisted').first.evaluate("e=>getComputedStyle(e).color") != 'rgb(181, 73, 65)')
     tid('agents-search').fill('zzzzqqq'); pg.wait_for_timeout(200)
     check('agents empty state drawing', tid('agents-table').locator('.fd-empty-cell svg').count() == 1)
     tid('agents-search').fill('')
+    tid('agents-f-status').select_option('preferred'); pg.wait_for_timeout(150)
+    rows = tid('agents-table').locator('tbody tr')
+    check('filter status = preferred', rows.count() >= 1 and rows.locator('.crm-status.st-preferred').count() == rows.count())
+    tid('agents-f-status').select_option('')
+    tid('agents-f-lane').select_option('Shanghai → Bandar Abbas'); pg.wait_for_timeout(150)
+    check('filter lane Shanghai → Bandar Abbas', rows.count() == 1 and 'Sample Agent Shanghai' in rows.first.inner_text())
+    tid('agents-f-lane').select_option('')
+    tid('agents-f-type').select_option('line'); pg.wait_for_timeout(150)
+    check('filter type = shipping line', rows.count() >= 3 and all('Shipping line' in rows.nth(i).inner_text() for i in range(rows.count())))
+    tid('agents-f-type').select_option('')
+    tid('agents-f-tag').select_option('consolidation'); pg.wait_for_timeout(150)
+    check('filter tag', rows.count() == 1)
+    tid('agents-f-tag').select_option('')
+    tid('sort-name').click(); pg.wait_for_timeout(150)
+    names = [rows.nth(i).locator('.crm-name').inner_text() for i in range(3)]
+    check('sort by name', names == sorted(names, key=str.lower))
+    tid('sort-status').click(); pg.wait_for_timeout(100)
+    # add agent
+    tid('agents-add').click(); pg.wait_for_timeout(200)
+    check('add-agent form opens', tid('agent-form').is_visible())
+    check('save disabled without name', tid('af-save').is_disabled())
+    tid('af-name').fill('Smoke Test Logistics (SAMPLE)')
+    tid('af-type').select_option('trucker'); tid('af-status').select_option('active')
+    tid('af-country').fill('Testland'); tid('af-city').fill('Port One')
+    tid('af-lane-add').click(); tid('af-lane-from-0').fill('Port One'); tid('af-lane-to-0').fill('Port Two')
+    tid('af-svc-road').check(force=True); tid('af-svc-customs').check(force=True)
+    tid('af-networks').fill('WCA, JCtrans'); tid('af-tags').fill('smoke, test')
+    tid('af-paymentTerms').fill('30 days'); tid('af-credit').fill('12000'); tid('af-currency').select_option('EUR')
+    tid('star-4').first.click()
+    tid('af-contact-add').click(); tid('af-c-name-0').fill('Ops Desk'); tid('af-c-email-0').fill('ops@example.com')
+    tid('af-save').click(); pg.wait_for_timeout(300)
+    check('new agent saved + detail opens', tid('agent-drawer').is_visible() and 'Smoke Test Logistics' in tid('agent-name').inner_text())
+    check('count is now 71', tid('agents-count').inner_text().startswith('71 / 71'))
+    ov = tid('pane-overview').inner_text()
+    check('detail shows lane, credit, network', 'Port One → Port Two' in ov and '12,000' in ov and 'WCA' in ov)
+    # edit
+    tid('agent-edit').click(); pg.wait_for_timeout(200)
+    tid('af-city').fill('Port Edited'); tid('af-save').click(); pg.wait_for_timeout(300)
+    check('edit agent', 'Port Edited' in tid('agent-drawer').inner_text())
+    tid('quick-status').select_option('preferred'); pg.wait_for_timeout(150)
+    check('quick status change', 'Preferred' in tid('agent-drawer').locator('.crm-d-kicker').inner_text())
+    # contacts
+    tid('agent-tab-contacts').click(); pg.wait_for_timeout(150)
+    tid('contact-add').click(); tid('cf-name').fill('Second Person'); tid('cf-role').fill('Pricing'); tid('cf-email').fill('pricing@example.com'); tid('cf-whatsapp').fill('+00 111 222')
+    tid('cf-save').click(); pg.wait_for_timeout(150)
+    check('add contact (2 contacts)', pg.locator('[data-testid=contact-card]').count() == 2 and 'pricing@example.com' in tid('pane-contacts').inner_text())
+    check('WhatsApp link', pg.locator('[data-testid=pane-contacts] a[href^="https://wa.me/"]').count() == 1)
+    # activity
+    tid('agent-tab-activity').click(); pg.wait_for_timeout(150)
+    tid('act-kind').select_option('rate_request'); tid('act-text').fill('Asked rate Port One → Port Two'); tid('act-log').click(); pg.wait_for_timeout(150)
+    tid('act-kind').select_option('call'); tid('act-text').fill('Follow-up call'); tid('act-log').click(); pg.wait_for_timeout(150)
+    check('log activity (2 items, newest first)', pg.locator('[data-testid=act-item]').count() == 2)
+    tid('agent-tab-overview').click(); pg.wait_for_timeout(150)
+    check('stats from logged activity (0/1 answered)', '0/1' in tid('agent-stats').inner_text())
+    # KYC
+    tid('agent-tab-kyc').click(); pg.wait_for_timeout(150)
+    import datetime
+    soon = (datetime.date.today() + datetime.timedelta(days=10)).isoformat()
+    past = (datetime.date.today() - datetime.timedelta(days=3)).isoformat()
+    tid('kyc-status-insurance').select_option('verified'); tid('kyc-exp-insurance').fill(soon); pg.wait_for_timeout(150)
+    check('KYC expiring soon = amber', 'expiring' in tid('kyc-flag-insurance').get_attribute('class'))
+    tid('kyc-status-license').select_option('received'); tid('kyc-exp-license').fill(past); pg.wait_for_timeout(150)
+    check('KYC expired = soft red', 'expired' in tid('kyc-flag-license').get_attribute('class'))
+    tid('kyc-status-agreement').select_option('requested'); pg.wait_for_timeout(100)
+    check('KYC requested = amber to-confirm', 'tbc' in tid('kyc-flag-agreement').get_attribute('class'))
+    # linked quotes/jobs on a SAMPLE line
+    tid('agent-close').click(); pg.wait_for_timeout(150)
+    tid('agents-search').fill('Sample Line B'); pg.wait_for_timeout(150)
+    rows.first.click(); pg.wait_for_timeout(200)
+    tid('agent-tab-deals').click(); pg.wait_for_timeout(150)
+    check('linked quotes + jobs from app data', tid('agent-quotes').locator('tr').count() >= 3 and tid('agent-jobs').locator('tr').count() >= 1)
+    tid('agent-tab-overview').click()
+    check('win rate computed from quotes', '%' in tid('agent-stats').inner_text())
+    tid('agent-close').click(); tid('agents-search').fill('')
+    # CSV export
+    with pg.expect_download() as dl:
+        tid('agents-export').click()
+    csv = open(dl.value.path(), encoding='utf-8-sig').read()
+    check('CSV export has CRM columns + new agent', csv.startswith('name,type,status,') and 'Smoke Test Logistics' in csv and 'Second Person | Pricing | pricing@example.com' in csv)
+    # CSV import (merge: dialog dismissed → merge)
+    import tempfile, os
+    f = os.path.join(tempfile.gettempdir(), 'crm-import.csv')
+    open(f, 'w').write('name,type,status,country,lane_pairs,service_flags,contacts,tags\n"Smoke Test Logistics (SAMPLE)",trucker,preferred,Testland,Port One > Port Three,road,,imported\nSample Import Agent,customs broker,prospect,Nowhere,A > B,customs,"Jane Doe | Ops | jane@example.com | +00 1 |",\n')
+    tid('agents-import-input').set_input_files(f); pg.wait_for_timeout(400)
+    check('CSV import merges (1 added, 1 updated)', '1 added' in tid('agents-msg').inner_text() and '1 updated' in tid('agents-msg').inner_text() and tid('agents-count').inner_text().startswith('72 / 72'))
+    # archive
+    tid('agents-search').fill('Smoke Test'); pg.wait_for_timeout(150)
+    rows.first.click(); pg.wait_for_timeout(150)
+    tid('agent-archive').click(); pg.wait_for_timeout(150); tid('agent-close').click(); pg.wait_for_timeout(100)
+    check('archive hides from list', rows.locator('.crm-name').count() == 0)
+    tid('agents-f-archived').check(); pg.wait_for_timeout(150)
+    check('show archived', rows.count() == 1 and 'archived' in rows.first.get_attribute('class'))
+    tid('agents-f-archived').uncheck(); tid('agents-search').fill('')
+    pg.reload(wait_until='networkidle'); tid('tab-agents').click(); pg.wait_for_timeout(300)
+    tid('agents-f-archived').check(); tid('agents-search').fill('Sample Import Agent'); pg.wait_for_timeout(150)
+    check('CRM changes persist after reload', rows.count() == 1)
+    tid('agents-f-archived').uncheck(); tid('agents-search').fill('')
+    # FA
+    tid('ui-lang-fa').click(); pg.wait_for_timeout(200)
+    check('FA: agents CRM is RTL + translated', pg.get_attribute('[data-testid=agents-db]', 'dir') == 'rtl' and 'افزودن نماینده' in tid('agents-add').inner_text())
+    tw = pg.evaluate("(()=>{const t=document.querySelector('[data-testid=agents-table]');return [t.scrollWidth,t.parentElement.clientWidth]})()")
+    check('FA: table fits at 1440', tw[0] <= tw[1])
+    tid('ui-lang-en').click(); pg.wait_for_timeout(150)
 
     tid('nav-portal').click(); pg.wait_for_timeout(200)
     check('portal login has drawing', tid('portal-login').locator('.fd-login-art svg').count() == 1)
@@ -78,6 +188,16 @@ with sync_playwright() as p:
     pg.get_by_role('button', name='Ocean FCL · Shanghai → Barcelona').click(); pg.wait_for_timeout(500)
     check('quote options', tid('quote-options').is_visible() and pg.locator('[data-testid^=option-pick-]').count() >= 2)
     check('quote text', len(tid('quote-text').inner_text()) > 100)
+    if tid('quote-agent-picker').count():
+        opts = tid('quote-agent-picker').locator('option').all_inner_texts()
+        check('quote agent picker: CRM agents, blacklisted hidden', len(opts) > 3 and not any('Sample Broker Mumbai' in o for o in opts))
+        st = [o.split(' · ')[0] for o in opts[1:]]
+        order = {'Preferred': 0, 'Active': 1, 'Prospect': 2, 'On hold': 3}
+        check('quote agent picker: preferred/active first', [order.get(x, 9) for x in st] == sorted(order.get(x, 9) for x in st))
+        tid('quote-agent-picker').select_option(index=1); pg.wait_for_timeout(150)
+        check('quote: rate request logged from picker', tid('export-agents').locator('.q-ok').count() >= 1 or tid('import-agents').locator('.q-ok').count() >= 1)
+    else:
+        check('quote agent picker present', False)
     with pg.expect_download() as dl:
         tid('generate-pdf').click()
     path = dl.value.path()
@@ -113,6 +233,11 @@ with sync_playwright() as p:
     check('phone: picking a page closes sidebar', 'open' not in m.get_attribute('[data-testid=sidebar]', 'class') and m.locator('[data-testid=clients-view]').is_visible())
     sw = m.evaluate('document.documentElement.scrollWidth')
     check('phone: no page-level horizontal overflow', sw <= 391)
+    m.click('[data-testid=nav-open]'); m.wait_for_timeout(300)
+    m.click('[data-testid=tab-agents]'); m.wait_for_timeout(400)
+    check('phone: agents CRM as cards, no horizontal overflow', m.locator('[data-testid=agents-table] thead').is_hidden() and m.evaluate('document.documentElement.scrollWidth') <= 391)
+    m.locator('[data-testid^=agent-row-]').first.click(); m.wait_for_timeout(300)
+    check('phone: agent detail opens', m.locator('[data-testid=agent-drawer]').is_visible())
     b.close()
 
 check('no page errors', not errs)

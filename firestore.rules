@@ -10,7 +10,10 @@ rules_version = '2';
 //   orgs/{orgId}/clientPublic/{cid}      { name, contact, lang }         -> what the client may see about itself
 //   orgs/{orgId}/lanes/{laneId}          lane profile, { clientId, source: 'desk'|'portal', ... }
 //   orgs/{orgId}/agentPrefs/{cid}        { agents: [...] }               -> client's preferred agents
-//   orgs/{orgId}/agents/{agentId}        agents database (read: any member, write: staff)
+//   orgs/{orgId}/agents/{agentId}        agent directory: name, type, coverage, public contact, hidden flag
+//                                        (read: any member — clients pick preferred agents; write: staff; no CRM fields)
+//   orgs/{orgId}/agentCrm/{agentId}      agent CRM: status, contacts, payment terms, credit, rating, KYC, notes, tags — STAFF ONLY
+//   orgs/{orgId}/agentActivities/{aid}   CRM timeline { agentId, kind, at, text, by } — STAFF ONLY
 //   orgs/{orgId}/jobs/{jobId}            { clientId, ..., portal: { draftBlApprovedAt, by } }   (no rebate / margin fields)
 //   orgs/{orgId}/jobInternal/{jobId}     { rebateReceived }               -> line rebate status — STAFF ONLY
 //   orgs/{orgId}/quotes/{qid}            sell-side quote only { clientId, options[{carrier, sell, transit}], status, ... }
@@ -80,6 +83,37 @@ service cloud.firestore {
     function validPrefs(d, cid) {
       return d.keys().hasOnly(['clientId', 'agents', 'updatedAt'])
         && d.clientId == cid && d.agents is list && d.agents.size() <= 50 && d.updatedAt is number;
+    }
+    // Agent directory doc: only directory fields; CRM fields (contacts, credit, notes...) are refused here.
+    function validAgentPub(d) {
+      return d.keys().hasOnly(['id', 'name', 'type', 'country', 'city', 'ports', 'lanes', 'services', 'portal', 'website',
+                               'email', 'phone', 'whatsapp', 'sanctions', 'source', 'sample', 'publicInfo', 'svc', 'lanePairs',
+                               'networks', 'hidden', 'updatedAt'])
+        && str(d.name, 200) && d.name.size() > 0
+        && (!('type' in d) || d.type in ['overseas', 'line', 'forwarder', 'trucker', 'clearance', 'network', 'other'])
+        && optStr(d, 'ports', 2000) && optStr(d, 'lanes', 4000) && optStr(d, 'services', 2000) && optStr(d, 'portal', 4000)
+        && optStr(d, 'sanctions', 4000) && optStr(d, 'source', 4000)
+        && (!('svc' in d) || (d.svc is list && d.svc.size() <= 5))
+        && (!('lanePairs' in d) || (d.lanePairs is list && d.lanePairs.size() <= 60))
+        && (!('networks' in d) || (d.networks is list && d.networks.size() <= 30))
+        && (!('hidden' in d) || d.hidden is bool);
+    }
+    function validAgentCrm(d) {
+      return d.keys().hasOnly(['status', 'contacts', 'paymentTerms', 'creditLimit', 'currency', 'rating', 'tags', 'kyc',
+                               'archived', 'notes', 'createdAt', 'updatedAt'])
+        && (!('status' in d) || d.status in ['prospect', 'active', 'preferred', 'on_hold', 'blacklisted'])
+        && (!('contacts' in d) || (d.contacts is list && d.contacts.size() <= 40))
+        && optStr(d, 'paymentTerms', 300) && optStr(d, 'currency', 8) && optStr(d, 'notes', 10000)
+        && (!('creditLimit' in d) || d.creditLimit == null || (d.creditLimit is number && d.creditLimit >= 0))
+        && (!('rating' in d) || (d.rating is number && d.rating >= 0 && d.rating <= 5))
+        && (!('tags' in d) || (d.tags is list && d.tags.size() <= 40))
+        && (!('kyc' in d) || (d.kyc is list && d.kyc.size() <= 12))
+        && (!('archived' in d) || d.archived is bool);
+    }
+    function validActivity(d) {
+      return d.keys().hasOnly(['agentId', 'kind', 'at', 'text', 'by'])
+        && str(d.agentId, 80) && d.kind in ['note', 'call', 'email', 'meeting', 'rate_request', 'rate_reply']
+        && d.at is number && str(d.text, 4000) && d.by == request.auth.uid;
     }
     function validMsdsDoc(d) {
       return d.keys().hasOnly(['clientId', 'name', 'type', 'size', 'dataB64', 'uid', 'at'])
@@ -154,7 +188,16 @@ service cloud.firestore {
 
       match /agents/{agentId} {
         allow read: if isMember(orgId);
-        allow write: if isStaff(orgId);
+        allow create, update: if isStaff(orgId) && validAgentPub(request.resource.data);
+        allow delete: if isStaff(orgId);
+      }
+      match /agentCrm/{agentId} {
+        allow read, delete: if isStaff(orgId);
+        allow create, update: if isStaff(orgId) && validAgentCrm(request.resource.data);
+      }
+      match /agentActivities/{aid} {
+        allow read, delete: if isStaff(orgId);
+        allow create, update: if isStaff(orgId) && validActivity(request.resource.data);
       }
 
       match /jobs/{jobId} {

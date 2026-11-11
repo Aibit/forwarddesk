@@ -32,6 +32,9 @@ await env.withSecurityRulesDisabled(async (ctx) => {
   await setDoc(doc(db, `${O}/jobInternal/J1`), { rebateReceived: false });
   await setDoc(doc(db, `userOrgs/cliD`), { orgId: 'other' });
   await setDoc(doc(db, 'orgs/other'), { name: 'Other', ownerUid: 'x' });
+  await setDoc(doc(db, 'orgs/other/members/staffX'), { role: 'staff', email: 'x@x' });
+  await setDoc(doc(db, `${O}/agentCrm/A1`), { status: 'active', contacts: [{ name: 'Ops', email: 'ops@example.com' }], creditLimit: 5000, notes: 'internal' });
+  await setDoc(doc(db, `${O}/agentActivities/act1`), { agentId: 'A1', kind: 'call', at: 1, text: 'called', by: 'staff1' });
 });
 
 const staff = env.authenticatedContext('staff1').firestore();
@@ -113,6 +116,40 @@ await t('stranger cannot read jobs', assertFails(getDoc(doc(stranger, `${O}/jobs
 await t('stranger cannot join org as staff', assertFails(setDoc(doc(stranger, `${O}/members/nobody`), { role: 'staff' })));
 await t('stranger cannot create a second org', assertFails(setDoc(doc(stranger, 'orgs/evil'), { name: 'x', ownerUid: 'nobody' })));
 await t('stranger cannot take over demo org', assertFails(setDoc(doc(stranger, O), { name: 'x', ownerUid: 'nobody' })));
+
+console.log('Agent CRM');
+const staffX = env.authenticatedContext('staffX').firestore();
+const crm = { status: 'preferred', contacts: [{ id: 'c1', name: 'Ops', role: 'Ops', email: 'ops@example.com', phone: '', whatsapp: '' }],
+  paymentTerms: '30 days', creditLimit: 10000, currency: 'USD', rating: 4, tags: ['reliable'], kyc: [{ kind: 'license', status: 'verified', expiry: '2027-01-01' }],
+  notes: 'internal', createdAt: 1, updatedAt: 1 };
+await t('staff adds agent directory doc', assertSucceeds(setDoc(doc(staff, `${O}/agents/A3`), { id: 'A3', name: 'Sample Agent', type: 'trucker', country: 'X', svc: ['road'], lanePairs: [{ from: 'A', to: 'B' }], hidden: false })));
+await t('staff adds agent CRM doc', assertSucceeds(setDoc(doc(staff, `${O}/agentCrm/A3`), crm)));
+await t('staff edits agent CRM status', assertSucceeds(updateDoc(doc(staff, `${O}/agentCrm/A3`), { status: 'on_hold', archived: true })));
+await t('staff reads agent CRM', assertSucceeds(getDoc(doc(staff, `${O}/agentCrm/A1`))));
+await t('staff lists agent CRM', assertSucceeds(getDocs(collection(staff, `${O}/agentCrm`))));
+await t('staff logs activity', assertSucceeds(setDoc(doc(staff, `${O}/agentActivities/act2`), { agentId: 'A3', kind: 'rate_request', at: 2, text: 'asked rate', by: 'staff1' })));
+await t('staff lists activities', assertSucceeds(getDocs(collection(staff, `${O}/agentActivities`))));
+await t('staff deletes activity', assertSucceeds(deleteDoc(doc(staff, `${O}/agentActivities/act2`))));
+await t('staff cannot put contacts/credit in member-readable agents doc', assertFails(setDoc(doc(staff, `${O}/agents/A4`), { name: 'Leak', contacts: [], creditLimit: 1 })));
+await t('staff cannot put notes in member-readable agents doc', assertFails(setDoc(doc(staff, `${O}/agents/A4`), { name: 'Leak', notes: 'internal' })));
+await t('staff cannot save agent with unknown type', assertFails(setDoc(doc(staff, `${O}/agents/A4`), { name: 'X', type: 'spy' })));
+await t('staff cannot save CRM with bad status', assertFails(setDoc(doc(staff, `${O}/agentCrm/A4`), { status: 'vip' })));
+await t('staff cannot save CRM with rating 9', assertFails(setDoc(doc(staff, `${O}/agentCrm/A4`), { rating: 9 })));
+await t('staff cannot save CRM with unknown field', assertFails(setDoc(doc(staff, `${O}/agentCrm/A4`), { status: 'active', marginPct: 3 })));
+await t('staff cannot log activity as someone else', assertFails(setDoc(doc(staff, `${O}/agentActivities/act3`), { agentId: 'A3', kind: 'note', at: 3, text: 'x', by: 'cliC' })));
+await t('staff cannot log activity of unknown kind', assertFails(setDoc(doc(staff, `${O}/agentActivities/act3`), { agentId: 'A3', kind: 'bribe', at: 3, text: 'x', by: 'staff1' })));
+await t('C cannot read agent CRM', assertFails(getDoc(doc(c, `${O}/agentCrm/A1`))));
+await t('C cannot list agent CRM', assertFails(getDocs(collection(c, `${O}/agentCrm`))));
+await t('C cannot write agent CRM', assertFails(setDoc(doc(c, `${O}/agentCrm/A1`), { status: 'blacklisted' })));
+await t('C cannot read activities', assertFails(getDoc(doc(c, `${O}/agentActivities/act1`))));
+await t('C cannot list activities', assertFails(getDocs(collection(c, `${O}/agentActivities`))));
+await t('C cannot log activity', assertFails(setDoc(doc(c, `${O}/agentActivities/act4`), { agentId: 'A1', kind: 'note', at: 1, text: 'x', by: 'cliC' })));
+await t('staff of another account cannot read agents', assertFails(getDoc(doc(staffX, `${O}/agents/A1`))));
+await t('staff of another account cannot read agent CRM', assertFails(getDoc(doc(staffX, `${O}/agentCrm/A1`))));
+await t('staff of another account cannot write agent CRM', assertFails(setDoc(doc(staffX, `${O}/agentCrm/A9`), { status: 'active' })));
+await t('staff of another account cannot read activities', assertFails(getDoc(doc(staffX, `${O}/agentActivities/act1`))));
+await t('stranger cannot read agent CRM', assertFails(getDoc(doc(stranger, `${O}/agentCrm/A1`))));
+await t('anon cannot list agents', assertFails(getDocs(collection(anon, `${O}/agents`))));
 
 console.log(`\n${pass} passed, ${fail} failed`);
 await env.cleanup();

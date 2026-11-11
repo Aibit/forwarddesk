@@ -18,7 +18,7 @@ const NAV: Record<ViewKey, { label: [string, string, string]; sub: [string, stri
   },
   agents: {
     label: ['Agents', 'Agentes', 'نمایندگان'],
-    sub: ['Overseas agents and shipping lines, with your preferences per client.', 'Agentes en destino y navieras, con tus preferencias por cliente.', 'نمایندگان خارجی و خطوط کشتیرانی، با ترجیحات هر مشتری.'],
+    sub: ['Your agent CRM: overseas agents, lines and partners — contacts, lanes, activity and documents.', 'Tu CRM de agentes: agentes, navieras y socios — contactos, rutas, actividad y documentos.', 'CRM نمایندگان: نمایندگان خارجی، خطوط و شرکا — مخاطبان، مسیرها، فعالیت‌ها و مدارک.'],
     art: 'map', icon: 'agents',
   },
   portal: {

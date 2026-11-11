@@ -21,7 +21,8 @@ const { sampleClients, sampleQuotes, clientForJob } = await import('../src/clien
 const { sampleJobs } = await import('../src/jobs/data');
 const { DEFAULT_TARIFFS } = await import('../src/jobs/tariffs');
 const { DEFAULT_MSDS_RULES } = await import('../src/clients/msds');
-const { csvToAgents } = await import('../src/agents/db');
+const { seedFrom, splitAgent } = await import('../src/agents/db');
+const { sampleActivities } = await import('../src/agents/crm');
 const { splitJob, splitTariffs } = await import('../src/backend/split');
 
 const EMU = process.env.FIREBASE_EMULATOR === '1';
@@ -103,8 +104,19 @@ for (const q of sampleQuotes(now)) {
     options: q.options.map((o) => { const buy = Math.round(o.sell / (1 + m / 100)); return { carrier: o.carrier, buy, margin: o.sell - buy, marginPct: m }; }),
   }]);
 }
-const { list: agents } = csvToAgents(readFileSync('src/agents/seed/agents.csv', 'utf8'), true);
-agents.forEach((a, i) => ops.push([`${O}/agents/db-s${String(i).padStart(2, '0')}`, { ...a, id: `db-s${String(i).padStart(2, '0')}` }]));
+// Agent CRM: SAMPLE agents (with sample CRM data) + researched public list (no CRM data invented).
+// Directory doc (members can read) and CRM doc (staff only) — same split as the app (splitAgent).
+const agents = seedFrom(readFileSync('src/agents/seed/agents.csv', 'utf8')).map((a, i) => (a.sample ? a : { ...a, id: `db-p${String(i).padStart(2, '0')}` }));
+for (const a of agents) {
+  const { pub, crm } = splitAgent({ ...a, createdAt: now, updatedAt: now });
+  ops.push([`${O}/agents/${a.id}`, pub]);
+  ops.push([`${O}/agentCrm/${a.id}`, crm]);
+}
+const staffUid = auth.currentUser?.uid ?? '';
+for (const x of sampleActivities(now)) {
+  const { id, sample: _s, ...rest } = x;
+  ops.push([`${O}/agentActivities/${id}`, { ...rest, text: rest.text, by: staffUid }]);
+}
 const tt = splitTariffs(DEFAULT_TARIFFS);
 ops.push([`${O}/settings/tariffs`, { data: tt.pub }]);
 ops.push([`${O}/settings/tariffsPrivate`, { data: tt.priv }]);

@@ -5,6 +5,7 @@ import type { Agent, Client, Company, QuoteRecord, QuoteStatus } from '../client
 import type { LaneProfile } from '../clients/lanes';
 import type { MsdsMeta, MsdsRule } from '../clients/msds';
 import type { DbAgent } from '../agents/db';
+import type { AgentActivity } from '../agents/crm';
 import type { Job } from '../jobs/data';
 import type { Tariffs } from '../jobs/tariffs';
 
@@ -28,6 +29,8 @@ export interface Writer {
   agentUpsert(a: DbAgent): void;
   agentRemove(id: string): void;
   agentReplace(list: DbAgent[]): void;
+  activityUpsert(a: AgentActivity): void;
+  activityRemove(id: string): void;
   setMsdsRules(r: MsdsRule[]): void;
   setTariffs(t: Tariffs): void;
   saveMsds(file: File, clientId: string | null): Promise<MsdsMeta>;
