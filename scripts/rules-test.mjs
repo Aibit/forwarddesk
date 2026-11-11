@@ -110,6 +110,36 @@ await t('D reads own job', assertSucceeds(getDoc(doc(d, `${O}/jobs/J2`))));
 await t('D cannot read C job', assertFails(getDoc(doc(d, `${O}/jobs/J1`))));
 await t('D cannot read C MSDS', assertFails(getDoc(doc(d, `${O}/msds/m1`))));
 
+console.log('Documents + billing');
+const ledger = (jobId, releaseOk, extra = {}) => ({ jobId, clientId: 'C', customer: 'Customer C', base: 'USD', fx: {}, lines: [{ id: 'l1', sell: 100, buy: 80 }],
+  invoices: [], payments: [], files: [], localPaid: {}, releaseOk, clientOpen: 0, updatedAt: 1, ...extra });
+const jdoc = (id, jobId, kind, status, extra = {}) => ({ id, jobId, clientId: 'C', kind, no: 'HBL-2026-0001', status, fields: { shipper: 'x' }, issuedAt: 1, releasedAt: null, updatedAt: 1, ...extra });
+await t('staff writes ledger', assertSucceeds(setDoc(doc(staff, `${O}/ledgers/J1`), ledger('J1', false))));
+await t('staff ledger with unknown field denied', assertFails(setDoc(doc(staff, `${O}/ledgers/J1`), ledger('J1', false, { hack: 1 }))));
+await t('staff ledger with wrong jobId denied', assertFails(setDoc(doc(staff, `${O}/ledgers/J1`), ledger('J2', false))));
+await t('C cannot read own job ledger (buy rates)', assertFails(getDoc(doc(c, `${O}/ledgers/J1`))));
+await t('C cannot write ledger', assertFails(setDoc(doc(c, `${O}/ledgers/J1`), ledger('J1', true))));
+await t('staff creates draft House B/L', assertSucceeds(setDoc(doc(staff, `${O}/jobDocs/J1-hbl`), jdoc('J1-hbl', 'J1', 'hbl', 'draft'))));
+await t('staff issues House B/L', assertSucceeds(updateDoc(doc(staff, `${O}/jobDocs/J1-hbl`), { status: 'issued' })));
+await t('release blocked while charges unpaid', assertFails(updateDoc(doc(staff, `${O}/jobDocs/J1-hbl`), { status: 'released', releasedAt: 2 })));
+await t('release blocked with no ledger at all', assertFails(setDoc(doc(staff, `${O}/jobDocs/J3-hbl`), jdoc('J3-hbl', 'J3', 'hbl', 'released'))));
+await t('arrival notice cannot be "released"', assertFails(setDoc(doc(staff, `${O}/jobDocs/J1-an`), jdoc('J1-an', 'J1', 'an', 'released'))));
+await t('staff marks all paid', assertSucceeds(setDoc(doc(staff, `${O}/ledgers/J1`), ledger('J1', true))));
+await t('release allowed once paid', assertSucceeds(updateDoc(doc(staff, `${O}/jobDocs/J1-hbl`), { status: 'released', releasedAt: 2 })));
+await t('cannot repoint doc to another job', assertFails(updateDoc(doc(staff, `${O}/jobDocs/J1-hbl`), { jobId: 'J2' })));
+await t('C reads own job docs', assertSucceeds(getDoc(doc(c, `${O}/jobDocs/J1-hbl`))));
+await t('C lists own job docs (query)', assertSucceeds(getDocs(query(collection(c, `${O}/jobDocs`), where('clientId', '==', 'C')))));
+await t('D cannot read C job docs', assertFails(getDoc(doc(d, `${O}/jobDocs/J1-hbl`))));
+await t('C cannot release / edit a doc', assertFails(updateDoc(doc(c, `${O}/jobDocs/J1-hbl`), { status: 'draft' })));
+await t('staff attaches job file', assertSucceeds(setDoc(doc(staff, `${O}/jobFiles/f1`), { jobId: 'J1', clientId: 'C', name: 'bl.pdf', type: 'application/pdf', size: 3, dataB64: 'AAAA', uid: 'staff1', at: serverTimestamp() })));
+await t('job file over 640 KB denied', assertFails(setDoc(doc(staff, `${O}/jobFiles/f2`), { jobId: 'J1', clientId: 'C', name: 'big.pdf', type: 'application/pdf', size: 700000, dataB64: 'AAAA', uid: 'staff1', at: serverTimestamp() })));
+await t('C cannot attach job file', assertFails(setDoc(doc(c, `${O}/jobFiles/f3`), { jobId: 'J1', clientId: 'C', name: 'x', type: 'x', size: 1, dataB64: 'A', uid: 'cliC', at: serverTimestamp() })));
+await t('D cannot read C job file', assertFails(getDoc(doc(d, `${O}/jobFiles/f1`))));
+await t('staff saves charge catalog', assertSucceeds(setDoc(doc(staff, `${O}/settings/chargeCatalog`), { codes: [{ code: 'OFR' }] })));
+await t('C reads charge catalog', assertSucceeds(getDoc(doc(c, `${O}/settings/chargeCatalog`))));
+await t('C cannot write charge catalog', assertFails(setDoc(doc(c, `${O}/settings/chargeCatalog`), { codes: [] })));
+await t('stranger cannot read ledgers', assertFails(getDoc(doc(stranger, `${O}/ledgers/J1`))));
+
 console.log('Outsiders');
 await t('anon cannot read org', assertFails(getDoc(doc(anon, O))));
 await t('stranger cannot read jobs', assertFails(getDoc(doc(stranger, `${O}/jobs/J1`))));

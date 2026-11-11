@@ -3,13 +3,18 @@ import { Art, Icon, type ArtName, type NavIcon } from './Art';
 import { useUiLang, type UiLang } from './lang';
 import { useTheme } from './theme';
 
-export type ViewKey = 'jobs' | 'clients' | 'agents' | 'portal' | 'quote' | 'desk' | 'pitch';
+export type ViewKey = 'jobs' | 'finance' | 'clients' | 'agents' | 'portal' | 'quote' | 'desk' | 'pitch';
 
 const NAV: Record<ViewKey, { label: [string, string, string]; sub: [string, string, string]; art: ArtName; icon: NavIcon }> = {
   jobs: {
     label: ['Jobs', 'Expedientes', 'پرونده‌ها'],
     sub: ['Deadlines, free time and money at risk across every shipment.', 'Plazos, días libres y dinero en riesgo en cada envío.', 'مهلت‌ها، روزهای آزاد و پول در خطر در همه محموله‌ها.'],
     art: 'crane', icon: 'jobs',
+  },
+  finance: {
+    label: ['Finance', 'Finanzas', 'مالی'],
+    sub: ['Invoices, vendor bills, payments, ageing and job profit.', 'Facturas, proveedores, cobros, antigüedad y beneficio por expediente.', 'فاکتورها، صورتحساب تأمین‌کنندگان، پرداخت‌ها، سنی‌بندی و سود پرونده.'],
+    art: 'ship', icon: 'finance',
   },
   clients: {
     label: ['Clients', 'Clientes', 'مشتریان'],
@@ -56,7 +61,7 @@ export const navLabel = (k: ViewKey, l: UiLang) => NAV[k].label[LI[l]];
 export const ui = (k: keyof typeof UI, l: UiLang) => UI[k][LI[l]];
 
 const GROUPS: { key: 'workspace' | 'sales'; items: ViewKey[] }[] = [
-  { key: 'workspace', items: ['jobs', 'clients', 'agents', 'portal'] },
+  { key: 'workspace', items: ['jobs', 'finance', 'clients', 'agents', 'portal'] },
   { key: 'sales', items: ['quote', 'desk', 'pitch'] },
 ];
 

@@ -1,5 +1,8 @@
 import { useUiLang } from '../ui/lang';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { JobDocs } from '../billing/JobDocs';
+import { JobBilling } from '../billing/JobBilling';
+import { bt } from '../billing/i18n';
 import { type Doc, type Job } from './data';
 import { jobsStore, useJobs } from './store';
 import { isLive } from '../backend/bridge';
@@ -438,7 +441,12 @@ const DOC_KEY: Record<Doc['key'], Key> = {
   originalBl: 'originalBl', packing: 'packing', arrival: 'arrival', loi: 'loi', do: 'do', warehouse: 'warehouse',
 };
 
-function JobDrawer({ job, lang, now, tariffs, T, onClose, onDraftQuote, onOpenClient, agentName, client }: { job: Job; lang: Lang; now: number; tariffs: Tariffs; T: (k: Key) => ReactNode; onClose: () => void; onDraftQuote: () => void; onOpenClient?: () => void; agentName?: string | null; client?: Client | null }) {
+function JobDrawer(props: Parameters<typeof JobDrawerBody>[0]) {
+  const [tab, setTab] = useState<'overview' | 'docs' | 'billing'>('overview');
+  return <JobDrawerBody {...props} tab={tab} setTab={setTab} />;
+}
+
+function JobDrawerBody({ job, lang, now, tariffs, T, onClose, onDraftQuote, onOpenClient, agentName, client, tab = 'overview', setTab }: { job: Job; lang: Lang; now: number; tariffs: Tariffs; T: (k: Key) => ReactNode; onClose: () => void; onDraftQuote: () => void; onOpenClient?: () => void; agentName?: string | null; client?: Client | null; tab?: 'overview' | 'docs' | 'billing'; setTab?: (t: 'overview' | 'docs' | 'billing') => void }) {
   const L = (k: Key) => tr(lang, k);
   const steps = stepsFor(job.dir);
   const cur = stepIndex(job.step);
@@ -447,7 +455,7 @@ function JobDrawer({ job, lang, now, tariffs, T, onClose, onDraftQuote, onOpenCl
   const co = cutoff(job);
   return (
     <div className="j-drawer-wrap" onClick={onClose}>
-      <aside className="j-drawer" role="dialog" aria-label={job.id} onClick={(e) => e.stopPropagation()} data-testid="job-detail">
+      <aside className={`j-drawer ${tab === 'billing' ? 'wide' : ''}`} role="dialog" aria-label={job.id} onClick={(e) => e.stopPropagation()} data-testid="job-detail">
         <header className="j-d-head">
           <div>
             <div className="j-d-id">
@@ -487,6 +495,16 @@ function JobDrawer({ job, lang, now, tariffs, T, onClose, onDraftQuote, onOpenCl
           </div>
         </header>
 
+        <div className="b-tabs" role="tablist" data-testid="job-tabs">
+          {(['overview', 'docs', 'billing'] as const).map((k) => (
+            <button key={k} type="button" role="tab" aria-selected={tab === k} className={tab === k ? 'active' : ''} onClick={() => setTab?.(k)} data-testid={`job-tab-${k}`}>
+              {bt(lang, k === 'docs' ? 'documents' : k)}
+            </button>
+          ))}
+        </div>
+        {tab === 'docs' && <JobDocs job={job} sample={!isLive()} />}
+        {tab === 'billing' && <JobBilling job={job} sample={!isLive()} />}
+        {tab === 'overview' && <>
         {alerts.length > 0 && (
           <ul className="j-alerts-now">
             {alerts.map((a, i) => (
@@ -644,6 +662,7 @@ function JobDrawer({ job, lang, now, tariffs, T, onClose, onDraftQuote, onOpenCl
             ))}
           </ul>
         </section>
+        </>}
       </aside>
     </div>
   );

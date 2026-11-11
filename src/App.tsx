@@ -26,6 +26,8 @@ import type {
 import { nowLabel, sleep, uid } from './utils';
 import './App.css';
 import './ui/notion.css';
+import { FinanceView } from './billing/FinanceView';
+import './billing/billing.css';
 import { Sidebar, PageHeader, navLabel, ui, type ViewKey } from './ui/Layout';
 import { Icon } from './ui/Art';
 import { useUiLang } from './ui/lang';
@@ -64,7 +66,7 @@ function App() {
   const [busy, setBusy] = useState(false);
   const [showRfqForm, setShowRfqForm] = useState(false);
   const [showCapForm, setShowCapForm] = useState(false);
-  const [viewMode, setViewMode] = useState<'jobs' | 'clients' | 'agents' | 'portal' | 'quote' | 'desk' | 'pitch'>('jobs');
+  const [viewMode, setViewMode] = useState<'jobs' | 'finance' | 'clients' | 'agents' | 'portal' | 'quote' | 'desk' | 'pitch'>('jobs');
   const [quoteSeed, setQuoteSeed] = useState<{ text: string; n: number; clientId?: string | null; laneId?: string | null } | null>(null);
   const [clientReq, setClientReq] = useState<{ id: string; n: number } | null>(null);
   const [jobReq, setJobReq] = useState<{ id: string; n: number } | null>(null);
@@ -75,7 +77,7 @@ function App() {
   useEffect(() => {
     if (clientOnly) setViewMode('portal');
   }, [clientOnly]);
-  const lite = viewMode === 'quote' || viewMode === 'jobs' || viewMode === 'clients' || viewMode === 'agents' || viewMode === 'portal';
+  const lite = viewMode === 'quote' || viewMode === 'jobs' || viewMode === 'finance' || viewMode === 'clients' || viewMode === 'agents' || viewMode === 'portal';
   const openClient = (id: string | null | undefined) => {
     if (!id) return;
     setClientReq((r) => ({ id, n: (r?.n ?? 0) + 1 }));
@@ -672,6 +674,7 @@ function App() {
           onOpenClient={(customer) => openClient(clientForJob(getStore().clients, customer)?.id)}
         />
       )}
+      {!clientOnly && viewMode === 'finance' && <FinanceView onOpenJob={(id) => { setJobReq((r) => ({ id, n: (r?.n ?? 0) + 1 })); setViewMode('jobs'); }} />}
       {!clientOnly && viewMode === 'clients' && (
         <ClientsView
           openRequest={clientReq}

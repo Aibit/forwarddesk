@@ -19,6 +19,10 @@ rules_version = '2';
 //   orgs/{orgId}/quotes/{qid}            sell-side quote only { clientId, options[{carrier, sell, transit}], status, ... }
 //   orgs/{orgId}/quotes/{qid}/private/costs   buy rates + margins — STAFF ONLY
 //   orgs/{orgId}/msds/{msdsId}           { clientId, name, type, size, dataB64 (< 900 KB), uid }
+//   orgs/{orgId}/ledgers/{jobId}         job charges (buy/sell), invoices, vendor bills, payments, FX, file list — STAFF ONLY
+//   orgs/{orgId}/jobDocs/{docId}         House B/L, arrival notice, DO, booking confirmation { jobId, clientId, kind, status }
+//                                        House B/L / DO can only be 'released' when ledgers/{jobId}.releaseOk == true
+//   orgs/{orgId}/jobFiles/{fileId}       file attached to a job { jobId, clientId, name, type, size, dataB64 (< 900 KB) }
 //   orgs/{orgId}/settings/{key}          tariffs (customer-facing fees), msdsRules (read: members, write: staff)
 //                                        tariffsPrivate (line rebate %) — STAFF ONLY
 //
@@ -119,6 +123,31 @@ service cloud.firestore {
       return d.keys().hasOnly(['clientId', 'name', 'type', 'size', 'dataB64', 'uid', 'at'])
         && str(d.clientId, 64) && str(d.name, 200) && str(d.type, 100)
         && d.size is number && d.size <= 650000
+        && str(d.dataB64, 900000) && d.uid == request.auth.uid && d.at == request.time;
+    }
+
+    function validLedger(d, jobId) {
+      return d.keys().hasOnly(['jobId', 'clientId', 'customer', 'base', 'fx', 'lines', 'invoices', 'payments', 'files',
+                               'localPaid', 'releaseOk', 'clientOpen', 'updatedAt', 'sample'])
+        && d.jobId == jobId && str(d.base, 8) && d.fx is map && d.localPaid is map
+        && d.lines is list && d.lines.size() <= 300 && d.invoices is list && d.invoices.size() <= 200
+        && d.payments is list && d.payments.size() <= 500 && d.files is list && d.files.size() <= 100
+        && d.releaseOk is bool;
+    }
+    function ledgerPath(orgId, jobId) { return /databases/$(database)/documents/orgs/$(orgId)/ledgers/$(jobId); }
+    function paidUp(orgId, jobId) { return exists(ledgerPath(orgId, jobId)) && get(ledgerPath(orgId, jobId)).data.releaseOk == true; }
+    function validJobDoc(d, id) {
+      return d.keys().hasOnly(['id', 'jobId', 'clientId', 'kind', 'no', 'status', 'fields', 'issuedAt', 'releasedAt', 'updatedAt'])
+        && d.id == id && str(d.jobId, 80) && d.kind in ['hbl', 'an', 'do', 'bc'] && d.status in ['draft', 'issued', 'released']
+        && str(d.no, 40) && d.fields is map && (d.clientId == null || str(d.clientId, 64))
+        && (d.status != 'released' || d.kind in ['hbl', 'do']);
+    }
+    // Bandar Abbas rule: the House B/L (export) or DO (import) is released only once every charge is paid.
+    function releaseOk(orgId, d) { return d.status != 'released' || paidUp(orgId, d.jobId); }
+    function validJobFile(d) {
+      return d.keys().hasOnly(['jobId', 'clientId', 'name', 'type', 'size', 'dataB64', 'uid', 'at'])
+        && str(d.jobId, 80) && str(d.name, 200) && str(d.type, 100)
+        && d.size is number && d.size <= 655360
         && str(d.dataB64, 900000) && d.uid == request.auth.uid && d.at == request.time;
     }
 
@@ -247,8 +276,29 @@ service cloud.firestore {
       }
 
       match /settings/{key} {
-        allow read: if isStaff(orgId) || (isMember(orgId) && key in ['tariffs', 'msdsRules']);
-        allow write: if isStaff(orgId) && key in ['tariffs', 'tariffsPrivate', 'msdsRules'];
+        allow read: if isStaff(orgId) || (isMember(orgId) && key in ['tariffs', 'msdsRules', 'chargeCatalog']);
+        allow write: if isStaff(orgId) && key in ['tariffs', 'tariffsPrivate', 'msdsRules', 'chargeCatalog'];
+      }
+
+      // Billing ledger per job: buy rates, margins, vendor bills — never readable by clients.
+      match /ledgers/{jobId} {
+        allow read, delete: if isStaff(orgId);
+        allow create, update: if isStaff(orgId) && validLedger(request.resource.data, jobId);
+      }
+
+      match /jobDocs/{docId} {
+        allow read: if isStaff(orgId) || (resource.data.clientId != null && isClientOf(orgId, resource.data.clientId));
+        allow create: if isStaff(orgId) && validJobDoc(request.resource.data, docId) && releaseOk(orgId, request.resource.data);
+        allow update: if isStaff(orgId) && validJobDoc(request.resource.data, docId) && unchanged('jobId') && unchanged('kind')
+          && (resource.data.status == 'released' || releaseOk(orgId, request.resource.data));
+        allow delete: if isStaff(orgId);
+      }
+
+      match /jobFiles/{fileId} {
+        allow read: if isStaff(orgId) || (resource.data.clientId != null && isClientOf(orgId, resource.data.clientId));
+        allow create: if isStaff(orgId) && validJobFile(request.resource.data);
+        allow update: if false;
+        allow delete: if isStaff(orgId);
       }
     }
 

@@ -17,6 +17,7 @@ import { jobsStore } from '../jobs/store';
 import type { Job } from '../jobs/data';
 import { hydrateTariffs, reloadTariffs, type Tariffs } from '../jobs/tariffs';
 import { splitJob, splitTariffs } from './split';
+import { startBilling, stopBilling } from '../billing/live';
 
 let app: FirebaseApp | null = null;
 let auth: Auth | null = null;
@@ -149,6 +150,7 @@ function subscribe(role: 'staff' | 'client', clientId: string | null) {
   unsubs.push(onSnapshot(d('settings/tariffs'), (s) => { pubT = (s.data()?.data as Partial<Tariffs>) ?? {}; hydrateTariffs({ ...pubT, ...privT }); }, err));
   if (role === 'staff') unsubs.push(onSnapshot(d('settings/tariffsPrivate'), (s) => { privT = (s.data()?.data as Partial<Tariffs>) ?? {}; hydrateTariffs({ ...pubT, ...privT }); }, err));
   unsubs.push(onSnapshot(d('settings/msdsRules'), (s) => hydrateMsdsRules((s.data()?.rules as never) ?? null), err));
+  unsubs.push(...startBilling(db!, O(), role, clientId, auth!.currentUser?.uid ?? '', err));
 }
 
 function writer(user: User, role: 'staff' | 'client', clientId: string | null): Writer {
@@ -320,6 +322,7 @@ function stop() {
   activities.reload();
   reloadTariffs();
   reloadMsdsRules();
+  stopBilling();
 }
 
 async function start(user: User) {

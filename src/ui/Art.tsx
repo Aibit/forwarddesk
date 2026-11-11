@@ -31,7 +31,7 @@ export function EmptyArt({ name, children, className = '' }: { name: ArtName; ch
 
 /* Small sidebar icons, line style, drawn on a 24px grid. */
 const P = { fill: 'none', stroke: 'currentColor', strokeWidth: 1.7, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const };
-export type NavIcon = 'jobs' | 'clients' | 'agents' | 'portal' | 'quote' | 'desk' | 'pitch' | 'menu' | 'sun' | 'moon' | 'close';
+export type NavIcon = 'jobs' | 'clients' | 'agents' | 'portal' | 'quote' | 'desk' | 'pitch' | 'finance' | 'menu' | 'sun' | 'moon' | 'close';
 export function Icon({ name }: { name: NavIcon }) {
   const body = (() => {
     switch (name) {
@@ -49,6 +49,8 @@ export function Icon({ name }: { name: NavIcon }) {
         return <><path d="M3 14.5h18l-2.6 4.5H5.6z" {...P} /><path d="M6 14.5v-4h4v4M10 14.5v-6h4v6M14 14.5v-4h4v4" {...P} /></>;
       case 'pitch': // route
         return <><circle cx="6" cy="17" r="2.2" {...P} /><circle cx="18" cy="7" r="2.2" {...P} /><path d="M7.8 15.6C11 13 9 9.5 12 8.5c1.6-.5 2.8-.9 4-1.2" {...P} strokeDasharray="1.5 2.6" /></>;
+      case 'finance': // invoice with anchor-free ledger lines
+        return <><rect x="4" y="3.5" width="16" height="17" rx="2" {...P} /><path d="M8 8h8M8 11.5h8M8 15h4.5" {...P} /><path d="M15 16.8l1.3 1.3 2.4-2.6" {...P} /></>;
       case 'menu':
         return <path d="M4 7h16M4 12h16M4 17h16" {...P} />;
       case 'close':
