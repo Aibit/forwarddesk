@@ -29,7 +29,7 @@ import { MsdsChip, MsdsSlot } from '../clients/Msds';
 import './quote.css';
 import { getUiLang, useUiLang } from '../ui/lang';
 import { isLive } from '../backend/bridge';
-import { agentStLabel, agentTag, linesText, scopeText, unitsText, basisLabel, issueText, modeLabel, qu, sideLabel, type UKey } from './uitext';
+import { agentStLabel, agentTag, sampleLabel, linesText, scopeText, unitsText, basisLabel, issueText, modeLabel, qu, sideLabel, type UKey } from './uitext';
 
 type Lang = 'en' | 'es';
 type FieldKey = keyof QuoteFields;
@@ -710,7 +710,7 @@ export function QuoteView({ seed, onOpenClient }: { seed?: { text: string; n: nu
             <span className="q-muted">{u('trySample')}</span>
             {SAMPLE_REQUESTS.map((s) => (
               <button key={s.id} type="button" className="btn ghost sm" onClick={() => startFresh(s.text)} title={s.text}>
-                {s.label}
+                {sampleLabel(ui, s.label)}
               </button>
             ))}
             {text && (

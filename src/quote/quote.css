@@ -137,7 +137,7 @@
 .q-summary.unpriced .q-summary-tag { background: var(--border-strong); color: var(--text); }
 .q-summary strong { color: var(--amber); font-size: 0.86rem; }
 .q-summary-meta { color: var(--muted); font-size: 0.66rem; }
-.q-summary .btn { margin-left: auto; }
+.q-summary .btn { margin-inline-start: auto; }
 /* Keep the quote column in view while the left column scrolls (wide layout) */
 @media (min-width: 1001px) {
   .q-right { position: sticky; top: 0; max-height: calc(100vh - 7rem); overflow: auto; }
@@ -202,3 +202,6 @@
 .q-trade-agents { margin-top: 0.5rem; }
 .q-trade-agents ul { margin: 0.25rem 0; padding-inline-start: 1.1rem; }
 .q-ok { color: var(--ok-ink); }
+
+/* Farsi: Persian script in the mono face reads badly; use the UI font for prose bits that are mono in Latin. */
+[dir='rtl'] .quote-view :is(.q-client-defs, .q-summary > .mono, .q-summary-tag, .q-summary-meta, .q-timer, .q-muted, .q-issue-tag, .q-stale-tag, .q-totals span) { font-family: inherit; letter-spacing: 0; }

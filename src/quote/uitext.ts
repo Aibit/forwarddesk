@@ -256,3 +256,17 @@ export function linesText(lang: UiLang, k: 'pref' | 'showing' | 'hidden' | 'hide
   if (lang === 'fa') return { pref: `خطوط ترجیحی ${name} اول نمایش داده می‌شوند. `, showing: `نمایش ${n} خط که ${name} از آن پرهیز می‌کند. `, hidden: `${n} گزینه از خطوطی که ${name} از آن پرهیز می‌کند پنهان است (${list}). `, hide: 'پنهان کردن', show: 'نمایش' }[k];
   return { pref: `${name}'s preferred line${pl ? 's' : ''} shown first. `, showing: `Showing ${n} line${pl ? 's' : ''} ${name} avoids. `, hidden: `${n} option${pl ? 's' : ''} from line${pl ? 's' : ''} ${name} avoids hidden (${list}). `, hide: 'hide', show: 'show' }[k];
 }
+
+/** Sample-request button labels ("Ocean FCL (messy) · Shanghai"). Place names stay as written. */
+export function sampleLabel(lang: UiLang, label: string): string {
+  if (lang === 'en') return label;
+  const es = lang === 'es';
+  return label
+    .replace('Ocean FCL', modeLabel(lang, 'fcl'))
+    .replace(/^LCL/, modeLabel(lang, 'lcl'))
+    .replace(/^Air/, modeLabel(lang, 'air'))
+    .replace(/^Road FTL/, `${modeLabel(lang, 'road')} FTL`)
+    .replace('(messy)', es ? '(desordenado)' : '(نامرتب)')
+    .replace('(Spanish)', es ? '(en español)' : '(اسپانیایی)')
+    .replace(' → ', lang === 'fa' ? ' ← ' : ' → ');
+}

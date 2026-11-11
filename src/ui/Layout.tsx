@@ -73,7 +73,7 @@ export function Sidebar({ view, onPick, open, onClose, clientOnly, account = fal
     <>
       <aside className={`nd-side ${open ? 'open' : ''}`} aria-label="ForwardDesk" data-testid="sidebar">
         <div className="nd-brand">
-          <LogoMark size={40} />
+          <LogoMark size={46} />
           <div className="nd-brand-txt">
             <strong>ForwardDesk</strong>
             <span>{ui('tagline', lang)}</span>

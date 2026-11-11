@@ -133,7 +133,7 @@ function Page({ children, testid }: { children: ReactNode; testid: string }) {
   return (
     <div className="fd-entry" dir={dir} lang={lang} data-testid={testid}>
       <div className="fd-entry-top">
-        <span className="fd-entry-brand"><LogoLockup height={44} /></span>
+        <span className="fd-entry-brand"><LogoLockup height={60} /></span>
         <LangSwitch />
       </div>
       {children}

@@ -225,7 +225,7 @@ export function JobsView({ onDraftQuote, onOpenClient, openRequest }: { onDraftQ
 
         <section className="q-panel j-tracker" aria-label={L('deadlines')} data-testid="deadline-tracker">
           <div className="q-head">
-            <h2>2 · {L('deadlines')}</h2>
+            <h2>{L('deadlines')}</h2>
             <span className="q-muted">E8 · E18 · E21 · I14–I16</span>
           </div>
           <ul className="j-dl">
