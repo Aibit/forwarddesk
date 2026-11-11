@@ -49,47 +49,47 @@ export function sampleLanes(clientId: string): LaneProfile[] {
 export const newLane = (): LaneProfile => ({ id: `l-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 5)}`, pol: '', pod: '', commodity: '', hs: '', volume: { amount: null, unit: '20GP', period: 'shipment' }, payment: 'Prepaid', target: { amount: null, currency: 'USD', per: '20GP' }, notes: '' });
 
 // ── HS code ──
-const CHAPTERS: Record<string, [string, string, string]> = {
-  '03': ['Fish and crustaceans', 'Pescados y crustáceos', 'ماهی و سخت‌پوستان'],
-  '07': ['Vegetables', 'Hortalizas', 'سبزیجات'],
-  '08': ['Fruit and nuts', 'Frutas y frutos secos', 'میوه و خشکبار'],
-  '09': ['Coffee, tea, spices', 'Café, té, especias', 'قهوه، چای، ادویه'],
-  '10': ['Cereals', 'Cereales', 'غلات'],
-  '15': ['Fats and oils', 'Grasas y aceites', 'چربی‌ها و روغن‌ها'],
-  '17': ['Sugars', 'Azúcares', 'قند و شکر'],
-  '25': ['Salt, sulphur, earths and stone, cement', 'Sal, azufre, tierras y piedras, cemento', 'نمک، گوگرد، خاک و سنگ، سیمان'],
-  '26': ['Ores, slag and ash', 'Minerales, escorias y cenizas', 'سنگ معدن، سرباره و خاکستر'],
-  '27': ['Mineral fuels, oils, bitumen', 'Combustibles minerales, aceites, betún', 'سوخت‌های معدنی، روغن، قیر'],
-  '28': ['Inorganic chemicals', 'Química inorgánica', 'مواد شیمیایی معدنی'],
-  '29': ['Organic chemicals', 'Química orgánica', 'مواد شیمیایی آلی'],
-  '31': ['Fertilisers', 'Abonos', 'کود'],
-  '39': ['Plastics', 'Plásticos', 'پلاستیک'],
-  '40': ['Rubber', 'Caucho', 'لاستیک'],
-  '44': ['Wood', 'Madera', 'چوب'],
-  '48': ['Paper and paperboard', 'Papel y cartón', 'کاغذ و مقوا'],
-  '52': ['Cotton', 'Algodón', 'پنبه'],
-  '57': ['Carpets', 'Alfombras', 'فرش'],
-  '68': ['Stone, plaster, cement articles', 'Manufacturas de piedra, yeso, cemento', 'مصنوعات سنگی، گچی، سیمانی'],
-  '69': ['Ceramic products', 'Productos cerámicos', 'محصولات سرامیکی'],
-  '70': ['Glass', 'Vidrio', 'شیشه'],
-  '72': ['Iron and steel', 'Fundición, hierro y acero', 'آهن و فولاد'],
-  '73': ['Articles of iron or steel', 'Manufacturas de hierro o acero', 'مصنوعات آهنی و فولادی'],
-  '74': ['Copper', 'Cobre', 'مس'],
-  '76': ['Aluminium', 'Aluminio', 'آلومینیوم'],
-  '84': ['Machinery and mechanical appliances', 'Máquinas y aparatos mecánicos', 'ماشین‌آلات و وسایل مکانیکی'],
-  '85': ['Electrical machinery', 'Máquinas y material eléctrico', 'ماشین‌آلات برقی'],
-  '87': ['Vehicles and parts', 'Vehículos y partes', 'وسایل نقلیه و قطعات'],
-  '94': ['Furniture, lighting', 'Muebles, iluminación', 'مبلمان، روشنایی'],
+const CHAPTERS: Record<string, [string, string, string, string]> = {
+  '03': ['Fish and crustaceans', 'Pescados y crustáceos', 'ماهی و سخت‌پوستان', 'الأسماك والقشريات'],
+  '07': ['Vegetables', 'Hortalizas', 'سبزیجات', 'الخضروات'],
+  '08': ['Fruit and nuts', 'Frutas y frutos secos', 'میوه و خشکبار', 'الفواكه والمكسرات'],
+  '09': ['Coffee, tea, spices', 'Café, té, especias', 'قهوه، چای، ادویه', 'البن والشاي والتوابل'],
+  '10': ['Cereals', 'Cereales', 'غلات', 'الحبوب'],
+  '15': ['Fats and oils', 'Grasas y aceites', 'چربی‌ها و روغن‌ها', 'الدهون والزيوت'],
+  '17': ['Sugars', 'Azúcares', 'قند و شکر', 'السكريات'],
+  '25': ['Salt, sulphur, earths and stone, cement', 'Sal, azufre, tierras y piedras, cemento', 'نمک، گوگرد، خاک و سنگ، سیمان', 'الملح والكبريت والأتربة والحجر والإسمنت'],
+  '26': ['Ores, slag and ash', 'Minerales, escorias y cenizas', 'سنگ معدن، سرباره و خاکستر', 'الخامات والخبث والرماد'],
+  '27': ['Mineral fuels, oils, bitumen', 'Combustibles minerales, aceites, betún', 'سوخت‌های معدنی، روغن، قیر', 'الوقود المعدني والزيوت والبيتومين'],
+  '28': ['Inorganic chemicals', 'Química inorgánica', 'مواد شیمیایی معدنی', 'المواد الكيميائية غير العضوية'],
+  '29': ['Organic chemicals', 'Química orgánica', 'مواد شیمیایی آلی', 'المواد الكيميائية العضوية'],
+  '31': ['Fertilisers', 'Abonos', 'کود', 'الأسمدة'],
+  '39': ['Plastics', 'Plásticos', 'پلاستیک', 'اللدائن (البلاستيك)'],
+  '40': ['Rubber', 'Caucho', 'لاستیک', 'المطاط'],
+  '44': ['Wood', 'Madera', 'چوب', 'الخشب'],
+  '48': ['Paper and paperboard', 'Papel y cartón', 'کاغذ و مقوا', 'الورق والكرتون'],
+  '52': ['Cotton', 'Algodón', 'پنبه', 'القطن'],
+  '57': ['Carpets', 'Alfombras', 'فرش', 'السجاد'],
+  '68': ['Stone, plaster, cement articles', 'Manufacturas de piedra, yeso, cemento', 'مصنوعات سنگی، گچی، سیمانی', 'مصنوعات الحجر والجبس والإسمنت'],
+  '69': ['Ceramic products', 'Productos cerámicos', 'محصولات سرامیکی', 'المنتجات الخزفية'],
+  '70': ['Glass', 'Vidrio', 'شیشه', 'الزجاج'],
+  '72': ['Iron and steel', 'Fundición, hierro y acero', 'آهن و فولاد', 'الحديد والصلب'],
+  '73': ['Articles of iron or steel', 'Manufacturas de hierro o acero', 'مصنوعات آهنی و فولادی', 'مصنوعات الحديد أو الصلب'],
+  '74': ['Copper', 'Cobre', 'مس', 'النحاس'],
+  '76': ['Aluminium', 'Aluminio', 'آلومینیوم', 'الألمنيوم'],
+  '84': ['Machinery and mechanical appliances', 'Máquinas y aparatos mecánicos', 'ماشین‌آلات و وسایل مکانیکی', 'الآلات والأجهزة الميكانيكية'],
+  '85': ['Electrical machinery', 'Máquinas y material eléctrico', 'ماشین‌آلات برقی', 'الآلات الكهربائية'],
+  '87': ['Vehicles and parts', 'Vehículos y partes', 'وسایل نقلیه و قطعات', 'المركبات وقطع الغيار'],
+  '94': ['Furniture, lighting', 'Muebles, iluminación', 'مبلمان، روشنایی', 'الأثاث والإنارة'],
 };
-const LIDX: Record<CLang, number> = { en: 0, es: 1, fa: 2 };
+const LIDX: Record<CLang, number> = { en: 0, es: 1, fa: 2, ar: 3 };
 export function hsCheck(hs: string, lang: CLang): { ok: boolean; digits: string; text: string } {
   const digits = hs.replace(/[\s.\-]/g, '');
   if (!digits) return { ok: true, digits, text: '' };
-  if (!/^\d+$/.test(digits)) return { ok: false, digits, text: lang === 'fa' ? 'فقط عدد (۶ تا ۱۰ رقم)' : lang === 'es' ? 'Solo dígitos (6–10)' : 'Digits only (6–10)' };
-  if (digits.length < 6 || digits.length > 10) return { ok: false, digits, text: lang === 'fa' ? `کد HS باید ۶ تا ۱۰ رقم باشد (${digits.length})` : lang === 'es' ? `El HS debe tener 6–10 dígitos (${digits.length})` : `HS code must be 6–10 digits (has ${digits.length})` };
+  if (!/^\d+$/.test(digits)) return { ok: false, digits, text: lang === 'fa' ? 'فقط عدد (۶ تا ۱۰ رقم)' : lang === 'ar' ? 'أرقام فقط (٦ إلى ١٠ أرقام)' : lang === 'es' ? 'Solo dígitos (6–10)' : 'Digits only (6–10)' };
+  if (digits.length < 6 || digits.length > 10) return { ok: false, digits, text: lang === 'fa' ? `کد HS باید ۶ تا ۱۰ رقم باشد (${digits.length})` : lang === 'ar' ? `يجب أن يتكون رمز HS من 6 إلى 10 أرقام (${digits.length})` : lang === 'es' ? `El HS debe tener 6–10 dígitos (${digits.length})` : `HS code must be 6–10 digits (has ${digits.length})` };
   const ch = digits.slice(0, 2);
   const name = CHAPTERS[ch]?.[LIDX[lang]];
-  return { ok: true, digits, text: `${lang === 'fa' ? 'فصل' : lang === 'es' ? 'Capítulo' : 'Chapter'} ${ch}${name ? ` · ${name}` : ''}` };
+  return { ok: true, digits, text: `${lang === 'fa' ? 'فصل' : lang === 'ar' ? 'الفصل' : lang === 'es' ? 'Capítulo' : 'Chapter'} ${ch}${name ? ` · ${name}` : ''}` };
 }
 
 // ── units for target comparison ──

@@ -6,45 +6,45 @@ import { getSession, signIn, signOut, setSession, useSession } from './session';
 import './auth.css';
 import { AccountDialog } from './Accounts';
 
-type L3 = 'en' | 'es' | 'fa';
+type L3 = 'en' | 'es' | 'fa' | 'ar';
 const T = {
-  demo: ['Demo mode', 'Modo demo', 'حالت نمایشی'],
-  demoTip: ['Sample data, kept in this browser only. No login needed.', 'Datos de ejemplo, solo en este navegador. Sin login.', 'داده نمونه، فقط در همین مرورگر. ورود لازم نیست.'],
-  signIn: ['Sign in', 'Iniciar sesión', 'ورود'],
-  signOut: ['Sign out', 'Cerrar sesión', 'خروج'],
-  backToDemo: ['Back to demo mode', 'Volver al modo demo', 'بازگشت به حالت نمایشی'],
-  live: ['Live', 'En vivo', 'آنلاین'],
-  staff: ['staff', 'personal', 'کارمند'],
-  client: ['client', 'cliente', 'مشتری'],
-  connecting: ['Connecting…', 'Conectando…', 'در حال اتصال…'],
-  title: ['Sign in to ForwardDesk', 'Entrar en ForwardDesk', 'ورود به ForwardDesk'],
-  sub: ['Staff use the forwarder desk. Clients see only their own shipments and quotes.', 'El personal usa el escritorio del transitario. Los clientes solo ven sus envíos y cotizaciones.', 'کارکنان از میز فورواردر استفاده می‌کنند. مشتری فقط محموله‌ها و قیمت‌های خودش را می‌بیند.'],
-  email: ['Email', 'Correo', 'ایمیل'],
-  password: ['Password', 'Contraseña', 'رمز عبور'],
-  cancel: ['Cancel', 'Cancelar', 'انصراف'],
-  stayDemo: ['Visitors: no account needed — close this and keep using Demo mode.', 'Visitantes: no hace falta cuenta — cierra y sigue en modo demo.', 'بازدیدکنندگان: حساب لازم نیست — این را ببندید و در حالت نمایشی بمانید.'],
-  badLogin: ['Email or password not recognised.', 'Correo o contraseña no reconocidos.', 'ایمیل یا رمز عبور درست نیست.'],
-  noOrg: ['This account is not linked to a ForwardDesk organisation yet. Ask your forwarder.', 'Esta cuenta aún no está vinculada a una organización. Consulta a tu transitario.', 'این حساب هنوز به سازمانی وصل نشده است. از فورواردر بپرسید.'],
-  denied: ['That change is not allowed for this account (security rules). Nothing was saved.', 'Ese cambio no está permitido para esta cuenta (reglas de seguridad). No se guardó nada.', 'این تغییر برای این حساب مجاز نیست (قواعد امنیتی). چیزی ذخیره نشد.'],
-  offline: ['Cannot reach the server. Check the connection.', 'No se puede conectar con el servidor.', 'اتصال به سرور برقرار نشد.'],
-  off: ['Online accounts are not configured in this build — Demo mode only.', 'Las cuentas en línea no están configuradas en esta versión — solo modo demo.', 'حساب آنلاین در این نسخه فعال نیست — فقط حالت نمایشی.'],
+  demo: ['Demo mode', 'Modo demo', 'حالت نمایشی', 'الوضع التجريبي'],
+  demoTip: ['Sample data, kept in this browser only. No login needed.', 'Datos de ejemplo, solo en este navegador. Sin login.', 'داده نمونه، فقط در همین مرورگر. ورود لازم نیست.', 'بيانات عيّنة، محفوظة في هذا المتصفح فقط. لا حاجة لتسجيل الدخول.'],
+  signIn: ['Sign in', 'Entrar', 'ورود', 'دخول'],
+  signOut: ['Sign out', 'Cerrar sesión', 'خروج', 'تسجيل الخروج'],
+  backToDemo: ['Back to demo mode', 'Volver al modo demo', 'بازگشت به حالت نمایشی', 'العودة إلى الوضع التجريبي'],
+  live: ['Live', 'En vivo', 'آنلاین', 'مباشر'],
+  staff: ['staff', 'personal', 'کارمند', 'موظف'],
+  client: ['client', 'cliente', 'مشتری', 'عميل'],
+  connecting: ['Connecting…', 'Conectando…', 'در حال اتصال…', 'جارٍ الاتصال…'],
+  title: ['Sign in to ForwardDesk', 'Entrar en ForwardDesk', 'ورود به ForwardDesk', 'سجّل الدخول إلى ForwardDesk'],
+  sub: ['Staff use the forwarder desk. Clients see only their own shipments and quotes.', 'El personal usa el escritorio del transitario. Los clientes solo ven sus envíos y cotizaciones.', 'کارکنان از میز فورواردر استفاده می‌کنند. مشتری فقط محموله‌ها و قیمت‌های خودش را می‌بیند.', 'الموظفون يستخدمون مكتب الشحن. العملاء يرون شحناتهم وعروض أسعارهم فقط.'],
+  email: ['Email', 'Correo', 'ایمیل', 'البريد الإلكتروني'],
+  password: ['Password', 'Contraseña', 'رمز عبور', 'كلمة المرور'],
+  cancel: ['Cancel', 'Cancelar', 'انصراف', 'إلغاء'],
+  stayDemo: ['Visitors: no account needed — close this and keep using Demo mode.', 'Visitantes: no hace falta cuenta — cierra y sigue en modo demo.', 'بازدیدکنندگان: حساب لازم نیست — این را ببندید و در حالت نمایشی بمانید.', 'الزوار: لا حاجة لحساب — أغلق هذا وواصل استخدام الوضع التجريبي.'],
+  badLogin: ['Email or password not recognised.', 'Correo o contraseña no reconocidos.', 'ایمیل یا رمز عبور درست نیست.', 'البريد الإلكتروني أو كلمة المرور غير معروفين.'],
+  noOrg: ['This account is not linked to a ForwardDesk organisation yet. Ask your forwarder.', 'Esta cuenta aún no está vinculada a una organización. Consulta a tu transitario.', 'این حساب هنوز به سازمانی وصل نشده است. از فورواردر بپرسید.', 'هذا الحساب غير مرتبط بمؤسسة على ForwardDesk بعد. اسأل وكيل الشحن الخاص بك.'],
+  denied: ['That change is not allowed for this account (security rules). Nothing was saved.', 'Ese cambio no está permitido para esta cuenta (reglas de seguridad). No se guardó nada.', 'این تغییر برای این حساب مجاز نیست (قواعد امنیتی). چیزی ذخیره نشد.', 'هذا التغيير غير مسموح لهذا الحساب (قواعد الأمان). لم يُحفظ شيء.'],
+  offline: ['Cannot reach the server. Check the connection.', 'No se puede conectar con el servidor.', 'اتصال به سرور برقرار نشد.', 'تعذّر الوصول إلى الخادم. تحقّق من الاتصال.'],
+  off: ['Online accounts are not configured in this build — Demo mode only.', 'Las cuentas en línea no están configuradas en esta versión — solo modo demo.', 'حساب آنلاین در این نسخه فعال نیست — فقط حالت نمایشی.', 'الحسابات عبر الإنترنت غير مهيّأة في هذا الإصدار — الوضع التجريبي فقط.'],
   compliance: [
     'Real accounts are in preview. Until they officially open, use sample data only — don\'t enter confidential customer data.',
     'Las cuentas reales están en versión preliminar. Hasta su apertura oficial, usa solo datos de ejemplo; no introduzcas datos confidenciales de clientes.',
-    'حساب‌های واقعی در مرحله پیش‌نمایش هستند. تا افتتاح رسمی فقط از داده نمونه استفاده کنید و اطلاعات محرمانه مشتری وارد نکنید.',
+    'حساب‌های واقعی در مرحله پیش‌نمایش هستند. تا افتتاح رسمی فقط از داده نمونه استفاده کنید و اطلاعات محرمانه مشتری وارد نکنید.', 'الحسابات الحقيقية في مرحلة المعاينة. إلى أن تُفتح رسميًا، استخدم بيانات عيّنة فقط — لا تُدخل بيانات عملاء سرّية.',
   ],
-  dismiss: ['Dismiss', 'Cerrar', 'بستن'],
-  create: ['Create account', 'Crear cuenta', 'ساخت حساب'],
-  owner: ['owner', 'propietario', 'مالک'],
+  dismiss: ['Dismiss', 'Cerrar', 'بستن', 'تجاهل'],
+  create: ['Create account', 'Crear cuenta', 'ساخت حساب', 'إنشاء حساب'],
+  owner: ['owner', 'propietario', 'مالک', 'المالك'],
 } as const;
 type K = keyof typeof T;
-const I: Record<L3, 0 | 1 | 2> = { en: 0, es: 1, fa: 2 };
+const I: Record<L3, 0 | 1 | 2 | 3> = { en: 0, es: 1, fa: 2, ar: 3 };
 export const at = (lang: L3, k: K) => T[k][I[lang]];
 export const errText = (lang: L3, e: string | null) =>
   !e ? '' : e === 'bad-login' ? at(lang, 'badLogin') : e === 'no-org' ? at(lang, 'noOrg') : e === 'denied' ? at(lang, 'denied') : e === 'offline' ? at(lang, 'offline') : e === 'backend-off' ? at(lang, 'off') : e;
 
 export function ComplianceNote({ lang = 'en' }: { lang?: L3 }) {
-  return <p className="fd-compliance" data-testid="compliance-note" dir={lang === 'fa' ? 'rtl' : 'ltr'}>{at(lang, 'compliance')}</p>;
+  return <p className="fd-compliance" data-testid="compliance-note" dir={(lang === 'fa' || lang === 'ar') ? 'rtl' : 'ltr'}>{at(lang, 'compliance')}</p>;
 }
 
 export function SignInDialog({ onClose, initialLang = 'en' }: { onClose: () => void; initialLang?: L3 }) {
@@ -68,13 +68,13 @@ export function SignInDialog({ onClose, initialLang = 'en' }: { onClose: () => v
   };
   return (
     <div className="fd-modal-bg" onClick={onClose}>
-      <form className="fd-modal" onClick={(e) => e.stopPropagation()} onSubmit={submit} dir={lang === 'fa' ? 'rtl' : 'ltr'} lang={lang} data-testid="signin-dialog">
+      <form className="fd-modal" onClick={(e) => e.stopPropagation()} onSubmit={submit} dir={(lang === 'fa' || lang === 'ar') ? 'rtl' : 'ltr'} lang={lang} data-testid="signin-dialog">
         <Art name="crane" className="fd-modal-art" />
         <div className="fd-modal-head">
           <h2>{at(lang, 'title')}</h2>
           <div className="q-lang" role="group" aria-label="Language">
-            {(['en', 'es', 'fa'] as L3[]).map((l) => (
-              <button key={l} type="button" className={lang === l ? 'active' : ''} onClick={() => setLang(l)}>{l === 'fa' ? 'FA فا' : l.toUpperCase()}</button>
+            {(['en', 'es', 'fa', 'ar'] as L3[]).map((l) => (
+              <button key={l} type="button" className={lang === l ? 'active' : ''} onClick={() => setLang(l)}>{l === 'fa' ? 'FA فا' : l === 'ar' ? 'AR عر' : l.toUpperCase()}</button>
             ))}
           </div>
         </div>

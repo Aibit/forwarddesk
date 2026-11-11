@@ -213,7 +213,8 @@ await t('verified user creates own account', assertSucceeds(setDoc(doc(ownA, A),
 await t('owner adds self as owner', assertSucceeds(setDoc(doc(ownA, `${A}/members/ownA`), { role: 'owner', email: 'owner.a@example.com', createdAt: 1 })));
 await t('owner links self to account', assertSucceeds(setDoc(doc(ownA, 'userOrgs/ownA'), { orgId: 'acctaaaaaaaaaa' })));
 await t('linked user cannot create a second account', assertFails(setDoc(doc(ownA, 'orgs/acctcccccccccc'), org('ownA'))));
-await t('owner B creates own account', assertSucceeds(setDoc(doc(ownB, B), org('ownB'))));
+await t('cannot create an account with an unknown UI language', assertFails(setDoc(doc(ownB, B), org('ownB', { lang: 'xx' }))));
+await t('owner B creates own account (Arabic UI)', assertSucceeds(setDoc(doc(ownB, B), org('ownB', { lang: 'ar' }))));
 await t('owner B adds self as owner', assertSucceeds(setDoc(doc(ownB, `${B}/members/ownB`), { role: 'owner', email: 'owner.b@example.com' })));
 await t('owner B cannot add self to account A', assertFails(setDoc(doc(ownB, `${A}/members/ownB`), { role: 'owner' })));
 await t('owner B cannot add self to A as staff', assertFails(setDoc(doc(ownB, `${A}/members/ownB`), { role: 'staff' })));

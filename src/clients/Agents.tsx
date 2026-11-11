@@ -38,7 +38,7 @@ export function AgentsEditor({ agents, onChange, lang, testid = 'agents' }: { ag
               <strong>{L(`t_${t}` as CKey)}</strong>
               {dbFor(t).length > 0 && (
                 <select className="c-in c-ag-pick" value="" onChange={(e) => { const d = db.find((x) => x.id === e.target.value); if (d) pick(t, d); }} data-testid={`${testid}-pick-${t}`} aria-label="Pick from Agent CRM">
-                  <option value="">{lang === 'fa' ? 'انتخاب از پایگاه نمایندگان…' : lang === 'es' ? 'Elegir de la base de agentes…' : 'Pick from Agent CRM…'}</option>
+                  <option value="">{lang === 'fa' ? 'انتخاب از پایگاه نمایندگان…' : lang === 'ar' ? 'اختر من CRM الوكلاء…' : lang === 'es' ? 'Elegir de la base de agentes…' : 'Pick from Agent CRM…'}</option>
                   {dbFor(t).map((d) => <option key={d.id} value={d.id}>{statusOf(d) === 'preferred' ? '★ ' : ''}{d.name}{d.city && d.city !== '—' ? ` · ${d.city}` : ''}{d.sanctions ? ' ⚑' : ''}</option>)}
                 </select>
               )}

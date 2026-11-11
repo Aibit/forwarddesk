@@ -43,6 +43,8 @@ function App() {
     history.replaceState(null, '', location.pathname + location.search);
     setAcctDlg('create');
   }, []);
+  // A new page starts at the top, not at the previous page's scroll position.
+  useEffect(() => { window.scrollTo(0, 0); document.querySelector('.nd-scroll')?.scrollTo(0, 0); }, [viewMode]);
   useEffect(() => {
     if (viewMode === 'account' && !(sess.mode === 'live' && sess.role === 'staff')) setViewMode('jobs');
   }, [viewMode, sess.mode, sess.role]);
@@ -79,7 +81,7 @@ function App() {
   }
 
   return (
-    <div className={`app nd ${navOpen ? 'nav-open' : ''}`} dir={uiLang === 'fa' ? 'rtl' : 'ltr'} lang={uiLang} data-view={shownView}>
+    <div className={`app nd ${navOpen ? 'nav-open' : ''}`} dir={(uiLang === 'fa' || uiLang === 'ar') ? 'rtl' : 'ltr'} lang={uiLang} data-view={shownView}>
       <Sidebar view={shownView} onPick={pick} open={navOpen} onClose={() => setNavOpen(false)} clientOnly={clientOnly} account={sess.mode === 'live' && sess.role === 'staff'} />
       {acctDlg && <AccountDialog tab={acctDlg} onClose={() => setAcctDlg(null)} />}
       <div className="nd-main">

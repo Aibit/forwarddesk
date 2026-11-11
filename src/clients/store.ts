@@ -3,7 +3,7 @@ import { sampleLanes, type LaneProfile } from './lanes';
 import { listedNames } from '../agents/db';
 import { bridge, type QuoteCosts } from '../backend/bridge';
 
-export type CLang = 'en' | 'es' | 'fa';
+export type CLang = 'en' | 'es' | 'fa' | 'ar';
 export interface Person { name: string; phone: string }
 export type AgentType = 'overseas' | 'line' | 'clearance';
 export type AgentRank = 'preferred' | 'allowed' | 'avoid';

@@ -64,12 +64,12 @@ export function FinanceView({ onOpenJob }: { onOpenJob: (id: string) => void }) 
     const code = nc.code.trim().toUpperCase().slice(0, 12);
     if (!code || catalog.some((c) => c.code === code)) return;
     const n = nc.name.trim() || code;
-    billingStore.saveCatalog([...catalog, { code, name: [n, n, n], side: 'both' } as ChargeCode]);
+    billingStore.saveCatalog([...catalog, { code, name: [n, n, n, n], side: 'both' } as ChargeCode]);
     setNc({ code: '', name: '' });
   };
 
   return (
-    <div className="b-fin" data-testid="finance-view" dir={lang === 'fa' ? 'rtl' : 'ltr'} lang={lang}>
+    <div className="b-fin" data-testid="finance-view" dir={(lang === 'fa' || lang === 'ar') ? 'rtl' : 'ltr'} lang={lang}>
       {anySample && <p className="b-note"><span className="j-sample sm">{L('sample')}</span> {L('sampleNote')}</p>}
       <div className="b-tiles" data-testid="finance-tiles">
         <div className="b-tile"><span>{L('receivable')}</span><strong className="mono">{B(toCollect)}</strong></div>

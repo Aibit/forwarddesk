@@ -6,25 +6,25 @@ export interface QuoteFor {
   target: string | null;
   msds: { status: 'required' | 'optional' | 'received'; file?: string } | null;
 }
-type L3 = 'en' | 'es' | 'fa';
-const T: Record<string, [string, string, string]> = {
-  for: ['Quotation for', 'Cotización para', 'پیش‌فاکتور برای'],
-  contact: ['Contact', 'Contacto', 'تماس'],
-  address: ['Address', 'Dirección', 'آدرس'],
-  lane: ['Lane profile', 'Perfil de ruta', 'مشخصات مسیر'],
-  pol: ['POL', 'POL', 'بندر بارگیری'],
-  pod: ['POD', 'POD', 'بندر تخلیه'],
-  commodity: ['Commodity', 'Mercancía', 'کالا'],
-  hs: ['HS code', 'Código HS', 'کد HS'],
-  volume: ['Volume', 'Volumen', 'حجم'],
-  payment: ['Term of payment', 'Forma de pago', 'شرایط پرداخت'],
-  target: ['Target freight rate', 'Tarifa objetivo', 'نرخ هدف کرایه'],
-  msds: ['MSDS', 'MSDS', 'MSDS'],
-  required: ['required — not received yet', 'obligatoria — pendiente de recibir', 'لازم — هنوز دریافت نشده'],
-  optional: ['optional', 'opcional', 'اختیاری'],
-  received: ['received', 'recibida', 'دریافت شد'],
+type L3 = 'en' | 'es' | 'fa' | 'ar';
+const T: Record<string, [string, string, string, string]> = {
+  for: ['Quotation for', 'Cotización para', 'پیش‌فاکتور برای', 'عرض سعر لـ'],
+  contact: ['Contact', 'Contacto', 'تماس', 'جهة الاتصال'],
+  address: ['Address', 'Dirección', 'آدرس', 'العنوان'],
+  lane: ['Lane profile', 'Perfil de ruta', 'مشخصات مسیر', 'ملف المسار'],
+  pol: ['POL', 'POL', 'بندر بارگیری', 'POL'],
+  pod: ['POD', 'POD', 'بندر تخلیه', 'POD'],
+  commodity: ['Commodity', 'Mercancía', 'کالا', 'السلعة'],
+  hs: ['HS code', 'Código HS', 'کد HS', 'رمز HS'],
+  volume: ['Volume', 'Volumen', 'حجم', 'الحجم'],
+  payment: ['Term of payment', 'Forma de pago', 'شرایط پرداخت', 'شروط الدفع'],
+  target: ['Target freight rate', 'Tarifa objetivo', 'نرخ هدف کرایه', 'سعر الشحن المستهدف'],
+  msds: ['MSDS', 'MSDS', 'MSDS', 'MSDS'],
+  required: ['required — not received yet', 'obligatoria — pendiente de recibir', 'لازم — هنوز دریافت نشده', 'مطلوبة — لم تُستلم بعد'],
+  optional: ['optional', 'opcional', 'اختیاری', 'اختيارية'],
+  received: ['received', 'recibida', 'دریافت شد', 'مستلمة'],
 };
-const I: Record<L3, number> = { en: 0, es: 1, fa: 2 };
+const I: Record<L3, number> = { en: 0, es: 1, fa: 2, ar: 3 };
 export const qfl = (lang: L3, k: keyof typeof T) => T[k][I[lang]];
 export const msdsText = (qf: QuoteFor, lang: L3) => (qf.msds ? `${qfl(lang, qf.msds.status)}${qf.msds.file ? ` (${qf.msds.file})` : ''}` : '');
 

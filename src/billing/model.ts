@@ -103,22 +103,22 @@ export interface JobDoc {
 
 export const CURRENCIES = ['USD', 'EUR', 'AED', 'CNY', 'INR', 'IRR'];
 
-export interface ChargeCode { code: string; name: [string, string, string]; side: 'both' | 'sell' | 'buy' }
+export interface ChargeCode { code: string; name: [string, string, string, string]; side: 'both' | 'sell' | 'buy' }
 export const DEFAULT_CATALOG: ChargeCode[] = [
-  { code: 'OFR', name: ['Ocean freight', 'Flete marítimo', 'کرایه حمل دریایی'], side: 'both' },
-  { code: 'THC-O', name: ['Origin THC', 'THC origen', 'THC مبدأ'], side: 'both' },
-  { code: 'THC-D', name: ['Destination THC', 'THC destino', 'THC مقصد'], side: 'both' },
-  { code: 'BL', name: ['B/L fee', 'Tasa B/L', 'هزینه بارنامه'], side: 'both' },
-  { code: 'DO', name: ['Delivery order fee', 'Tasa orden de entrega', 'هزینه ترخیصیه (دی‌او)'], side: 'both' },
-  { code: 'SEAL', name: ['Seal', 'Precinto', 'پلمپ'], side: 'both' },
-  { code: 'CUS', name: ['Customs clearance', 'Despacho de aduanas', 'ترخیص گمرکی'], side: 'both' },
-  { code: 'HAUL', name: ['Trucking / haulage', 'Transporte terrestre', 'حمل جاده‌ای'], side: 'both' },
-  { code: 'DEM', name: ['Demurrage', 'Demora', 'حق توقف (دموراژ)'], side: 'both' },
-  { code: 'DET', name: ['Detention', 'Detención', 'دیتنشن'], side: 'both' },
-  { code: 'STOR', name: ['Storage', 'Almacenaje', 'انبارداری'], side: 'both' },
-  { code: 'INS', name: ['Cargo insurance', 'Seguro de carga', 'بیمه بار'], side: 'both' },
-  { code: 'HAND', name: ['Handling fee', 'Gastos de gestión', 'هزینه خدمات'], side: 'sell' },
-  { code: 'AGT', name: ['Agent fee', 'Comisión de agente', 'کارمزد نماینده'], side: 'buy' },
+  { code: 'OFR', name: ['Ocean freight', 'Flete marítimo', 'کرایه حمل دریایی', 'أجرة الشحن البحري'], side: 'both' },
+  { code: 'THC-O', name: ['Origin THC', 'THC origen', 'THC مبدأ', 'THC المنشأ'], side: 'both' },
+  { code: 'THC-D', name: ['Destination THC', 'THC destino', 'THC مقصد', 'THC الوجهة'], side: 'both' },
+  { code: 'BL', name: ['B/L fee', 'Tasa B/L', 'هزینه بارنامه', 'رسوم بوليصة الشحن'], side: 'both' },
+  { code: 'DO', name: ['Delivery order fee', 'Tasa orden de entrega', 'هزینه ترخیصیه (دی‌او)', 'رسوم إذن التسليم'], side: 'both' },
+  { code: 'SEAL', name: ['Seal', 'Precinto', 'پلمپ', 'الختم'], side: 'both' },
+  { code: 'CUS', name: ['Customs clearance', 'Despacho de aduanas', 'ترخیص گمرکی', 'التخليص الجمركي'], side: 'both' },
+  { code: 'HAUL', name: ['Trucking / haulage', 'Transporte terrestre', 'حمل جاده‌ای', 'النقل البري'], side: 'both' },
+  { code: 'DEM', name: ['Demurrage', 'Demora', 'حق توقف (دموراژ)', 'غرامة التأخير (Demurrage)'], side: 'both' },
+  { code: 'DET', name: ['Detention', 'Detención', 'دیتنشن', 'رسوم احتجاز الحاوية (Detention)'], side: 'both' },
+  { code: 'STOR', name: ['Storage', 'Almacenaje', 'انبارداری', 'التخزين'], side: 'both' },
+  { code: 'INS', name: ['Cargo insurance', 'Seguro de carga', 'بیمه بار', 'تأمين البضائع'], side: 'both' },
+  { code: 'HAND', name: ['Handling fee', 'Gastos de gestión', 'هزینه خدمات', 'رسوم المناولة'], side: 'sell' },
+  { code: 'AGT', name: ['Agent fee', 'Comisión de agente', 'کارمزد نماینده', 'عمولة الوكيل'], side: 'buy' },
 ];
 
 export const emptyLedger = (job: Pick<Job, 'id' | 'clientId' | 'customer' | 'sample'>): Ledger => ({

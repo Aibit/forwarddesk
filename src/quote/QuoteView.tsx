@@ -13,6 +13,7 @@ import {
 } from './parser';
 import { CSV_COLUMNS, buildOptions, buildQuote, loadRateCsv, optionBadges, sampleRates, type Badge, type Quote, type RateRow, type Side } from './rates';
 import { BADGE_L, MODE_L, ol, type QLang } from './optlabels';
+import { DEFAULT_CATALOG } from '../billing/model';
 import { quoteNumber } from './quoteno';
 import { agentForPort, lineRank, store, useStore } from '../clients/store';
 import { SAMPLE_REQUESTS } from './samples';
@@ -58,14 +59,14 @@ function fmtElapsed(ms: number): string {
 }
 
 function fmtShort(iso: string, lang: QLang): string {
-  return new Date(iso + 'T12:00:00').toLocaleDateString(lang === 'es' ? 'es-ES' : lang === 'fa' ? 'fa-IR' : 'en-GB', { day: 'numeric', month: 'short' });
+  return new Date(iso + 'T12:00:00').toLocaleDateString(lang === 'es' ? 'es-ES' : lang === 'fa' ? 'fa-IR' : lang === 'ar' ? 'ar-EG' : 'en-GB', { day: 'numeric', month: 'short' });
 }
 
 function fmtDate(iso: string | null, lang: QLang): string {
   if (!iso) return '—';
-  if (iso === 'ASAP') return lang === 'es' ? 'lo antes posible' : lang === 'fa' ? 'در اسرع وقت' : 'ASAP';
+  if (iso === 'ASAP') return lang === 'es' ? 'lo antes posible' : lang === 'fa' ? 'در اسرع وقت' : lang === 'ar' ? 'في أقرب وقت' : 'ASAP';
   const d = new Date(iso + 'T12:00:00');
-  return d.toLocaleDateString(lang === 'es' ? 'es-ES' : lang === 'fa' ? 'fa-IR' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  return d.toLocaleDateString(lang === 'es' ? 'es-ES' : lang === 'fa' ? 'fa-IR' : lang === 'ar' ? 'ar-EG' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
 function equipmentText(eq: Record<string, number>): string {
@@ -137,6 +138,15 @@ const TXT = {
     bye: 'با احترام،', stale: '  (منوط به تأیید خط)', option: 'گزینه', perCntr: ' برای هر کانتینر', chargeable: 'وزن قابل محاسبه', pcs: 'بسته', nonDg: 'غیرخطرناک',
     fobTbc: 'FOB (نیاز به تأیید)', vs: (o: number) => `نسبت به گزینه ${o}`, more: 'بیشتر', less: 'کمتر', fewer: 'کمتر', options: 'گزینه',
   },
+  ar: {
+    subject: 'الموضوع: عرض سعر شحن', hi: 'مرحبًا،', thanks: 'شكرًا على طلبكم. نرفق لكم عرضنا أدناه:', thanksMulti: 'شكرًا على طلبكم. نرفق لكم خياراتنا أدناه:',
+    route: 'المسار', mode: 'وسيلة النقل', cargo: 'البضاعة', ready: 'جاهزية البضاعة', transit: 'مدة العبور', approx: (n: number) => `حوالي ${n} يومًا`, tbc: 'بانتظار التأكيد',
+    charges: 'الرسوم', line: 'الخط الملاحي', free: 'الفترة المجانية', days: 'يومًا', optionsHead: 'الخيارات', allIn: 'إجمالي الرسوم المذكورة', common: 'رسوم مشمولة في جميع الخيارات أعلاه',
+    validity: (d: string) => `الصلاحية: حتى ${d}، رهنًا بتوفر المساحة والمعدّات وقت الحجز.`,
+    notIncl: (x: string) => `غير مشمول: الرسوم الجمركية والضرائب والتأمين${x} وأي بند غير مذكور أعلاه.`, pending: (x: string) => `رهنًا بتأكيد: ${x}.`,
+    bye: 'مع أطيب التحيات،', stale: '  (رهنًا بتأكيد الناقل)', option: 'الخيار', perCntr: ' لكل حاوية', chargeable: 'الوزن المحتسب', pcs: 'طرد', nonDg: 'غير خطرة',
+    fobTbc: 'FOB (بانتظار التأكيد)', vs: (o: number) => `مقارنة بالخيار ${o}`, more: 'أكثر', less: 'أقل', fewer: 'أقل', options: 'خيارات',
+  },
 };
 
 function optionHeader(q: Quote, i: number, badges: Badge[], lang: QLang): string {
@@ -158,7 +168,7 @@ function optionFacts(q: Quote, lang: QLang): string {
 function quoteText(f: QuoteFields, opts: Quote[], badges: Badge[][], issues: Issue[], lang: QLang, qf?: QuoteFor | null, sign?: string[], tb?: TradeBlock | null): string {
   if (!opts.length) return '';
   const W = TXT[lang];
-  const tl: Lang = lang === 'fa' ? 'en' : lang;
+  const tl: Lang = lang === 'fa' || lang === 'ar' ? 'en' : lang;
   const q = opts[0];
   const multi = opts.length > 1;
   const mode = f.mode ? MODE_L[lang][f.mode] : '';
@@ -243,7 +253,7 @@ function Chip({ label, value, status, evidence, editing, onEdit, editor }: ChipP
       {editing ? (
         <span className="q-chip-editor">{editor}</span>
       ) : (
-        <button type="button" className="q-chip-value" onClick={onEdit} title={(() => { const g = getUiLang(); const f = g === 'es' ? ['Encontrado', 'pulsa para editar', 'Pulsa para editar'] : g === 'fa' ? ['پیدا شد', 'برای ویرایش کلیک کنید', 'برای ویرایش کلیک کنید'] : ['Found', 'click to edit', 'Click to edit']; return evidence ? `${f[0]}: “${evidence}” — ${f[1]}` : f[2]; })()}>
+        <button type="button" className="q-chip-value" onClick={onEdit} title={(() => { const g = getUiLang(); const f = g === 'es' ? ['Encontrado', 'pulsa para editar', 'Pulsa para editar'] : g === 'fa' ? ['پیدا شد', 'برای ویرایش کلیک کنید', 'برای ویرایش کلیک کنید'] : g === 'ar' ? ['وُجد', 'انقر للتعديل', 'انقر للتعديل'] : ['Found', 'click to edit', 'Click to edit']; return evidence ? `${f[0]}: “${evidence}” — ${f[1]}` : f[2]; })()}>
           {value}
         </button>
       )}
@@ -472,7 +482,7 @@ export function QuoteView({ seed, onOpenClient }: { seed?: { text: string; n: nu
     });
   const custOpts = custIdx.map((i) => options[i]);
   const custBadges = custIdx.map((i) => badges[i] ?? []);
-  const tl: Lang = lang === 'fa' ? 'en' : lang;
+  const tl: Lang = lang === 'fa' || lang === 'ar' ? 'en' : lang;
 
   const alternatives = useMemo(() => {
     const opts = originRes?.options;
@@ -937,7 +947,7 @@ export function QuoteView({ seed, onOpenClient }: { seed?: { text: string; n: nu
                 </div>
               )}
               {fields.mode === 'fcl' && tbUi && (
-                <div className="q-trade" data-testid="quote-trade" dir={ui === 'fa' ? 'rtl' : 'ltr'} lang={ui}>
+                <div className="q-trade" data-testid="quote-trade" dir={(ui === 'fa' || ui === 'ar') ? 'rtl' : 'ltr'} lang={ui}>
                   <div className="q-trade-head">
                     <span className="q-lang" role="group" aria-label="Export / import">
                       {(['export', 'import'] as TradeDir[]).map((d) => (
@@ -985,7 +995,7 @@ export function QuoteView({ seed, onOpenClient }: { seed?: { text: string; n: nu
                 </div>
               )}
               {options.length > 1 && (
-                <div className="q-opts-wrap" dir={ui === 'fa' ? 'rtl' : 'ltr'} lang={ui} data-testid="quote-options">
+                <div className="q-opts-wrap" dir={(ui === 'fa' || ui === 'ar') ? 'rtl' : 'ltr'} lang={ui} data-testid="quote-options">
                   <div className="q-opts-head">
                     <strong>{ol(ui, 'options')} · {options.length}</strong>
                     <span className="q-muted">{ol(ui, 'optionsSub')}</span>
@@ -1012,8 +1022,8 @@ export function QuoteView({ seed, onOpenClient }: { seed?: { text: string; n: nu
                             </label>
                           </div>
                           <div className="q-opt-badges">
-                            {rankOf(o.carrier) === 'preferred' && <span className="q-badge pref">{ui === 'es' ? 'Preferida del cliente' : ui === 'fa' ? 'ترجیح مشتری' : 'Client preferred'}</span>}
-                            {rankOf(o.carrier) === 'avoid' && <span className="q-badge">{ui === 'es' ? 'El cliente la evita' : ui === 'fa' ? 'مشتری پرهیز می‌کند' : 'Client avoids'}</span>}
+                            {rankOf(o.carrier) === 'preferred' && <span className="q-badge pref">{ui === 'es' ? 'Preferida del cliente' : ui === 'fa' ? 'ترجیح مشتری' : ui === 'ar' ? 'مفضّل لدى العميل' : 'Client preferred'}</span>}
+                            {rankOf(o.carrier) === 'avoid' && <span className="q-badge">{ui === 'es' ? 'El cliente la evita' : ui === 'fa' ? 'مشتری پرهیز می‌کند' : ui === 'ar' ? 'العميل يتجنّبه' : 'Client avoids'}</span>}
                             {(badges[i] ?? []).map((b) => (
                               <span key={b} className={`q-badge ${b}`}>{BADGE_L[ui][b]}</span>
                             ))}
@@ -1030,7 +1040,7 @@ export function QuoteView({ seed, onOpenClient }: { seed?: { text: string; n: nu
                           </div>
                           <dl className="q-opt-facts">
                             <div><dt>{ol(ui, 'transit')}</dt><dd>{o.transitDays ?? '?'} {D}{dT ? <bdi className={`q-delta ${dT < 0 ? 'best' : ''}`}><bdi dir="ltr">{dT > 0 ? '+' : '−'}{Math.abs(dT)}</bdi> {D}</bdi> : null}</dd></div>
-                            <div><dt>{ol(ui, 'sailing')}</dt><dd className="mono"><bdi dir={ui === 'fa' ? 'rtl' : 'ltr'}>{o.etd ? fmtShort(o.etd, ui) : '—'}{o.eta ? `${ui === 'fa' ? ' ← ' : ' → '}${fmtShort(o.eta, ui)}` : ''}</bdi></dd></div>
+                            <div><dt>{ol(ui, 'sailing')}</dt><dd className="mono"><bdi dir={(ui === 'fa' || ui === 'ar') ? 'rtl' : 'ltr'}>{o.etd ? fmtShort(o.etd, ui) : '—'}{o.eta ? `${(ui === 'fa' || ui === 'ar') ? ' ← ' : ' → '}${fmtShort(o.eta, ui)}` : ''}</bdi></dd></div>
                             <div><dt>{ol(ui, 'freeTime')}</dt><dd>{o.freeDays != null ? `${o.freeDays} ${D}` : ol(ui, 'na')}{client?.freeTimeRequest && o.freeDays != null && o.freeDays < client.freeTimeRequest ? <bdi className="q-delta q-amber" title={`${client.name} asks for ${client.freeTimeRequest} days`}>&lt; {client.freeTimeRequest}</bdi> : null}{dF ? <bdi className={`q-delta ${dF > 0 ? 'best' : ''}`}><bdi dir="ltr">{dF > 0 ? '+' : '−'}{Math.abs(dF)}</bdi> {D}</bdi> : null}</dd></div>
                             <div><dt>{ol(ui, 'validTo')}</dt><dd className="mono">{o.validUntil ?? '—'}</dd></div>
                           </dl>
@@ -1070,7 +1080,7 @@ export function QuoteView({ seed, onOpenClient }: { seed?: { text: string; n: nu
                     <FragmentRows key={g.side} label={sideLabel(ui, g.side)}>
                       {g.lines.map((l, i) => (
                         <tr key={i} className={l.stale ? 'stale' : ''}>
-                          <td>{l.charge}</td>
+                          <td title={l.charge}>{chargeLabel(ui, l.charge)}</td>
                           <td className="num mono">
                             {money2(l.qty)} {basisLabel(ui, l.basis)}
                           </td>
@@ -1121,15 +1131,16 @@ export function QuoteView({ seed, onOpenClient }: { seed?: { text: string; n: nu
                   <button type="button" className={lang === 'en' ? 'active' : ''} onClick={() => setLang('en')}>EN</button>
                   <button type="button" className={lang === 'es' ? 'active' : ''} onClick={() => setLang('es')}>ES</button>
                   <button type="button" className={lang === 'fa' ? 'active' : ''} onClick={() => setLang('fa')}>FA</button>
+                  <button type="button" className={lang === 'ar' ? 'active' : ''} onClick={() => setLang('ar')} data-testid="quote-lang-ar">AR</button>
                 </div>
               </div>
-              <pre className="q-text" data-testid="quote-text" dir={lang === 'fa' ? 'rtl' : 'ltr'}>{qText}</pre>
+              <pre className="q-text" data-testid="quote-text" dir={(lang === 'fa' || lang === 'ar') ? 'rtl' : 'ltr'}>{qText}</pre>
               <div className="q-actions">
                 <button type="button" className="btn primary" onClick={() => void doCopy('quote')}>
                   {copied === 'quote' ? u('copied') : u('copyQuote')}
                 </button>
-                <button type="button" className="btn" data-testid="generate-pdf" disabled={pdfState === 'busy' || !custOpts.length} title={lang === 'fa' ? u('pdfFa') : undefined} onClick={() => void doPdf()}>
-                  {pdfState === 'busy' ? u('pdfBusy') : pdfState === 'done' ? u('pdfDone') : pdfState === 'error' ? u('pdfErr') : `${u('pdfGen')}${custOpts.length > 1 ? ` (${custOpts.length} ${u('options')})` : ''}${lang === 'fa' ? ' · EN' : ''}`}
+                <button type="button" className="btn" data-testid="generate-pdf" disabled={pdfState === 'busy' || !custOpts.length} title={lang === 'fa' || lang === 'ar' ? u('pdfFa') : undefined} onClick={() => void doPdf()}>
+                  {pdfState === 'busy' ? u('pdfBusy') : pdfState === 'done' ? u('pdfDone') : pdfState === 'error' ? u('pdfErr') : `${u('pdfGen')}${custOpts.length > 1 ? ` (${custOpts.length} ${u('options')})` : ''}${lang === 'fa' || lang === 'ar' ? ' · EN' : ''}`}
                 </button>
                 <label className="q-pdf-internal" title={u('internalTitle')}>
                   <input type="checkbox" data-testid="pdf-internal" checked={pdfInternal} onChange={(e) => setPdfInternal(e.target.checked)} /> {u('internal')}
@@ -1165,4 +1176,11 @@ function FragmentRows({ label, children }: { label: string; children: ReactNode 
       {children}
     </>
   );
+}
+
+/** Rate-sheet charge names are free text; when one matches a standard charge, show it in the UI language. */
+function chargeLabel(ui: string, charge: string): string {
+  const c = DEFAULT_CATALOG.find((x) => x.name[0].toLowerCase() === charge.trim().toLowerCase());
+  const i = ({ en: 0, es: 1, fa: 2, ar: 3 } as Record<string, number>)[ui] ?? 0;
+  return c ? c.name[i as 0 | 1 | 2 | 3] : charge;
 }

@@ -1,13 +1,13 @@
 import { useSyncExternalStore } from 'react';
 
 /** App-wide UI language (EN / ES / FA). Jobs, Clients, Agents, the sidebar and page headers share it. */
-export type UiLang = 'en' | 'es' | 'fa';
+export type UiLang = 'en' | 'es' | 'fa' | 'ar';
 const KEY = 'fd-ui-lang';
 const subs = new Set<() => void>();
 let cur: UiLang = (() => {
   try {
     const v = localStorage.getItem(KEY);
-    return v === 'es' || v === 'fa' ? v : 'en';
+    return v === 'es' || v === 'fa' || v === 'ar' ? v : 'en';
   } catch {
     return 'en';
   }

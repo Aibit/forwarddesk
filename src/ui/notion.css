@@ -51,6 +51,7 @@
   --radius-sm: 6px;
   --font: Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
   --font-fa: Vazirmatn, 'IBM Plex Sans Arabic', Tahoma, sans-serif;
+  --font-ar: 'IBM Plex Sans Arabic', 'Noto Sans Arabic', Tahoma, sans-serif;
   --mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
   --art-ink: #191919;
   font-family: var(--font);
@@ -580,3 +581,16 @@ body { overflow: hidden; }
 }
 .app.nd .c-row { border-top-color: var(--border); padding-block: 12px; }
 .fd-modal { white-space: normal; text-align: start; }
+
+/* Arabic UI: IBM Plex Sans Arabic (Noto Sans Arabic fallback). Persian-only terms keep Vazirmatn. */
+.app.nd[lang='ar'], .app.nd[lang='ar'] [dir='rtl'], .app.nd[lang='ar'] .jobs-view, .app.nd[lang='ar'] .j-gloss dt:not([lang='fa']), .fd-modal[lang='ar'] { font-family: var(--font-ar); }
+.app.nd[lang='ar'] [lang='fa'], .app.nd[lang='ar'] .fa-term { font-family: var(--font-fa); }
+
+/* Narrow phones: keep the page title readable next to the auth buttons */
+@media (max-width: 420px) {
+  .app.nd .topbar.nd-top { padding-inline: 8px; gap: 6px; }
+  .nd-top-right { gap: 6px; }
+  .nd-crumb { gap: 5px; }
+  .app.nd .nd-top-right button, .app.nd .nd-top-right .btn { padding-inline: 10px !important; }
+  .nd-burger { flex: none; }
+}

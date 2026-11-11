@@ -104,24 +104,24 @@ export const deleteMsds = (id: string) => (bridge.w ? bridge.w.deleteMsds(id).ca
 export const msdsMax = () => (bridge.w ? LIVE_MSDS_MAX : MSDS_MAX);
 export const fmtSize = (n: number) => (n >= 1024 * 1024 ? `${(n / 1024 / 1024).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1024))} KB`);
 
-const ML: Record<string, [string, string, string]> = {
-  required: ['MSDS required', 'MSDS obligatoria', 'MSDS لازم است'],
-  optional: ['MSDS optional', 'MSDS opcional', 'MSDS اختیاری'],
-  received: ['MSDS received', 'MSDS recibida', 'MSDS دریافت شد'],
-  missing: ['MSDS missing', 'Falta MSDS', 'MSDS ارسال نشده'],
-  upload: ['Upload MSDS (PDF / image)', 'Subir MSDS (PDF / imagen)', 'بارگذاری MSDS (PDF / تصویر)'],
-  replace: ['Replace', 'Sustituir', 'جایگزینی'],
-  view: ['View', 'Ver', 'مشاهده'],
-  remove: ['Remove', 'Quitar', 'حذف'],
-  browserOnly: ['stored in this browser only', 'guardada solo en este navegador', 'فقط در همین مرورگر ذخیره می‌شود'],
-  online: ['stored online (sample/demo data only)', 'guardada en línea (solo datos de ejemplo)', 'ذخیرهٔ آنلاین (فقط داده نمونه)'],
-  tooBigLive: ['File too large for online storage (max 640 KB)', 'Archivo demasiado grande para guardar en línea (máx. 640 KB)', 'فایل برای ذخیرهٔ آنلاین بزرگ است (حداکثر ۶۴۰ کیلوبایت)'],
-  sampleRule: ['sample rule — confirm with line', 'regla de ejemplo — confirmar con la naviera', 'قاعده نمونه — با خط کشتیرانی تأیید شود'],
-  dgRule: ['dangerous goods', 'mercancía peligrosa', 'کالای خطرناک'],
-  tooBig: ['File too large (max 8 MB)', 'Archivo demasiado grande (máx. 8 MB)', 'فایل خیلی بزرگ است (حداکثر ۸ مگابایت)'],
-  badType: ['PDF or image only', 'Solo PDF o imagen', 'فقط PDF یا تصویر'],
-  rulesH: ['MSDS rules by HS code', 'Reglas MSDS por código HS', 'قواعد MSDS بر اساس کد HS'],
-  hsNote: ['MSDS / UN number', 'MSDS / número UN', 'MSDS / شماره UN'],
+const ML: Record<string, [string, string, string, string]> = {
+  required: ['MSDS required', 'MSDS obligatoria', 'MSDS لازم است', 'MSDS مطلوبة'],
+  optional: ['MSDS optional', 'MSDS opcional', 'MSDS اختیاری', 'MSDS اختيارية'],
+  received: ['MSDS received', 'MSDS recibida', 'MSDS دریافت شد', 'تم استلام MSDS'],
+  missing: ['MSDS missing', 'Falta MSDS', 'MSDS ارسال نشده', 'MSDS ناقصة'],
+  upload: ['Upload MSDS (PDF / image)', 'Subir MSDS (PDF / imagen)', 'بارگذاری MSDS (PDF / تصویر)', 'رفع MSDS (PDF / صورة)'],
+  replace: ['Replace', 'Sustituir', 'جایگزینی', 'استبدال'],
+  view: ['View', 'Ver', 'مشاهده', 'عرض'],
+  remove: ['Remove', 'Quitar', 'حذف', 'إزالة'],
+  browserOnly: ['stored in this browser only', 'guardada solo en este navegador', 'فقط در همین مرورگر ذخیره می‌شود', 'محفوظة في هذا المتصفح فقط'],
+  online: ['stored online (sample/demo data only)', 'guardada en línea (solo datos de ejemplo)', 'ذخیرهٔ آنلاین (فقط داده نمونه)', 'محفوظة عبر الإنترنت (بيانات عيّنة/تجريبية فقط)'],
+  tooBigLive: ['File too large for online storage (max 640 KB)', 'Archivo demasiado grande para guardar en línea (máx. 640 KB)', 'فایل برای ذخیرهٔ آنلاین بزرگ است (حداکثر ۶۴۰ کیلوبایت)', 'الملف كبير جدًا للتخزين عبر الإنترنت (الحد الأقصى ٦٤٠ كيلوبايت)'],
+  sampleRule: ['sample rule — confirm with line', 'regla de ejemplo — confirmar con la naviera', 'قاعده نمونه — با خط کشتیرانی تأیید شود', 'قاعدة عيّنة — تأكّد مع الخط الملاحي'],
+  dgRule: ['dangerous goods', 'mercancía peligrosa', 'کالای خطرناک', 'بضائع خطرة'],
+  tooBig: ['File too large (max 8 MB)', 'Archivo demasiado grande (máx. 8 MB)', 'فایل خیلی بزرگ است (حداکثر ۸ مگابایت)', 'الملف كبير جدًا (الحد الأقصى ٨ ميجابايت)'],
+  badType: ['PDF or image only', 'Solo PDF o imagen', 'فقط PDF یا تصویر', 'PDF أو صورة فقط'],
+  rulesH: ['MSDS rules by HS code', 'Reglas MSDS por código HS', 'قواعد MSDS بر اساس کد HS', 'قواعد MSDS حسب رمز HS'],
+  hsNote: ['MSDS / UN number', 'MSDS / número UN', 'MSDS / شماره UN', 'MSDS / رقم UN'],
 };
-const LI: Record<CLang, number> = { en: 0, es: 1, fa: 2 };
+const LI: Record<CLang, number> = { en: 0, es: 1, fa: 2, ar: 3 };
 export const ml = (lang: CLang, k: keyof typeof ML) => ML[k][LI[lang]];

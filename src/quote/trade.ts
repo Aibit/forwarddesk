@@ -5,7 +5,7 @@ import type { Tariffs } from '../jobs/tariffs';
 /** Export / import quote sections around the client's home port (brief E3/E4 export, I2/I13 import). Tariffs are SAMPLE data. */
 export const HOME_PORT = 'Bandar Abbas';
 export type TradeDir = 'export' | 'import';
-type L3 = 'en' | 'es' | 'fa';
+type L3 = 'en' | 'es' | 'fa' | 'ar';
 const base = (s: string | null) => (s ?? '').toLowerCase().replace(/\s*\(.*\)$/, '').trim();
 export function autoDir(f: Pick<QuoteFields, 'origin' | 'destination'>): TradeDir | null {
   const h = base(HOME_PORT);
@@ -14,38 +14,38 @@ export function autoDir(f: Pick<QuoteFields, 'origin' | 'destination'>): TradeDi
   return null;
 }
 
-const T: Record<string, [string, string, string]> = {
-  export: ['EXPORT QUOTATION', 'COTIZACIÓN DE EXPORTACIÓN', 'پیش‌فاکتور صادرات'],
-  import: ['IMPORT QUOTATION', 'COTIZACIÓN DE IMPORTACIÓN', 'پیش‌فاکتور واردات'],
-  localExp: ['Origin charges at Bandar Abbas', 'Gastos en origen en Bandar Abbas', 'هزینه‌های مبدأ در بندرعباس'],
-  localImp: ['Destination charges at Bandar Abbas', 'Gastos en destino en Bandar Abbas', 'هزینه‌های مقصد در بندرعباس'],
-  tariffSrc: ['per Shipping Association / Ports Organization tariff (sample figures — confirm)', 'según tarifa de la Asociación de Navieras / Organización de Puertos (cifras de ejemplo — confirmar)', 'طبق تعرفه انجمن کشتیرانی / سازمان بنادر (ارقام نمونه — تأیید شود)'],
-  thc: ['THC (Ports Organization)', 'THC (Organización de Puertos)', 'THC (سازمان بنادر)'],
-  bl: ['B/L fee (Shipping Association)', 'Emisión B/L (Asociación de Navieras)', 'هزینه بارنامه (انجمن کشتیرانی)'],
-  seal: ['Seal fee', 'Precinto', 'هزینه پلمب'],
-  doFee: ['DO fee (Shipping Association)', 'Despacho DO (Asociación de Navieras)', 'هزینه ترخیصیه / DO (انجمن کشتیرانی)'],
-  warehouse: ['Port warehouse / storage', 'Almacén / almacenaje portuario', 'انبارداری بندر'],
-  atCost: ['at cost, after the free storage period', 'al coste, tras el periodo libre', 'به قیمت تمام‌شده، پس از دوره رایگان'],
-  included: ['included in the totals above', 'incluido en los totales', 'در جمع بالا منظور شده'],
-  local: ['payable locally — not in the totals above', 'pagadero en destino — no incluido en los totales', 'محلی پرداخت می‌شود — در جمع بالا نیست'],
-  freeOrigin: ['Free time at origin', 'Días libres en origen', 'زمان آزاد در مبدأ'],
-  freeDest: ['Free time at destination', 'Días libres en destino', 'زمان آزاد در مقصد'],
-  days: ['days', 'días', 'روز'],
-  cutoff: ['Cut-off: cargo and documents 48 h before vessel closing', 'Cut-off: mercancía y documentos 48 h antes del cierre del buque', 'کات‌آف: بار و مدارک ۴۸ ساعت پیش از بسته شدن کشتی'],
-  obl: ['Original B/L released after all charges are paid', 'B/L original se entrega tras el pago de todos los gastos', 'بارنامه اصلی پس از پرداخت همه هزینه‌ها تحویل می‌شود'],
-  collect: ['Freight: usually collect (paid at Bandar Abbas before DO release)', 'Flete: normalmente a cobrar (pagado en Bandar Abbas antes del DO)', 'کرایه: معمولاً پس‌کرایه (پرداخت در بندرعباس پیش از ترخیصیه)'],
-  prepaid: ['Freight: prepaid at origin', 'Flete: prepagado en origen', 'کرایه: پیش‌کرایه در مبدأ'],
-  cheques: ['Guarantee cheques', 'Cheques de garantía', 'چک‌های تضمین'],
-  chqDem: ['demurrage cheque per B/L', 'cheque de demora por B/L', 'چک دموراژ برای هر بارنامه'],
-  chqCntr: ['container cheque per container', 'cheque de contenedor por contenedor', 'چک کانتینر برای هر کانتینر'],
-  chqBack: ['returned when the empties are back', 'se devuelven al retornar los vacíos', 'پس از برگشت کانتینر خالی عودت می‌شود'],
-  loi: ['LOI (letter of indemnity) required for DO release', 'Se requiere LOI (carta de indemnidad) para el DO', 'برای ترخیصیه، تعهدنامه (LOI) لازم است'],
-  tbcLine: ['to confirm with the line', 'a confirmar con la naviera', 'با خط کشتیرانی تأیید شود'],
-  agentAt: ['Origin agent', 'Agente en origen', 'نماینده مبدأ'],
-  lineCompare: ['Options compare shipping lines', 'Las opciones comparan navieras', 'گزینه‌ها خطوط کشتیرانی را مقایسه می‌کنند'],
-  agentCompare: ['Options compare overseas agents at origin', 'Las opciones comparan agentes en origen', 'گزینه‌ها نمایندگان خارجی مبدأ را مقایسه می‌کنند'],
+const T: Record<string, [string, string, string, string]> = {
+  export: ['EXPORT QUOTATION', 'COTIZACIÓN DE EXPORTACIÓN', 'پیش‌فاکتور صادرات', 'عرض سعر تصدير'],
+  import: ['IMPORT QUOTATION', 'COTIZACIÓN DE IMPORTACIÓN', 'پیش‌فاکتور واردات', 'عرض سعر استيراد'],
+  localExp: ['Origin charges at Bandar Abbas', 'Gastos en origen en Bandar Abbas', 'هزینه‌های مبدأ در بندرعباس', 'رسوم المنشأ في بندر عباس'],
+  localImp: ['Destination charges at Bandar Abbas', 'Gastos en destino en Bandar Abbas', 'هزینه‌های مقصد در بندرعباس', 'رسوم الوجهة في بندر عباس'],
+  tariffSrc: ['per Shipping Association / Ports Organization tariff (sample figures — confirm)', 'según tarifa de la Asociación de Navieras / Organización de Puertos (cifras de ejemplo — confirmar)', 'طبق تعرفه انجمن کشتیرانی / سازمان بنادر (ارقام نمونه — تأیید شود)', 'وفق تعرفة جمعية الملاحة / منظمة الموانئ (أرقام عيّنة — للتأكيد)'],
+  thc: ['THC (Ports Organization)', 'THC (Organización de Puertos)', 'THC (سازمان بنادر)', 'THC (منظمة الموانئ)'],
+  bl: ['B/L fee (Shipping Association)', 'Emisión B/L (Asociación de Navieras)', 'هزینه بارنامه (انجمن کشتیرانی)', 'رسوم بوليصة الشحن (جمعية الملاحة)'],
+  seal: ['Seal fee', 'Precinto', 'هزینه پلمب', 'رسوم الختم'],
+  doFee: ['DO fee (Shipping Association)', 'Despacho DO (Asociación de Navieras)', 'هزینه ترخیصیه / DO (انجمن کشتیرانی)', 'رسوم إذن التسليم (جمعية الملاحة)'],
+  warehouse: ['Port warehouse / storage', 'Almacén / almacenaje portuario', 'انبارداری بندر', 'مستودع / تخزين الميناء'],
+  atCost: ['at cost, after the free storage period', 'al coste, tras el periodo libre', 'به قیمت تمام‌شده، پس از دوره رایگان', 'بالتكلفة، بعد فترة التخزين المجانية'],
+  included: ['included in the totals above', 'incluido en los totales', 'در جمع بالا منظور شده', 'مشمولة في الإجماليات أعلاه'],
+  local: ['payable locally — not in the totals above', 'pagadero en destino — no incluido en los totales', 'محلی پرداخت می‌شود — در جمع بالا نیست', 'تُدفع محليًا — غير مشمولة في الإجماليات أعلاه'],
+  freeOrigin: ['Free time at origin', 'Días libres en origen', 'زمان آزاد در مبدأ', 'الفترة المجانية في المنشأ'],
+  freeDest: ['Free time at destination', 'Días libres en destino', 'زمان آزاد در مقصد', 'الفترة المجانية في الوجهة'],
+  days: ['days', 'días', 'روز', 'أيام'],
+  cutoff: ['Cut-off: cargo and documents 48 h before vessel closing', 'Cut-off: mercancía y documentos 48 h antes del cierre del buque', 'کات‌آف: بار و مدارک ۴۸ ساعت پیش از بسته شدن کشتی', 'Cut-off: البضائع والمستندات قبل ٤٨ ساعة من إغلاق السفينة'],
+  obl: ['Original B/L released after all charges are paid', 'B/L original se entrega tras el pago de todos los gastos', 'بارنامه اصلی پس از پرداخت همه هزینه‌ها تحویل می‌شود', 'تُسلَّم بوليصة الشحن الأصلية بعد دفع جميع الرسوم'],
+  collect: ['Freight: usually collect (paid at Bandar Abbas before DO release)', 'Flete: normalmente a cobrar (pagado en Bandar Abbas antes del DO)', 'کرایه: معمولاً پس‌کرایه (پرداخت در بندرعباس پیش از ترخیصیه)', 'أجرة الشحن: عادةً تُحصَّل عند الوصول (تُدفع في بندر عباس قبل الإفراج عن إذن التسليم)'],
+  prepaid: ['Freight: prepaid at origin', 'Flete: prepagado en origen', 'کرایه: پیش‌کرایه در مبدأ', 'أجرة الشحن: مدفوعة مسبقًا في المنشأ'],
+  cheques: ['Guarantee cheques', 'Cheques de garantía', 'چک‌های تضمین', 'شيكات الضمان'],
+  chqDem: ['demurrage cheque per B/L', 'cheque de demora por B/L', 'چک دموراژ برای هر بارنامه', 'شيك غرامة تأخير لكل بوليصة'],
+  chqCntr: ['container cheque per container', 'cheque de contenedor por contenedor', 'چک کانتینر برای هر کانتینر', 'شيك حاوية لكل حاوية'],
+  chqBack: ['returned when the empties are back', 'se devuelven al retornar los vacíos', 'پس از برگشت کانتینر خالی عودت می‌شود', 'تُعاد عند إرجاع الحاويات الفارغة'],
+  loi: ['LOI (letter of indemnity) required for DO release', 'Se requiere LOI (carta de indemnidad) para el DO', 'برای ترخیصیه، تعهدنامه (LOI) لازم است', 'خطاب ضمان (LOI) مطلوب للإفراج عن إذن التسليم'],
+  tbcLine: ['to confirm with the line', 'a confirmar con la naviera', 'با خط کشتیرانی تأیید شود', 'للتأكيد مع الخط'],
+  agentAt: ['Origin agent', 'Agente en origen', 'نماینده مبدأ', 'وكيل المنشأ'],
+  lineCompare: ['Options compare shipping lines', 'Las opciones comparan navieras', 'گزینه‌ها خطوط کشتیرانی را مقایسه می‌کنند', 'الخيارات تقارن الخطوط الملاحية'],
+  agentCompare: ['Options compare overseas agents at origin', 'Las opciones comparan agentes en origen', 'گزینه‌ها نمایندگان خارجی مبدأ را مقایسه می‌کنند', 'الخيارات تقارن الوكلاء الخارجيين في المنشأ'],
 };
-const I: Record<L3, number> = { en: 0, es: 1, fa: 2 };
+const I: Record<L3, number> = { en: 0, es: 1, fa: 2, ar: 3 };
 export const tl3 = (lang: L3, k: keyof typeof T) => T[k][I[lang]];
 
 export interface TradeLine { label: string; amount: number | null; note: string; included: boolean }

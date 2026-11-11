@@ -50,7 +50,7 @@ export const LIVE_MSDS_MAX = 640 * 1024;
 // ── Accounts adapter (backend-agnostic) ──
 // UI components (start screen, sign-up, onboarding, team) only talk to this interface via session.ts.
 // Today it is implemented by ./live.ts (Firebase); a self-hosted backend (PocketBase / Postgres API) can implement the same.
-export interface AccountProfile { name: string; country: string; baseCurrency: string; ports: string[]; lang: 'en' | 'es' | 'fa' }
+export interface AccountProfile { name: string; country: string; baseCurrency: string; ports: string[]; lang: 'en' | 'es' | 'fa' | 'ar' }
 export interface Member { uid: string; role: 'owner' | 'staff' | 'client'; email: string; name?: string; clientId?: string }
 export interface Invite { code: string; email: string; role: 'staff' | 'client'; clientId?: string; expiresAt: number; usedBy: string | null; join: string }
 export interface TeamState { members: Member[]; invites: Invite[]; org: AccountProfile | null }

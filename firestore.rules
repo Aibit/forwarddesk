@@ -82,7 +82,7 @@ service cloud.firestore {
         && (!('company' in d) || d.company is map)
         && optStr(d, 'country', 80) && optStr(d, 'baseCurrency', 8)
         && (!('ports' in d) || (d.ports is list && d.ports.size() <= 12))
-        && (!('lang' in d) || d.lang in ['en', 'es', 'fa']);
+        && (!('lang' in d) || d.lang in ['en', 'es', 'fa', 'ar']);
     }
     function validInvite(d, code) {
       return d.keys().hasOnly(['email', 'role', 'clientId', 'createdBy', 'createdAt', 'expiresAt', 'usedBy', 'usedAt'])

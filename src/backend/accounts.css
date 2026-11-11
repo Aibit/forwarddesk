@@ -69,3 +69,5 @@
 .fd-invites code { font-family: var(--mono); font-size: 0.72rem; background: var(--soft); padding: 6px 8px; border-radius: 6px; overflow-wrap: anywhere; }
 .fd-empty-big { font-size: 1.05rem; color: var(--ink); margin: 4px 0; }
 .fd-empty-btns { display: flex; gap: 10px; justify-content: center; margin-top: 12px; }
+
+.fd-entry[lang='ar'], .fd-entry[lang='ar'] [dir='rtl'] { font-family: var(--font-ar); }

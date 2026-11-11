@@ -51,7 +51,7 @@ export function ClientsView({ openRequest, onOpenJob, onNewQuote }: Props) {
   const bill = useBilling();
   const kpis = useMemo(() => new Map(clients.map((c) => [c.id, clientKpi(c, jobs, quotes, now, tariffs)])), [clients, jobs, quotes, now, tariffs, bill]); // eslint-disable-line react-hooks/exhaustive-deps
   const open = clients.find((c) => c.id === openId) ?? null;
-  const D = lang === 'fa' ? 'روز' : 'd';
+  const D = lang === 'fa' ? 'روز' : lang === 'ar' ? 'يوم' : 'd';
 
   const deadline = (k: ClientKpi): ReactNode => {
     if (!k.next) return <span className="c-muted">{L('nothingDue')}</span>;
@@ -65,7 +65,7 @@ export function ClientsView({ openRequest, onOpenJob, onNewQuote }: Props) {
   };
 
   return (
-    <div className="clients-view jobs-view" dir={lang === 'fa' ? 'rtl' : 'ltr'} lang={lang} data-testid="clients-view">
+    <div className="clients-view jobs-view" dir={(lang === 'fa' || lang === 'ar') ? 'rtl' : 'ltr'} lang={lang} data-testid="clients-view">
       <div className="j-top">
         <div className="j-title">
           <span className="j-sample">{L('sample')}</span>
@@ -74,7 +74,7 @@ export function ClientsView({ openRequest, onOpenJob, onNewQuote }: Props) {
         <div className="c-top-actions">
           <button type="button" className="btn sm primary" onClick={() => setEditing(newClient())} data-testid="add-client">{L('addClient')}</button>
           <button type="button" className="btn sm ghost" onClick={() => setEditCompany(true)} data-testid="edit-company">{L('yourCompany')}</button>
-          <button type="button" className="btn sm ghost" onClick={() => setEditRules((v) => !v)} data-testid="edit-msds-rules">{lang === 'fa' ? 'قواعد MSDS' : lang === 'es' ? 'Reglas MSDS' : 'MSDS rules'}</button>
+          <button type="button" className="btn sm ghost" onClick={() => setEditRules((v) => !v)} data-testid="edit-msds-rules">{lang === 'fa' ? 'قواعد MSDS' : lang === 'ar' ? 'قواعد MSDS' : lang === 'es' ? 'Reglas MSDS' : 'MSDS rules'}</button>
         </div>
       </div>
 
@@ -298,7 +298,7 @@ function JobDeadline({ j, lang, now, L }: { j: Job; lang: CLang; now: number; L:
   if (!k.next) return <span className="c-muted">{L('nothingDue')}</span>;
   const n = k.next;
   const label = n.kind === 'over' ? L('over') : n.kind === 'cutoff' ? L('cutoff') : L('free');
-  return <span className={`c-dl ${n.level}`}>{label} <bdi className="mono">{n.kind === 'over' ? `+${num(lang, Math.ceil(-n.ms / DAY))} ${lang === 'fa' ? 'روز' : 'd'}` : dur(lang, n.ms, n.kind === 'cutoff')}</bdi></span>;
+  return <span className={`c-dl ${n.level}`}>{label} <bdi className="mono">{n.kind === 'over' ? `+${num(lang, Math.ceil(-n.ms / DAY))} ${lang === 'fa' ? 'روز' : lang === 'ar' ? 'يوم' : 'd'}` : dur(lang, n.ms, n.kind === 'cutoff')}</bdi></span>;
 }
 let tariffCache: ReturnType<typeof loadTariffs> | null = null;
 const loadTariffsCached = () => (tariffCache ??= loadTariffs());
@@ -328,7 +328,7 @@ function ClientForm({ c, L, lang, onClose, onSaved }: { c: Client; L: (k: CKey) 
   };
   return (
     <div className="c-modal-bg" onClick={onClose}>
-      <div className="q-panel c-modal" role="dialog" aria-label={L('client')} onClick={(e) => e.stopPropagation()} dir={lang === 'fa' ? 'rtl' : 'ltr'} data-testid="client-form">
+      <div className="q-panel c-modal" role="dialog" aria-label={L('client')} onClick={(e) => e.stopPropagation()} dir={(lang === 'fa' || lang === 'ar') ? 'rtl' : 'ltr'} data-testid="client-form">
         <div className="q-head"><h2>{c.name ? `${L('edit')} · ${c.name}` : L('addClient')}</h2><span className="c-muted">{L(isLive() ? 'savedLive' : 'savedLocal')}</span></div>
         <div className="c-form">
           <Field label={L('company')}>{txt('name', 'cf-name')}</Field>
@@ -342,7 +342,7 @@ function ClientForm({ c, L, lang, onClose, onSaved }: { c: Client; L: (k: CKey) 
           <Field label={`${L('baContact')} · ${L('phone')}`}><input className="c-in" value={d.bandarAbbas.phone} onChange={(e) => up('bandarAbbas', { ...d.bandarAbbas, phone: e.target.value })} /></Field>
           <Field label={L('language')}>
             <select className="c-in" value={d.lang} onChange={(e) => up('lang', e.target.value as CLang)}>
-              <option value="en">EN</option><option value="es">ES</option><option value="fa">FA</option>
+              <option value="en">EN</option><option value="es">ES</option><option value="fa">FA</option><option value="ar">AR</option>
             </select>
           </Field>
           <Field label={L('incoterm')}>
@@ -404,7 +404,7 @@ function CompanyForm({ co, L, lang, onClose }: { co: Company; L: (k: CKey) => st
   };
   return (
     <div className="c-modal-bg" onClick={onClose}>
-      <div className="q-panel c-modal" role="dialog" aria-label={L('yourCompany')} onClick={(e) => e.stopPropagation()} dir={lang === 'fa' ? 'rtl' : 'ltr'} data-testid="company-form">
+      <div className="q-panel c-modal" role="dialog" aria-label={L('yourCompany')} onClick={(e) => e.stopPropagation()} dir={(lang === 'fa' || lang === 'ar') ? 'rtl' : 'ltr'} data-testid="company-form">
         <div className="q-head"><h2>{L('yourCompany')}</h2><span className="c-muted">{L('companyHint')}</span></div>
         <ComplianceNote lang={lang} />
         <div className="c-form">

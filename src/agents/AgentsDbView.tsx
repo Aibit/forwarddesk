@@ -115,7 +115,7 @@ export function AgentsDbView() {
   );
 
   return (
-    <div className="clients agents-db agents-crm" dir={lang === 'fa' ? 'rtl' : 'ltr'} lang={lang} data-testid="agents-db">
+    <div className="clients agents-db agents-crm" dir={(lang === 'fa' || lang === 'ar') ? 'rtl' : 'ltr'} lang={lang} data-testid="agents-db">
       <div className="crm-top">
         <div className="crm-badges">
           {anySample && <span className="j-sample" data-testid="agents-sample">{L('sampleNote')}</span>}
@@ -201,7 +201,7 @@ export function AgentsDbView() {
                   </td>
                   <td><StatusChip s={statusOf(a)} L={L} /></td>
                   <td><Stars n={a.rating ?? 0} /></td>
-                  <td>{c0 ? <><div className="crm-clip1">{c0.name}{c0.role ? <span className="crm-sub"> · {c0.role}</span> : null}</div><div className="crm-sub crm-clip1"><bdi dir="ltr">{c0.email || c0.phone}</bdi></div></> : <div className="crm-sub crm-clip1"><bdi dir="ltr">{a.email || '—'}</bdi></div>}</td>
+                  <td>{c0 ? <><div className="crm-clip1">{c0.name}{c0.role ? <span className="crm-sub" data-ud=""> · {c0.role}</span> : null}</div><div className="crm-sub crm-clip1"><bdi dir="ltr">{c0.email || c0.phone}</bdi></div></> : <div className="crm-sub crm-clip1"><bdi dir="ltr">{a.email || '—'}</bdi></div>}</td>
                   <td><span className={`crm-kyc ${ks.expired ? 'red' : ks.expiring ? 'amber' : ks.ok === ks.total ? 'ok' : ''}`} data-testid="kyc-cell">{ks.ok}/{ks.total}{ks.expired ? ` · ${L('expired')}` : ks.expiring ? ' · ⏳' : ''}</span></td>
                   <td className="crm-sub">{la ? <Rel at={la} lang={lang} /> : '—'}</td>
                 </tr>
@@ -210,8 +210,8 @@ export function AgentsDbView() {
             {sorted.length === 0 && list.length === 0 && (
               <tr><td colSpan={8} className="c-muted fd-empty-cell" data-testid="agents-empty">
                 <Art name="map" className="fd-empty-art" />
-                <div className="fd-empty-big">{lang === 'fa' ? 'هنوز نماینده‌ای ندارید' : lang === 'es' ? 'Aún no tienes agentes' : 'No agents yet'}</div>
-                <div>{lang === 'fa' ? 'اولین نماینده را دستی اضافه کنید یا فهرست خود را از CSV وارد کنید.' : lang === 'es' ? 'Añade tu primer agente a mano o importa tu lista desde un CSV.' : 'Add your first agent by hand, or import your list from a CSV.'}</div>
+                <div className="fd-empty-big">{lang === 'fa' ? 'هنوز نماینده‌ای ندارید' : lang === 'ar' ? 'لا يوجد لديك وكلاء بعد' : lang === 'es' ? 'Aún no tienes agentes' : 'No agents yet'}</div>
+                <div>{lang === 'fa' ? 'اولین نماینده را دستی اضافه کنید یا فهرست خود را از CSV وارد کنید.' : lang === 'ar' ? 'أضف أول وكيل يدويًا أو استورد قائمتك من ملف CSV.' : lang === 'es' ? 'Añade tu primer agente a mano o importa tu lista desde un CSV.' : 'Add your first agent by hand, or import your list from a CSV.'}</div>
                 <div className="fd-empty-btns">
                   <button type="button" className="btn primary" onClick={() => setEditing(newDbAgent())} data-testid="agents-empty-add">{L('add')}</button>
                   <button type="button" className="btn ghost" onClick={() => fileRef.current?.click()} data-testid="agents-empty-import">{L('importCsv')}</button>
@@ -268,7 +268,7 @@ function AgentDetail({ a, tab, setTab, L, lang, acts, quotes, jobs, usedBy, onCl
   const tabs: [Tab, string, number | null][] = [['overview', L('overview'), null], ['contacts', L('contacts'), a.contacts?.length ?? 0], ['activity', L('activity'), mine.length], ['deals', L('deals'), st.quotes.length + st.jobs.length], ['kyc', L('kyc'), null]];
   return (
     <div className="j-drawer-wrap" onClick={onClose}>
-      <aside className="j-drawer crm-drawer" onClick={(e) => e.stopPropagation()} data-testid="agent-drawer" dir={lang === 'fa' ? 'rtl' : 'ltr'} lang={lang}>
+      <aside className="j-drawer crm-drawer" onClick={(e) => e.stopPropagation()} data-testid="agent-drawer" dir={(lang === 'fa' || lang === 'ar') ? 'rtl' : 'ltr'} lang={lang}>
         <div className="crm-d-head">
           <div>
             <div className="crm-d-kicker">
@@ -394,7 +394,7 @@ function ContactsPane({ a, L }: { a: DbAgent; L: (k: string) => string }) {
           <div key={c.id} className="crm-contact" data-testid="contact-card">
             <div className="crm-avatar" aria-hidden="true">{(c.name || '?').trim().slice(0, 1).toUpperCase()}</div>
             <div className="crm-contact-main">
-              <strong>{c.name || '—'}</strong>{c.role ? <span className="crm-sub"> · {c.role}</span> : null}
+              <strong>{c.name || '—'}</strong>{c.role ? <span className="crm-sub" data-ud=""> · {c.role}</span> : null}
               <div className="crm-contact-links">
                 {c.email && <a href={`mailto:${c.email}`}><bdi dir="ltr">{c.email}</bdi></a>}
                 {c.phone && <a href={`tel:${c.phone.replace(/[^\d+]/g, '')}`}><bdi dir="ltr">{c.phone}</bdi></a>}
@@ -521,7 +521,7 @@ function AgentForm({ a, L, lang, onClose, onSaved }: { a: DbAgent; L: (k: string
   };
   return (
     <div className="c-modal-bg" onClick={onClose}>
-      <div className="q-panel c-modal crm-modal" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()} dir={lang === 'fa' ? 'rtl' : 'ltr'} lang={lang} data-testid="agent-form">
+      <div className="q-panel c-modal crm-modal" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()} dir={(lang === 'fa' || lang === 'ar') ? 'rtl' : 'ltr'} lang={lang} data-testid="agent-form">
         <div className="crm-modal-head"><Art name="ship" className="crm-modal-art" /><div><h2>{isNew ? L('newAgent') : a.name}</h2><span className="c-muted">{isLive() ? L('savedLive') : L('savedLocal')}</span></div></div>
         <h3 className="crm-h">{L('company')}</h3>
         <div className="c-form crm-form3">
@@ -543,7 +543,7 @@ function AgentForm({ a, L, lang, onClose, onSaved }: { a: DbAgent; L: (k: string
               {lp.map((p, i) => (
                 <div key={i} className="crm-lp-row">
                   <input className="c-in" placeholder={L('from')} value={p.from} onChange={(e) => setLp(lp.map((x, j) => (j === i ? { ...x, from: e.target.value } : x)))} data-testid={`af-lane-from-${i}`} />
-                  <span aria-hidden="true">{lang === 'fa' ? '←' : '→'}</span>
+                  <span aria-hidden="true">{(lang === 'fa' || lang === 'ar') ? '←' : '→'}</span>
                   <input className="c-in" placeholder={L('to')} value={p.to} onChange={(e) => setLp(lp.map((x, j) => (j === i ? { ...x, to: e.target.value } : x)))} data-testid={`af-lane-to-${i}`} />
                   <button type="button" className="crm-x" onClick={() => setLp(lp.filter((_, j) => j !== i))} aria-label={L('remove')}>×</button>
                 </div>

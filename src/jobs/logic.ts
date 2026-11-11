@@ -51,13 +51,13 @@ export function chargeAmount(job: Job, ch: Charge, t: Tariffs, now: number): num
   }
 }
 
-export const CHARGE_LABEL: Record<Charge['key'], [string, string, string]> = {
-  bl: ['B/L fee', 'Tasa B/L', 'هزینه بارنامه'],
-  thc: ['THC (Ports Organization)', 'THC (Ports Organization)', 'THC (سازمان بنادر)'],
-  seal: ['Seal fee', 'Precintos', 'هزینه پلمپ'],
-  extras: ['Small extras', 'Extras', 'هزینه‌های جزئی'],
-  demurrage: ['Demurrage (line calculates)', 'Demora (la calcula la naviera)', 'حق توقف (محاسبه خط)'],
-  do: ['DO fee', 'Tasa DO', 'هزینه دی‌او'],
+export const CHARGE_LABEL: Record<Charge['key'], [string, string, string, string]> = {
+  bl: ['B/L fee', 'Tasa B/L', 'هزینه بارنامه', 'رسوم بوليصة الشحن'],
+  thc: ['THC (Ports Organization)', 'THC (Ports Organization)', 'THC (سازمان بنادر)', 'THC (منظمة الموانئ)'],
+  seal: ['Seal fee', 'Precintos', 'هزینه پلمپ', 'رسوم الختم'],
+  extras: ['Small extras', 'Extras', 'هزینه‌های جزئی', 'إضافات صغيرة'],
+  demurrage: ['Demurrage (line calculates)', 'Demora (la calcula la naviera)', 'حق توقف (محاسبه خط)', 'غرامة التأخير (يحسبها الخط)'],
+  do: ['DO fee', 'Tasa DO', 'هزینه دی‌او', 'رسوم إذن التسليم'],
 };
 
 export function chequeAmount(job: Job, ch: Job['cheques'][number], t: Tariffs): number {
@@ -95,7 +95,7 @@ export function jobAlerts(job: Job, now: number, t: Tariffs, lang: Lang, block?:
     out.push({
       level: 'red',
       sortKey: -1e6 - maxOver,
-      text: `${L('demurrage')}: ${num(lang, red.length)} ${L('cntr')} · ${num(lang, maxOver)} ${lang === 'fa' ? 'روز' : 'd'} ${L('over')} · ${usd(lang, cost)} ${L('estDemurrage')}${running ? '' : ` (${job.dir === 'export' ? L('loaded') : L('returnedEmpty')})`}`,
+      text: `${L('demurrage')}: ${num(lang, red.length)} ${L('cntr')} · ${num(lang, maxOver)} ${lang === 'fa' ? 'روز' : lang === 'ar' ? 'يوم' : 'd'} ${L('over')} · ${usd(lang, cost)} ${L('estDemurrage')}${running ? '' : ` (${job.dir === 'export' ? L('loaded') : L('returnedEmpty')})`}`,
     });
   }
   const amber = cks.filter((x) => x.k.level === 'amber');

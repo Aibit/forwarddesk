@@ -8,7 +8,7 @@ import type { JobBalance } from '../billing/model';
 import { type Doc, type Job } from './data';
 import { jobsStore, useJobs } from './store';
 import { isLive } from '../backend/bridge';
-import { FA_TERM, GLOSSARY, dur, fmtDay, fmtWhen, num, tr, usd, type Key } from './i18n';
+import { FA_TERM, GLOSSARY, unitTx, dur, fmtDay, fmtWhen, num, tr, usd, type Key } from './i18n';
 import { DAY, chequeAmount, clock, cutoff, jobAlerts, nextDeadline, summarize } from './logic';
 import { PHASES, stepDef, stepIndex, stepsFor, type Lang } from './steps';
 import { DEFAULT_TARIFFS, TARIFF_ROWS, loadTariffs, saveTariffs, useTariffs, type TariffKey, type Tariffs } from './tariffs';
@@ -18,7 +18,7 @@ import { MsdsChip, MsdsSlot } from '../clients/Msds';
 import { store as clientStore, type Client } from '../clients/store';
 import './jobs.css';
 
-const LIDX: Record<Lang, 0 | 1 | 2> = { en: 0, es: 1, fa: 2 };
+const LIDX: Record<Lang, 0 | 1 | 2 | 3> = { en: 0, es: 1, fa: 2, ar: 3 };
 
 export function JobsView({ onDraftQuote, onOpenClient, openRequest }: { onDraftQuote: (text: string, customer?: string) => void; onOpenClient?: (customer: string) => void; openRequest?: { id: string; n: number } | null }) {
   const [lang] = useUiLang<Lang>();
@@ -90,14 +90,14 @@ export function JobsView({ onDraftQuote, onOpenClient, openRequest }: { onDraftQ
         const cost = ks.reduce((s, x) => s + x.k.cost, 0);
         rows.push({
           job: j, kind: over ? 'over' : 'free', level: worst.k.level === 'idle' ? 'ok' : worst.k.level, ms: worst.k.remainingMs, used,
-          text: `${L('freeTime')} ${num(lang, fd)} ${lang === 'fa' ? 'روز' : lang === 'es' ? 'días' : 'days'} · ${j.dir === 'export' ? 'E8' : 'I14'} · ${num(lang, ks.length)} ${L('cntr')}`,
-          sub: over ? `${num(lang, worst.k.daysOver)} ${lang === 'fa' ? 'روز' : 'd'} ${L('over')} · ${usd(lang, cost)} ${L('estDemurrage')}${j.docDelay ? ` · ${L('docDelay')}` : ''}` : `${L('freeTime')} → ${fmtDay(lang, worst.k.end!)}`,
+          text: `${L('freeTime')} ${num(lang, fd)} ${lang === 'fa' ? 'روز' : lang === 'ar' ? 'يوم' : lang === 'es' ? 'días' : 'days'} · ${j.dir === 'export' ? 'E8' : 'I14'} · ${num(lang, ks.length)} ${L('cntr')}`,
+          sub: over ? `${num(lang, worst.k.daysOver)} ${lang === 'fa' ? 'روز' : lang === 'ar' ? 'يوم' : 'd'} ${L('over')} · ${usd(lang, cost)} ${L('estDemurrage')}${j.docDelay ? ` · ${L('docDelay')}` : ''}` : `${L('freeTime')} → ${fmtDay(lang, worst.k.end!)}`,
         });
       }
       const stopped = j.containers.map((c) => clock(c, now, tariffs)).filter((k) => k.state === 'stopped' && k.daysOver > 0);
       if (stopped.length) {
         const cost = stopped.reduce((s, k) => s + k.cost, 0);
-        rows.push({ job: j, kind: 'stopped', level: 'red', ms: 0, used: 1, right: usd(lang, cost), text: `${L('demurrage')} · ${j.dir === 'export' ? 'E21' : 'I15'} · ${num(lang, stopped.length)} ${L('cntr')}`, sub: `${num(lang, Math.max(...stopped.map((k) => k.daysOver)))} ${lang === 'fa' ? 'روز' : 'd'} ${L('over')} (${L(j.dir === 'export' ? 'loaded' : 'returnedEmpty')}) · ${usd(lang, cost)} ${L('estDemurrage')}` });
+        rows.push({ job: j, kind: 'stopped', level: 'red', ms: 0, used: 1, right: usd(lang, cost), text: `${L('demurrage')} · ${j.dir === 'export' ? 'E21' : 'I15'} · ${num(lang, stopped.length)} ${L('cntr')}`, sub: `${num(lang, Math.max(...stopped.map((k) => k.daysOver)))} ${lang === 'fa' ? 'روز' : lang === 'ar' ? 'يوم' : 'd'} ${L('over')} (${L(j.dir === 'export' ? 'loaded' : 'returnedEmpty')}) · ${usd(lang, cost)} ${L('estDemurrage')}` });
       }
     }
     const rank = (r: (typeof rows)[number]) => (r.kind === 'over' ? -2e12 + r.ms : r.kind === 'stopped' ? -1e12 : r.ms);
@@ -110,7 +110,7 @@ export function JobsView({ onDraftQuote, onOpenClient, openRequest }: { onDraftQ
   const chequeJobs = jobs.filter((j) => j.cheques.length);
 
   return (
-    <div className="jobs-view" dir={lang === 'fa' ? 'rtl' : 'ltr'} lang={lang}>
+    <div className="jobs-view" dir={(lang === 'fa' || lang === 'ar') ? 'rtl' : 'ltr'} lang={lang}>
       <div className="j-top">
         <div className="j-title">
           {(!isLive() || jobs.some((j) => j.sample)) && <><span className="j-sample" data-testid="jobs-sample">{L('sampleData')}</span>
@@ -132,7 +132,7 @@ export function JobsView({ onDraftQuote, onOpenClient, openRequest }: { onDraftQ
       <div className="j-main">
         <section className="q-panel j-board" aria-label={L('board')}>
           <div className="q-head">
-            <h2>1 · {L('board')}</h2>
+            <h2>{L('board')}</h2>
             <div className="q-lang" role="group">
               {(['all', 'export', 'import'] as const).map((f) => (
                 <button key={f} type="button" className={filter === f ? 'active' : ''} onClick={() => setFilter(f)}>
@@ -192,7 +192,7 @@ export function JobsView({ onDraftQuote, onOpenClient, openRequest }: { onDraftQ
                       <>
                         <strong>
                           {num(lang, j.containers.length)} × {j.containers[0].size === '40HC' ? "40′HC" : `${j.containers[0].size}′`}
-                          {j.containers[0].heavy ? (lang === 'fa' ? ' سنگین' : lang === 'es' ? ' pesado' : ' heavy') : ''}
+                          {j.containers[0].heavy ? (lang === 'fa' ? ' سنگین' : lang === 'ar' ? ' ثقيلة' : lang === 'es' ? ' pesado' : ' heavy') : ''}
                         </strong>
                         <bdi className="j-sub mono">
                           {j.containers[0].no}
@@ -210,7 +210,7 @@ export function JobsView({ onDraftQuote, onOpenClient, openRequest }: { onDraftQ
                     {nd ? (
                       <span className={`j-count ${nd.level}`}>
                         <span className="j-count-k">{nd.kind === 'cutoff' ? L('cutoff') : nd.kind === 'over' ? L('inDemurrage') : L('freeTime')}</span>
-                        <bdi className="mono">{nd.kind === 'over' ? `+${num(lang, Math.ceil(-nd.ms / DAY))} ${lang === 'fa' ? 'روز' : 'd'}` : dur(lang, nd.ms, nd.ms < 2 * DAY)}</bdi>
+                        <bdi className="mono">{nd.kind === 'over' ? `+${num(lang, Math.ceil(-nd.ms / DAY))} ${lang === 'fa' ? 'روز' : lang === 'ar' ? 'يوم' : 'd'}` : dur(lang, nd.ms, nd.ms < 2 * DAY)}</bdi>
                       </span>
                     ) : (
                       <span className="j-sub">—</span>
@@ -236,7 +236,7 @@ export function JobsView({ onDraftQuote, onOpenClient, openRequest }: { onDraftQ
                     <bdi className="mono j-dl-id">{r.job.id}</bdi>
                     <span className="j-dl-what">{r.text}</span>
                     <bdi className={`mono j-dl-time ${r.level}`}>
-                      {r.kind === 'over' ? `+${num(lang, Math.ceil(-r.ms / DAY))} ${lang === 'fa' ? 'روز' : 'd'}` : r.kind === 'stopped' ? r.right : dur(lang, r.ms, r.ms < 2 * DAY)}
+                      {r.kind === 'over' ? `+${num(lang, Math.ceil(-r.ms / DAY))} ${lang === 'fa' ? 'روز' : lang === 'ar' ? 'يوم' : 'd'}` : r.kind === 'stopped' ? r.right : dur(lang, r.ms, r.ms < 2 * DAY)}
                     </bdi>
                   </span>
                   <span className="j-bar">
@@ -347,7 +347,7 @@ export function JobsView({ onDraftQuote, onOpenClient, openRequest }: { onDraftQ
                     onChange={(e) => setTariffs((t) => ({ ...t, [r.key]: Math.max(0, Number(e.target.value) || 0) }))}
                     aria-label={TARIFF_LABEL[r.key][0]}
                   />
-                  <bdi className="j-unit">{r.key === 'lineRebatePct' || r.key === 'tier1Days' ? r.unit : `${tariffs.currency} ${r.unit}`}</bdi>
+                  <bdi className="j-unit">{r.key === 'lineRebatePct' || r.key === 'tier1Days' ? unitTx(lang, r.unit) : `${tariffs.currency} ${unitTx(lang, r.unit)}`}</bdi>
                 </span>
               </label>
             ))}
@@ -358,10 +358,10 @@ export function JobsView({ onDraftQuote, onOpenClient, openRequest }: { onDraftQ
             <h2>{L('glossary')} · واژه‌نامه</h2>
           </div>
           <dl className="j-gloss-list">
-            {GLOSSARY.map(([fa, en]) => (
+            {GLOSSARY.map(([fa, en, ar]) => (
               <div key={fa}>
                 <dt lang="fa" dir="rtl">{fa}</dt>
-                <dd>{en}</dd>
+                <dd lang={lang === 'ar' ? 'ar' : undefined}>{lang === 'ar' ? ar : en}</dd>
               </div>
             ))}
           </dl>
@@ -386,21 +386,21 @@ export function JobsView({ onDraftQuote, onOpenClient, openRequest }: { onDraftQ
   );
 }
 
-const TARIFF_LABEL: Record<TariffKey, [string, string, string]> = {
-  demurrage20Tier1: ["Demurrage 20′, days 1–N", "Demora 20′, días 1–N", 'حق توقف ۲۰ فوت، روزهای اول'],
-  demurrage20Tier2: ["Demurrage 20′, after N", "Demora 20′, después de N", 'حق توقف ۲۰ فوت، بعد از آن'],
-  demurrage40Tier1: ["Demurrage 40′, days 1–N", "Demora 40′, días 1–N", 'حق توقف ۴۰ فوت، روزهای اول'],
-  demurrage40Tier2: ["Demurrage 40′, after N", "Demora 40′, después de N", 'حق توقف ۴۰ فوت، بعد از آن'],
-  tier1Days: ['N (first tier days)', 'N (días primer tramo)', 'تعداد روزهای پله اول'],
-  blFee: ['B/L fee', 'Tasa B/L', 'هزینه بارنامه'],
-  doFee: ['DO fee (ترخیصیه)', 'Tasa DO (ترخیصیه)', 'هزینه دی‌او (ترخیصیه)'],
-  thc20: ["THC 20′", "THC 20′", 'THC ۲۰ فوت'],
-  thc40: ["THC 40′", "THC 40′", 'THC ۴۰ فوت'],
-  sealFee: ['Seal fee (پلمپ)', 'Precinto (پلمپ)', 'هزینه پلمپ'],
-  chequeDemurrage: ['Demurrage cheque', 'Cheque de demora', 'چک تضمین حق توقف'],
-  chequeContainer20: ["Container cheque 20′", "Cheque contenedor 20′", 'چک تضمین کانتینر ۲۰ فوت'],
-  chequeContainer40: ["Container cheque 40′", "Cheque contenedor 40′", 'چک تضمین کانتینر ۴۰ فوت'],
-  lineRebatePct: ['Line rebate on collect freight (I13)', 'Comisión naviera sobre collect (I13)', 'سهم خط از کرایه کالکت (I13)'],
+const TARIFF_LABEL: Record<TariffKey, [string, string, string, string]> = {
+  demurrage20Tier1: ["Demurrage 20′, days 1–N", "Demora 20′, días 1–N", 'حق توقف ۲۰ فوت، روزهای اول', 'غرامة التأخير ٢٠′، الأيام ١–N'],
+  demurrage20Tier2: ["Demurrage 20′, after N", "Demora 20′, después de N", 'حق توقف ۲۰ فوت، بعد از آن', 'غرامة التأخير ٢٠′، بعد N'],
+  demurrage40Tier1: ["Demurrage 40′, days 1–N", "Demora 40′, días 1–N", 'حق توقف ۴۰ فوت، روزهای اول', 'غرامة التأخير ٤٠′، الأيام ١–N'],
+  demurrage40Tier2: ["Demurrage 40′, after N", "Demora 40′, después de N", 'حق توقف ۴۰ فوت، بعد از آن', 'غرامة التأخير ٤٠′، بعد N'],
+  tier1Days: ['N (first tier days)', 'N (días primer tramo)', 'تعداد روزهای پله اول', 'N (أيام الشريحة الأولى)'],
+  blFee: ['B/L fee', 'Tasa B/L', 'هزینه بارنامه', 'رسوم بوليصة الشحن'],
+  doFee: ['DO fee (ترخیصیه)', 'Tasa DO (ترخیصیه)', 'هزینه دی‌او (ترخیصیه)', 'رسوم إذن التسليم (ترخیصیه)'],
+  thc20: ["THC 20′", "THC 20′", 'THC ۲۰ فوت', 'THC 20′'],
+  thc40: ["THC 40′", "THC 40′", 'THC ۴۰ فوت', 'THC 40′'],
+  sealFee: ['Seal fee (پلمپ)', 'Precinto (پلمپ)', 'هزینه پلمپ', 'رسوم الختم (پلمپ)'],
+  chequeDemurrage: ['Demurrage cheque', 'Cheque de demora', 'چک تضمین حق توقف', 'شيك غرامة التأخير'],
+  chequeContainer20: ["Container cheque 20′", "Cheque contenedor 20′", 'چک تضمین کانتینر ۲۰ فوت', 'شيك الحاوية ٢٠′'],
+  chequeContainer40: ["Container cheque 40′", "Cheque contenedor 40′", 'چک تضمین کانتینر ۴۰ فوت', 'شيك الحاوية ٤٠′'],
+  lineRebatePct: ['Line rebate on collect freight (I13)', 'Comisión naviera sobre collect (I13)', 'سهم خط از کرایه کالکت (I13)', 'خصم الخط على أجرة الشحن المُحصَّلة (I13)'],
 };
 
 function Tile({ label, value, tone, sub, subTone }: { label: ReactNode; value: string; tone?: 'amber' | 'red'; sub?: string; subTone?: 'red' }) {
@@ -423,7 +423,7 @@ function BalanceTable({ b, lang }: { b: JobBalance; lang: Lang }) {
         {b.invoices.map((x) => (
           <tr key={x.no}>
             <td><bdi className="mono">{x.no}</bdi></td>
-            <td className="mono num"><bdi>{x.currency} {x.open.toLocaleString(lang === 'fa' ? 'fa-IR' : lang === 'es' ? 'es-ES' : 'en-US', { maximumFractionDigits: 2 })}</bdi></td>
+            <td className="mono num"><bdi>{x.currency} {x.open.toLocaleString(lang === 'fa' ? 'fa-IR' : lang === 'ar' ? 'ar-EG' : lang === 'es' ? 'es-ES' : 'en-US', { maximumFractionDigits: 2 })}</bdi></td>
             <td className={`st ${x.overdue ? 'red' : 'amber'}`}>{tr(lang, 'unpaid')}</td>
           </tr>
         ))}
@@ -564,12 +564,12 @@ function JobDrawerBody({ job, lang, now, tariffs, T, onClose, onDraftQuote, onOp
                         <bdi className="mono">{c.no}</bdi> <span className="j-sub">{c.size === '40HC' ? "40′HC" : `${c.size}′`}</span>
                       </td>
                       <td><bdi className="mono">{c.seal ?? '—'}</bdi></td>
-                      <td>{c.freeDays != null ? `${num(lang, c.freeDays)} ${lang === 'fa' ? 'روز' : 'd'}` : '—'}</td>
+                      <td>{c.freeDays != null ? `${num(lang, c.freeDays)} ${lang === 'fa' ? 'روز' : lang === 'ar' ? 'يوم' : 'd'}` : '—'}</td>
                       <td className={k.level}>
                         {k.state === 'notStarted'
                           ? L('notStarted')
                           : k.daysOver > 0
-                            ? `${num(lang, k.daysOver)} ${lang === 'fa' ? 'روز' : 'd'} ${L('over')}${k.state === 'stopped' ? ` (${job.dir === 'export' ? L('loaded') : L('returnedEmpty')})` : ''}`
+                            ? `${num(lang, k.daysOver)} ${lang === 'fa' ? 'روز' : lang === 'ar' ? 'يوم' : 'd'} ${L('over')}${k.state === 'stopped' ? ` (${job.dir === 'export' ? L('loaded') : L('returnedEmpty')})` : ''}`
                             : k.state === 'stopped'
                               ? `${L('stopped')}${c.returned === 'checking' ? ' · I15' : ''}`
                               : <bdi className="mono">{dur(lang, k.remainingMs, k.remainingMs < 2 * DAY)}</bdi>}

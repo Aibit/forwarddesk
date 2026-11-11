@@ -6,57 +6,57 @@ import { LogoMark } from './Brand';
 
 export type ViewKey = 'jobs' | 'finance' | 'clients' | 'agents' | 'portal' | 'quote' | 'pipeline' | 'account';
 
-const NAV: Record<ViewKey, { label: [string, string, string]; sub: [string, string, string]; art: ArtName; icon: NavIcon }> = {
+const NAV: Record<ViewKey, { label: [string, string, string, string]; sub: [string, string, string, string]; art: ArtName; icon: NavIcon }> = {
   jobs: {
-    label: ['Jobs', 'Expedientes', 'پرونده‌ها'],
-    sub: ['Deadlines, free time and money at risk across every shipment.', 'Plazos, días libres y dinero en riesgo en cada envío.', 'مهلت‌ها، روزهای آزاد و پول در خطر در همه محموله‌ها.'],
+    label: ['Jobs', 'Expedientes', 'پرونده‌ها', 'الشحنات'],
+    sub: ['Deadlines, free time and money at risk across every shipment.', 'Plazos, días libres y dinero en riesgo en cada envío.', 'مهلت‌ها، روزهای آزاد و پول در خطر در همه محموله‌ها.', 'المواعيد النهائية والفترة المجانية والأموال المعرّضة للخطر في كل شحنة.'],
     art: 'crane', icon: 'jobs',
   },
   finance: {
-    label: ['Finance', 'Finanzas', 'مالی'],
-    sub: ['Invoices, vendor bills, payments, ageing and job profit.', 'Facturas, proveedores, cobros, antigüedad y beneficio por expediente.', 'فاکتورها، صورتحساب تأمین‌کنندگان، پرداخت‌ها، سنی‌بندی و سود پرونده.'],
+    label: ['Finance', 'Finanzas', 'مالی', 'المالية'],
+    sub: ['Invoices, vendor bills, payments, ageing and job profit.', 'Facturas, proveedores, cobros, antigüedad y beneficio por expediente.', 'فاکتورها، صورتحساب تأمین‌کنندگان، پرداخت‌ها، سنی‌بندی و سود پرونده.', 'الفواتير وفواتير الموردين والمدفوعات وأعمار الديون وربح الشحنات.'],
     art: 'ship', icon: 'finance',
   },
   clients: {
-    label: ['Clients', 'Clientes', 'مشتریان'],
-    sub: ['Client setup, lanes, MSDS and each client’s dashboard.', 'Alta de clientes, rutas, MSDS y el panel de cada cliente.', 'تعریف مشتری، مسیرها، MSDS و داشبورد هر مشتری.'],
+    label: ['Clients', 'Clientes', 'مشتریان', 'العملاء'],
+    sub: ['Client setup, lanes, MSDS and each client’s dashboard.', 'Alta de clientes, rutas, MSDS y el panel de cada cliente.', 'تعریف مشتری، مسیرها، MSDS و داشبورد هر مشتری.', 'إعداد العملاء والمسارات وMSDS ولوحة كل عميل.'],
     art: 'containers', icon: 'clients',
   },
   agents: {
-    label: ['Agents', 'Agentes', 'نمایندگان'],
-    sub: ['Your agent CRM: overseas agents, lines and partners — contacts, lanes, activity and documents.', 'Tu CRM de agentes: agentes, navieras y socios — contactos, rutas, actividad y documentos.', 'CRM نمایندگان: نمایندگان خارجی، خطوط و شرکا — مخاطبان، مسیرها، فعالیت‌ها و مدارک.'],
+    label: ['Agents', 'Agentes', 'نمایندگان', 'الوكلاء'],
+    sub: ['Your agent CRM: overseas agents, lines and partners — contacts, lanes, activity and documents.', 'Tu CRM de agentes: agentes, navieras y socios — contactos, rutas, actividad y documentos.', 'CRM نمایندگان: نمایندگان خارجی، خطوط و شرکا — مخاطبان، مسیرها، فعالیت‌ها و مدارک.', 'نظام CRM للوكلاء: الوكلاء الخارجيون والخطوط والشركاء — جهات الاتصال والمسارات والنشاط والمستندات.'],
     art: 'map', icon: 'agents',
   },
   portal: {
-    label: ['Client portal', 'Portal del cliente', 'پرتال مشتری'],
-    sub: ['What your customer sees: shipments, quotes and draft B/L. Sell prices only.', 'Lo que ve tu cliente: envíos, cotizaciones y B/L borrador. Solo precios de venta.', 'آنچه مشتری می‌بیند: محموله‌ها، قیمت‌ها و پیش‌نویس بارنامه. فقط قیمت فروش.'],
+    label: ['Client portal', 'Portal del cliente', 'پرتال مشتری', 'بوابة العميل'],
+    sub: ['What your customer sees: shipments, quotes and draft B/L. Sell prices only.', 'Lo que ve tu cliente: envíos, cotizaciones y B/L borrador. Solo precios de venta.', 'آنچه مشتری می‌بیند: محموله‌ها، قیمت‌ها و پیش‌نویس بارنامه. فقط قیمت فروش.', 'ما يراه عميلك: الشحنات وعروض الأسعار ومسودة البوليصة. أسعار البيع فقط.'],
     art: 'ship', icon: 'portal',
   },
   quote: {
-    label: ['Quote', 'Cotizar', 'قیمت‌دهی'],
-    sub: ['Paste a request, compare line options and send the customer quote.', 'Pega una solicitud, compara opciones de naviera y envía la cotización.', 'درخواست را بچسبانید، گزینه‌های خط را مقایسه کنید و قیمت را بفرستید.'],
+    label: ['Quote', 'Cotizar', 'قیمت‌دهی', 'عرض سعر'],
+    sub: ['Paste a request, compare line options and send the customer quote.', 'Pega una solicitud, compara opciones de naviera y envía la cotización.', 'درخواست را بچسبانید، گزینه‌های خط را مقایسه کنید و قیمت را بفرستید.', 'الصق طلبًا، وقارن خيارات الخطوط، وأرسل عرض العميل.'],
     art: 'truck', icon: 'quote',
   },
   pipeline: {
-    label: ['Sales pipeline', 'Embudo de ventas', 'قیف فروش'],
-    sub: ['Every inquiry, quote and booking by stage — with value and margin from your quotes and jobs.', 'Cada consulta, cotización y reserva por etapa, con valor y margen de tus cotizaciones y expedientes.', 'هر استعلام، پیشنهاد قیمت و رزرو به تفکیک مرحله — با ارزش و حاشیه سود از قیمت‌ها و پرونده‌ها.'],
+    label: ['Sales pipeline', 'Embudo de ventas', 'قیف فروش', 'مسار المبيعات'],
+    sub: ['Every inquiry, quote and booking by stage — with value and margin from your quotes and jobs.', 'Cada consulta, cotización y reserva por etapa, con valor y margen de tus cotizaciones y expedientes.', 'هر استعلام، پیشنهاد قیمت و رزرو به تفکیک مرحله — با ارزش و حاشیه سود از قیمت‌ها و پرونده‌ها.', 'كل استفسار وعرض وحجز حسب المرحلة — مع القيمة والهامش من عروضك وشحناتك.'],
     art: 'map', icon: 'pipeline',
   },
   account: {
-    label: ['Account', 'Cuenta', 'حساب'],
-    sub: ['Your company profile, your team and invite links.', 'El perfil de tu empresa, tu equipo y los enlaces de invitación.', 'مشخصات شرکت، تیم و لینک‌های دعوت.'],
+    label: ['Account', 'Cuenta', 'حساب', 'الحساب'],
+    sub: ['Your company profile, your team and invite links.', 'El perfil de tu empresa, tu equipo y los enlaces de invitación.', 'مشخصات شرکت، تیم و لینک‌های دعوت.', 'ملف شركتك وفريقك وروابط الدعوة.'],
     art: 'containers', icon: 'account',
   },
 };
-const LI: Record<UiLang, 0 | 1 | 2> = { en: 0, es: 1, fa: 2 };
+const LI: Record<UiLang, 0 | 1 | 2 | 3> = { en: 0, es: 1, fa: 2, ar: 3 };
 const UI = {
-  workspace: ['Workspace', 'Espacio de trabajo', 'فضای کار'],
-  sales: ['Sales', 'Ventas', 'فروش'],
-  language: ['Language', 'Idioma', 'زبان'],
-  dark: ['Dark mode', 'Modo oscuro', 'حالت تیره'],
-  menu: ['Menu', 'Menú', 'منو'],
-  close: ['Close menu', 'Cerrar menú', 'بستن منو'],
-  tagline: ['Freight forwarding desk', 'Escritorio del transitario', 'میز کار فورواردر'],
+  workspace: ['Workspace', 'Espacio de trabajo', 'فضای کار', 'مساحة العمل'],
+  sales: ['Sales', 'Ventas', 'فروش', 'المبيعات'],
+  language: ['Language', 'Idioma', 'زبان', 'اللغة'],
+  dark: ['Dark mode', 'Modo oscuro', 'حالت تیره', 'الوضع الداكن'],
+  menu: ['Menu', 'Menú', 'منو', 'القائمة'],
+  close: ['Close menu', 'Cerrar menú', 'بستن منو', 'إغلاق القائمة'],
+  tagline: ['Freight forwarding desk', 'Escritorio del transitario', 'میز کار فورواردر', 'مكتب الشحن والتخليص'],
 } as const;
 export const navLabel = (k: ViewKey, l: UiLang) => NAV[k].label[LI[l]];
 export const ui = (k: keyof typeof UI, l: UiLang) => UI[k][LI[l]];
@@ -107,8 +107,8 @@ export function Sidebar({ view, onPick, open, onClose, clientOnly, account = fal
         <div className="nd-side-foot">
           <div className="nd-group-h">{ui('language', lang)}</div>
           <div className="q-lang nd-lang" role="group" aria-label="Language">
-            {(['en', 'es', 'fa'] as UiLang[]).map((l) => (
-              <button key={l} type="button" className={lang === l ? 'active' : ''} onClick={() => setLang(l)} data-testid={`ui-lang-${l}`}>{l === 'fa' ? 'فا' : l.toUpperCase()}</button>
+            {(['en', 'es', 'fa', 'ar'] as UiLang[]).map((l) => (
+              <button key={l} type="button" className={lang === l ? 'active' : ''} onClick={() => setLang(l)} data-testid={`ui-lang-${l}`}>{l === 'fa' ? 'فا' : l === 'ar' ? 'عر' : l.toUpperCase()}</button>
             ))}
           </div>
           <label className="nd-switch" data-testid="theme-toggle">
@@ -128,7 +128,7 @@ export function PageHeader({ view, children, compact }: { view: ViewKey; childre
   const [lang] = useUiLang();
   const n = NAV[view];
   return (
-    <header className={`nd-head ${compact ? 'compact' : ''}`} data-testid="page-header" dir={lang === 'fa' ? 'rtl' : 'ltr'} lang={lang}>
+    <header className={`nd-head ${compact ? 'compact' : ''}`} data-testid="page-header" dir={(lang === 'fa' || lang === 'ar') ? 'rtl' : 'ltr'} lang={lang}>
       <div className="nd-head-txt">
         <span className="nd-head-ic"><Icon name={n.icon} /></span>
         <h1>{n.label[LI[lang]]}</h1>

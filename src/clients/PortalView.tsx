@@ -68,9 +68,9 @@ export function PortalView() {
 function LangToggle({ lang, setLang }: { lang: CLang; setLang: (l: CLang) => void }) {
   return (
     <div className="q-lang j-lang" role="group" aria-label="Language">
-      {(['en', 'es', 'fa'] as CLang[]).map((l) => (
+      {(['en', 'es', 'fa', 'ar'] as CLang[]).map((l) => (
         <button key={l} type="button" className={lang === l ? 'active' : ''} onClick={() => setLang(l)} data-testid={`portal-lang-${l}`}>
-          {l === 'fa' ? 'FA فا' : l.toUpperCase()}
+          {l === 'fa' ? 'FA فا' : l === 'ar' ? 'AR عر' : l.toUpperCase()}
         </button>
       ))}
     </div>
@@ -99,7 +99,7 @@ function Login({ clients, lang, setLang, onLogin, companyName, companyLogo }: { 
     }
   };
   return (
-    <div className="portal-view jobs-view" dir={lang === 'fa' ? 'rtl' : 'ltr'} lang={lang} data-testid="portal-login">
+    <div className="portal-view jobs-view" dir={(lang === 'fa' || lang === 'ar') ? 'rtl' : 'ltr'} lang={lang} data-testid="portal-login">
       <div className="p-demo" data-testid="portal-demo-warning">⚠ {L('demoWarn')}</div>
       <div className="p-login-wrap">
         <form className="q-panel p-login" onSubmit={submit}>
@@ -168,7 +168,7 @@ function Portal({ c, lang, setLang, onLogout, quotes, company, live = false }: {
   const cheques = jobs.flatMap((j) => j.cheques.filter((ch) => ch.status === 'held').map((ch) => ({ job: j, ch, amount: chequeAmount(j, ch, tariffs) })));
 
   return (
-    <div className="portal-view jobs-view" dir={lang === 'fa' ? 'rtl' : 'ltr'} lang={lang} data-testid="portal">
+    <div className="portal-view jobs-view" dir={(lang === 'fa' || lang === 'ar') ? 'rtl' : 'ltr'} lang={lang} data-testid="portal">
       {live ? <div className="p-live" data-testid="portal-live-note">{L('liveNote')}</div> : <div className="p-demo">⚠ {L('demoWarn')}</div>}
       <div className="q-panel p-top">
         {company.logo ? <img src={company.logo} alt="" className="c-logo" /> : <LogoMark size={40} className="c-logo-ph-mark" />}
@@ -336,8 +336,8 @@ function Portal({ c, lang, setLang, onLogout, quotes, company, live = false }: {
             <LanesEditor lanes={c.lanes} onChange={(l) => store.setLanes(c.id, l)} lang={lang} portal testid="portal-lanes-ed" clientId={c.id} />
           </section>
           <section className="q-panel" data-testid="portal-agents">
-            <div className="q-head"><h2>{(lang === 'fa' ? 'نمایندگان و همکاران ترجیحی شما' : lang === 'es' ? 'Tus agentes y socios preferidos' : 'Your preferred agents & partners')}</h2></div>
-            <p className="c-muted c-small">{lang === 'fa' ? 'خودتان اضافه، ویرایش و رتبه‌بندی کنید. فورواردر در قیمت‌دهی از این فهرست استفاده می‌کند' + (live ? '.' : ' (فقط در همین مرورگر).') : lang === 'es' ? 'Añádelos, edítalos y ordénalos tú. Tu transitario los usa al cotizar' + (live ? '.' : ' (solo en este navegador).') : 'Add, edit and rank them yourself. Your forwarder uses this list when quoting' + (live ? '.' : ' (saved in this browser only).')}</p>
+            <div className="q-head"><h2>{(lang === 'fa' ? 'نمایندگان و همکاران ترجیحی شما' : lang === 'ar' ? 'وكلاؤك وشركاؤك المفضّلون' : lang === 'es' ? 'Tus agentes y socios preferidos' : 'Your preferred agents & partners')}</h2></div>
+            <p className="c-muted c-small">{lang === 'fa' ? 'خودتان اضافه، ویرایش و رتبه‌بندی کنید. فورواردر در قیمت‌دهی از این فهرست استفاده می‌کند' + (live ? '.' : ' (فقط در همین مرورگر).') : lang === 'ar' ? 'أضِفهم وعدّلهم ورتّبهم بنفسك. يستخدم وكيل الشحن هذه القائمة عند التسعير' + (live ? '.' : ' (محفوظة في هذا المتصفح فقط).') : lang === 'es' ? 'Añádelos, edítalos y ordénalos tú. Tu transitario los usa al cotizar' + (live ? '.' : ' (solo en este navegador).') : 'Add, edit and rank them yourself. Your forwarder uses this list when quoting' + (live ? '.' : ' (saved in this browser only).')}</p>
             <AgentsEditor agents={c.agents} onChange={(a) => store.setAgents(c.id, a)} lang={lang} testid="portal-agents" />
           </section>
           <p className="c-muted c-small">{L('contactUs')} {company.contactName || company.name || L('yourForwarder')}{company.email ? ` · ${company.email}` : ''}{company.phone ? ` · ${company.phone}` : ''}</p>

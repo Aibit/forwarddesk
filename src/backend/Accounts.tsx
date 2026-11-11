@@ -14,107 +14,107 @@ import './accounts.css';
 import { LogoLockup, LogoMark } from '../ui/Brand';
 
 const T = {
-  brandSub: ['The freight forwarder’s desk: deadlines, agents, documents and billing in one place.', 'El escritorio del transitario: plazos, agentes, documentos y facturación en un solo lugar.', 'میز کار فورواردر: مهلت‌ها، نمایندگان، اسناد و صورتحساب در یک جا.'],
-  demoT: ['Try the demo', 'Probar la demo', 'امتحان نسخه نمایشی'],
-  demoD: ['Explore with SAMPLE shipments, clients and agents. Nothing to sign up for; it stays in this browser.', 'Explora con envíos, clientes y agentes de EJEMPLO. Sin registro; se queda en este navegador.', 'با محموله، مشتری و نماینده نمونه کار کنید. ثبت‌نام لازم نیست؛ فقط در همین مرورگر می‌ماند.'],
-  demoB: ['Open the demo', 'Abrir la demo', 'باز کردن نسخه نمایشی'],
-  realT: ['Your own account', 'Tu propia cuenta', 'حساب خودتان'],
-  realD: ['Create your company account, add your agents, clients and jobs, and invite your team. Starts empty — your data only.', 'Crea la cuenta de tu empresa, añade tus agentes, clientes y expedientes e invita a tu equipo. Empieza vacía: solo tus datos.', 'حساب شرکت خود را بسازید، نمایندگان، مشتریان و پرونده‌ها را اضافه کنید و تیم را دعوت کنید. خالی شروع می‌شود — فقط داده‌های شما.'],
-  create: ['Create account', 'Crear cuenta', 'ساخت حساب'],
-  signIn: ['Sign in', 'Iniciar sesión', 'ورود'],
-  soon: ['Accounts open shortly — try the demo in the meantime.', 'Las cuentas abren muy pronto — mientras tanto, prueba la demo.', 'حساب‌ها به‌زودی باز می‌شوند — فعلاً نسخه نمایشی را امتحان کنید.'],
-  name: ['Your name', 'Tu nombre', 'نام شما'],
-  email: ['Email', 'Correo', 'ایمیل'],
-  password: ['Password (8+ characters)', 'Contraseña (8+ caracteres)', 'رمز عبور (۸+ نویسه)'],
-  pw: ['Password', 'Contraseña', 'رمز عبور'],
-  google: ['Continue with Google', 'Continuar con Google', 'ادامه با گوگل'],
-  or: ['or', 'o', 'یا'],
-  forgot: ['Forgot password?', '¿Olvidaste la contraseña?', 'رمز را فراموش کرده‌اید؟'],
-  resetT: ['Reset your password', 'Restablecer contraseña', 'بازنشانی رمز عبور'],
-  resetB: ['Send reset link', 'Enviar enlace', 'ارسال لینک'],
-  resetOk: ['If an account exists for that email, a reset link is on its way.', 'Si existe una cuenta con ese correo, te llega un enlace.', 'اگر حسابی با این ایمیل باشد، لینک بازنشانی ارسال شد.'],
-  back: ['Back', 'Atrás', 'بازگشت'],
-  cancel: ['Cancel', 'Cancelar', 'انصراف'],
-  working: ['Working…', 'Procesando…', 'در حال انجام…'],
-  createT: ['Create your ForwardDesk account', 'Crea tu cuenta de ForwardDesk', 'حساب ForwardDesk خود را بسازید'],
-  signInT: ['Sign in to ForwardDesk', 'Entrar en ForwardDesk', 'ورود به ForwardDesk'],
-  haveAcc: ['Already have an account? Sign in', '¿Ya tienes cuenta? Inicia sesión', 'حساب دارید؟ وارد شوید'],
-  noAcc: ['New here? Create an account', '¿Nuevo? Crea una cuenta', 'تازه‌وارد هستید؟ حساب بسازید'],
-  invited: ['You were invited to a team. Sign up or sign in with the invited email to join.', 'Te invitaron a un equipo. Regístrate o entra con el correo invitado para unirte.', 'به یک تیم دعوت شده‌اید. با همان ایمیل دعوت ثبت‌نام کنید یا وارد شوید.'],
-  verifyT: ['Check your inbox', 'Revisa tu correo', 'صندوق ایمیل را ببینید'],
-  verifyD: ['We sent a verification link to', 'Enviamos un enlace de verificación a', 'لینک تأیید فرستادیم به'],
-  verifyD2: ['Open it, then come back and continue.', 'Ábrelo y vuelve para continuar.', 'آن را باز کنید و برگردید.'],
-  verifyGo: ['I’ve verified — continue', 'Ya verifiqué — continuar', 'تأیید کردم — ادامه'],
-  verifyNot: ['Not verified yet. Open the link in the email first.', 'Aún sin verificar. Abre primero el enlace del correo.', 'هنوز تأیید نشده. اول لینک ایمیل را باز کنید.'],
-  resend: ['Resend email', 'Reenviar correo', 'ارسال دوباره'],
-  resent: ['Sent again.', 'Enviado de nuevo.', 'دوباره ارسال شد.'],
-  signOut: ['Sign out', 'Cerrar sesión', 'خروج'],
-  onbT: ['Set up your company', 'Configura tu empresa', 'شرکت خود را تنظیم کنید'],
-  onbD: ['You’ll be the owner. You can change all of this later in Account settings.', 'Serás el propietario. Puedes cambiarlo todo luego en Ajustes de la cuenta.', 'شما مالک حساب خواهید بود. بعداً در تنظیمات حساب قابل تغییر است.'],
-  step: ['Step', 'Paso', 'مرحله'],
-  of: ['of', 'de', 'از'],
-  company: ['Company name', 'Nombre de la empresa', 'نام شرکت'],
-  country: ['Country', 'País', 'کشور'],
-  currency: ['Base currency', 'Moneda base', 'ارز پایه'],
-  ports: ['Main ports (comma separated)', 'Puertos principales (separados por comas)', 'بندرهای اصلی (با کاما جدا کنید)'],
-  lang: ['Language', 'Idioma', 'زبان'],
-  next: ['Continue', 'Continuar', 'ادامه'],
-  review: ['Review', 'Revisar', 'بازبینی'],
-  createAcc: ['Create company account', 'Crear cuenta de empresa', 'ساخت حساب شرکت'],
-  joinT: ['Joining a team instead?', '¿Te unes a un equipo?', 'به تیمی می‌پیوندید؟'],
-  joinD: ['Paste the invite link or code your colleague sent you.', 'Pega el enlace o código de invitación que te enviaron.', 'لینک یا کد دعوت همکارتان را بچسبانید.'],
-  joinB: ['Join team', 'Unirme', 'پیوستن'],
-  role: ['Role', 'Rol', 'نقش'],
-  owner: ['Owner', 'Propietario', 'مالک'],
-  staff: ['Staff', 'Personal', 'کارمند'],
-  client: ['Client', 'Cliente', 'مشتری'],
-  gsT: ['Get started', 'Primeros pasos', 'شروع کار'],
-  gsD: ['Your account is empty — no sample data. Add your own:', 'Tu cuenta está vacía, sin datos de ejemplo. Añade lo tuyo:', 'حساب شما خالی است — بدون داده نمونه. موارد خود را اضافه کنید:'],
-  gsAgents: ['Add your first agents', 'Añade tus primeros agentes', 'اولین نمایندگان را اضافه کنید'],
-  gsAgentsD: ['Type them in or import a CSV.', 'Escríbelos o importa un CSV.', 'دستی وارد کنید یا CSV وارد کنید.'],
-  gsClients: ['Add a client', 'Añade un cliente', 'یک مشتری اضافه کنید'],
-  gsJob: ['Open your first job', 'Abre tu primer expediente', 'اولین پرونده را باز کنید'],
-  gsTeam: ['Invite your team', 'Invita a tu equipo', 'تیم را دعوت کنید'],
-  open: ['Open', 'Abrir', 'باز کردن'],
-  done: ['Done', 'Hecho', 'انجام شد'],
-  hide: ['Hide', 'Ocultar', 'پنهان'],
-  acctT: ['Company account', 'Cuenta de empresa', 'حساب شرکت'],
-  save: ['Save', 'Guardar', 'ذخیره'],
-  saved: ['Saved.', 'Guardado.', 'ذخیره شد.'],
-  onlyOwner: ['Only the owner can change these.', 'Solo el propietario puede cambiar esto.', 'فقط مالک می‌تواند این‌ها را تغییر دهد.'],
-  team: ['Team', 'Equipo', 'تیم'],
-  you: ['you', 'tú', 'شما'],
-  remove: ['Remove', 'Quitar', 'حذف'],
-  removeQ: ['Remove this person from the account? They lose access immediately.', '¿Quitar a esta persona de la cuenta? Pierde el acceso al instante.', 'این شخص از حساب حذف شود؟ دسترسی فوراً قطع می‌شود.'],
-  invite: ['Invite someone', 'Invitar a alguien', 'دعوت از کسی'],
-  inviteD: ['ForwardDesk does not send this email — copy the link and send it yourself (WhatsApp, email…). It works once, for that email, for 14 days.', 'ForwardDesk no envía este correo: copia el enlace y envíalo tú (WhatsApp, correo…). Sirve una vez, para ese correo, 14 días.', 'ForwardDesk این ایمیل را نمی‌فرستد — لینک را کپی کنید و خودتان بفرستید (واتساپ، ایمیل…). یک بار، برای همان ایمیل، ۱۴ روز معتبر است.'],
-  forClient: ['Client login for', 'Acceso de cliente para', 'ورود مشتری برای'],
-  pickClient: ['Pick a client', 'Elige un cliente', 'یک مشتری انتخاب کنید'],
-  createInv: ['Create invite link', 'Crear enlace de invitación', 'ساخت لینک دعوت'],
-  pending: ['Pending invites', 'Invitaciones pendientes', 'دعوت‌های در انتظار'],
-  none: ['None yet.', 'Ninguna aún.', 'هنوز هیچ.'],
-  copy: ['Copy link', 'Copiar enlace', 'کپی لینک'],
-  copied: ['Copied', 'Copiado', 'کپی شد'],
-  revoke: ['Revoke', 'Revocar', 'لغو'],
-  expires: ['expires', 'caduca', 'انقضا'],
-  used: ['used', 'usada', 'استفاده شد'],
-  staffOnlyTeam: ['Ask the account owner to invite staff. You can invite client logins.', 'Pide al propietario que invite al personal. Tú puedes invitar accesos de cliente.', 'برای دعوت کارمند از مالک بخواهید. شما می‌توانید مشتری دعوت کنید.'],
-  tryDemo: ['Try the demo', 'Probar la demo', 'نسخه نمایشی'],
+  brandSub: ['The freight forwarder’s desk: deadlines, agents, documents and billing in one place.', 'El escritorio del transitario: plazos, agentes, documentos y facturación en un solo lugar.', 'میز کار فورواردر: مهلت‌ها، نمایندگان، اسناد و صورتحساب در یک جا.', 'مكتب وكيل الشحن: المواعيد النهائية والوكلاء والمستندات والفواتير في مكان واحد.'],
+  demoT: ['Try the demo', 'Probar la demo', 'امتحان نسخه نمایشی', 'جرّب النسخة التجريبية'],
+  demoD: ['Explore with SAMPLE shipments, clients and agents. Nothing to sign up for; it stays in this browser.', 'Explora con envíos, clientes y agentes de EJEMPLO. Sin registro; se queda en este navegador.', 'با محموله، مشتری و نماینده نمونه کار کنید. ثبت‌نام لازم نیست؛ فقط در همین مرورگر می‌ماند.', 'استكشف بشحنات وعملاء ووكلاء عيّنة. لا حاجة للتسجيل؛ كل شيء يبقى في هذا المتصفح.'],
+  demoB: ['Open the demo', 'Abrir la demo', 'باز کردن نسخه نمایشی', 'افتح النسخة التجريبية'],
+  realT: ['Your own account', 'Tu propia cuenta', 'حساب خودتان', 'حسابك الخاص'],
+  realD: ['Create your company account, add your agents, clients and jobs, and invite your team. Starts empty — your data only.', 'Crea la cuenta de tu empresa, añade tus agentes, clientes y expedientes e invita a tu equipo. Empieza vacía: solo tus datos.', 'حساب شرکت خود را بسازید، نمایندگان، مشتریان و پرونده‌ها را اضافه کنید و تیم را دعوت کنید. خالی شروع می‌شود — فقط داده‌های شما.', 'أنشئ حساب شركتك، وأضف وكلاءك وعملاءك وشحناتك، وادعُ فريقك. يبدأ فارغًا — بياناتك فقط.'],
+  create: ['Create account', 'Crear cuenta', 'ساخت حساب', 'إنشاء حساب'],
+  signIn: ['Sign in', 'Iniciar sesión', 'ورود', 'تسجيل الدخول'],
+  soon: ['Accounts open shortly — try the demo in the meantime.', 'Las cuentas abren muy pronto — mientras tanto, prueba la demo.', 'حساب‌ها به‌زودی باز می‌شوند — فعلاً نسخه نمایشی را امتحان کنید.', 'الحسابات ستُفتح قريبًا — جرّب النسخة التجريبية في الأثناء.'],
+  name: ['Your name', 'Tu nombre', 'نام شما', 'اسمك'],
+  email: ['Email', 'Correo', 'ایمیل', 'البريد الإلكتروني'],
+  password: ['Password (8+ characters)', 'Contraseña (8+ caracteres)', 'رمز عبور (۸+ نویسه)', 'كلمة المرور (٨ أحرف أو أكثر)'],
+  pw: ['Password', 'Contraseña', 'رمز عبور', 'كلمة المرور'],
+  google: ['Continue with Google', 'Continuar con Google', 'ادامه با گوگل', 'المتابعة باستخدام Google'],
+  or: ['or', 'o', 'یا', 'أو'],
+  forgot: ['Forgot password?', '¿Olvidaste la contraseña?', 'رمز را فراموش کرده‌اید؟', 'نسيت كلمة المرور؟'],
+  resetT: ['Reset your password', 'Restablecer contraseña', 'بازنشانی رمز عبور', 'إعادة تعيين كلمة المرور'],
+  resetB: ['Send reset link', 'Enviar enlace', 'ارسال لینک', 'إرسال رابط إعادة التعيين'],
+  resetOk: ['If an account exists for that email, a reset link is on its way.', 'Si existe una cuenta con ese correo, te llega un enlace.', 'اگر حسابی با این ایمیل باشد، لینک بازنشانی ارسال شد.', 'إذا كان هناك حساب لهذا البريد، فرابط إعادة التعيين في الطريق.'],
+  back: ['Back', 'Atrás', 'بازگشت', 'رجوع'],
+  cancel: ['Cancel', 'Cancelar', 'انصراف', 'إلغاء'],
+  working: ['Working…', 'Procesando…', 'در حال انجام…', 'جارٍ العمل…'],
+  createT: ['Create your ForwardDesk account', 'Crea tu cuenta de ForwardDesk', 'حساب ForwardDesk خود را بسازید', 'أنشئ حساب ForwardDesk'],
+  signInT: ['Sign in to ForwardDesk', 'Entrar en ForwardDesk', 'ورود به ForwardDesk', 'سجّل الدخول إلى ForwardDesk'],
+  haveAcc: ['Already have an account? Sign in', '¿Ya tienes cuenta? Inicia sesión', 'حساب دارید؟ وارد شوید', 'لديك حساب؟ سجّل الدخول'],
+  noAcc: ['New here? Create an account', '¿Nuevo? Crea una cuenta', 'تازه‌وارد هستید؟ حساب بسازید', 'جديد هنا؟ أنشئ حسابًا'],
+  invited: ['You were invited to a team. Sign up or sign in with the invited email to join.', 'Te invitaron a un equipo. Regístrate o entra con el correo invitado para unirte.', 'به یک تیم دعوت شده‌اید. با همان ایمیل دعوت ثبت‌نام کنید یا وارد شوید.', 'تمت دعوتك إلى فريق. سجّل أو سجّل الدخول بالبريد المدعو للانضمام.'],
+  verifyT: ['Check your inbox', 'Revisa tu correo', 'صندوق ایمیل را ببینید', 'تحقّق من بريدك الوارد'],
+  verifyD: ['We sent a verification link to', 'Enviamos un enlace de verificación a', 'لینک تأیید فرستادیم به', 'أرسلنا رابط التحقق إلى'],
+  verifyD2: ['Open it, then come back and continue.', 'Ábrelo y vuelve para continuar.', 'آن را باز کنید و برگردید.', 'افتحه، ثم عُد وتابع.'],
+  verifyGo: ['I’ve verified — continue', 'Ya verifiqué — continuar', 'تأیید کردم — ادامه', 'تحقّقت — متابعة'],
+  verifyNot: ['Not verified yet. Open the link in the email first.', 'Aún sin verificar. Abre primero el enlace del correo.', 'هنوز تأیید نشده. اول لینک ایمیل را باز کنید.', 'لم يتم التحقق بعد. افتح الرابط في البريد أولًا.'],
+  resend: ['Resend email', 'Reenviar correo', 'ارسال دوباره', 'إعادة إرسال البريد'],
+  resent: ['Sent again.', 'Enviado de nuevo.', 'دوباره ارسال شد.', 'أُرسل مرة أخرى.'],
+  signOut: ['Sign out', 'Cerrar sesión', 'خروج', 'تسجيل الخروج'],
+  onbT: ['Set up your company', 'Configura tu empresa', 'شرکت خود را تنظیم کنید', 'إعداد شركتك'],
+  onbD: ['You’ll be the owner. You can change all of this later in Account settings.', 'Serás el propietario. Puedes cambiarlo todo luego en Ajustes de la cuenta.', 'شما مالک حساب خواهید بود. بعداً در تنظیمات حساب قابل تغییر است.', 'ستكون المالك. يمكنك تغيير كل ذلك لاحقًا في إعدادات الحساب.'],
+  step: ['Step', 'Paso', 'مرحله', 'الخطوة'],
+  of: ['of', 'de', 'از', 'من'],
+  company: ['Company name', 'Nombre de la empresa', 'نام شرکت', 'اسم الشركة'],
+  country: ['Country', 'País', 'کشور', 'الدولة'],
+  currency: ['Base currency', 'Moneda base', 'ارز پایه', 'العملة الأساسية'],
+  ports: ['Main ports (comma separated)', 'Puertos principales (separados por comas)', 'بندرهای اصلی (با کاما جدا کنید)', 'الموانئ الرئيسية (مفصولة بفواصل)'],
+  lang: ['Language', 'Idioma', 'زبان', 'اللغة'],
+  next: ['Continue', 'Continuar', 'ادامه', 'متابعة'],
+  review: ['Review', 'Revisar', 'بازبینی', 'مراجعة'],
+  createAcc: ['Create company account', 'Crear cuenta de empresa', 'ساخت حساب شرکت', 'إنشاء حساب الشركة'],
+  joinT: ['Joining a team instead?', '¿Te unes a un equipo?', 'به تیمی می‌پیوندید؟', 'هل تنضم إلى فريق بدلًا من ذلك؟'],
+  joinD: ['Paste the invite link or code your colleague sent you.', 'Pega el enlace o código de invitación que te enviaron.', 'لینک یا کد دعوت همکارتان را بچسبانید.', 'الصق رابط الدعوة أو الرمز الذي أرسله زميلك.'],
+  joinB: ['Join team', 'Unirme', 'پیوستن', 'الانضمام إلى الفريق'],
+  role: ['Role', 'Rol', 'نقش', 'الدور'],
+  owner: ['Owner', 'Propietario', 'مالک', 'المالك'],
+  staff: ['Staff', 'Personal', 'کارمند', 'موظف'],
+  client: ['Client', 'Cliente', 'مشتری', 'عميل'],
+  gsT: ['Get started', 'Primeros pasos', 'شروع کار', 'ابدأ'],
+  gsD: ['Your account is empty — no sample data. Add your own:', 'Tu cuenta está vacía, sin datos de ejemplo. Añade lo tuyo:', 'حساب شما خالی است — بدون داده نمونه. موارد خود را اضافه کنید:', 'حسابك فارغ — لا توجد بيانات عيّنة. أضف بياناتك:'],
+  gsAgents: ['Add your first agents', 'Añade tus primeros agentes', 'اولین نمایندگان را اضافه کنید', 'أضف وكلاءك الأوائل'],
+  gsAgentsD: ['Type them in or import a CSV.', 'Escríbelos o importa un CSV.', 'دستی وارد کنید یا CSV وارد کنید.', 'اكتبهم أو استورد ملف CSV.'],
+  gsClients: ['Add a client', 'Añade un cliente', 'یک مشتری اضافه کنید', 'إضافة عميل'],
+  gsJob: ['Open your first job', 'Abre tu primer expediente', 'اولین پرونده را باز کنید', 'افتح أول شحنة'],
+  gsTeam: ['Invite your team', 'Invita a tu equipo', 'تیم را دعوت کنید', 'ادعُ فريقك'],
+  open: ['Open', 'Abrir', 'باز کردن', 'فتح'],
+  done: ['Done', 'Hecho', 'انجام شد', 'تم'],
+  hide: ['Hide', 'Ocultar', 'پنهان', 'إخفاء'],
+  acctT: ['Company account', 'Cuenta de empresa', 'حساب شرکت', 'حساب الشركة'],
+  save: ['Save', 'Guardar', 'ذخیره', 'حفظ'],
+  saved: ['Saved.', 'Guardado.', 'ذخیره شد.', 'تم الحفظ.'],
+  onlyOwner: ['Only the owner can change these.', 'Solo el propietario puede cambiar esto.', 'فقط مالک می‌تواند این‌ها را تغییر دهد.', 'المالك وحده يمكنه تغيير هذه الإعدادات.'],
+  team: ['Team', 'Equipo', 'تیم', 'الفريق'],
+  you: ['you', 'tú', 'شما', 'أنت'],
+  remove: ['Remove', 'Quitar', 'حذف', 'إزالة'],
+  removeQ: ['Remove this person from the account? They lose access immediately.', '¿Quitar a esta persona de la cuenta? Pierde el acceso al instante.', 'این شخص از حساب حذف شود؟ دسترسی فوراً قطع می‌شود.', 'إزالة هذا الشخص من الحساب؟ سيفقد الوصول فورًا.'],
+  invite: ['Invite someone', 'Invitar a alguien', 'دعوت از کسی', 'دعوة شخص'],
+  inviteD: ['ForwardDesk does not send this email — copy the link and send it yourself (WhatsApp, email…). It works once, for that email, for 14 days.', 'ForwardDesk no envía este correo: copia el enlace y envíalo tú (WhatsApp, correo…). Sirve una vez, para ese correo, 14 días.', 'ForwardDesk این ایمیل را نمی‌فرستد — لینک را کپی کنید و خودتان بفرستید (واتساپ، ایمیل…). یک بار، برای همان ایمیل، ۱۴ روز معتبر است.', 'لا يرسل ForwardDesk هذا البريد — انسخ الرابط وأرسله بنفسك (واتساب، بريد…). يعمل مرة واحدة ولهذا البريد فقط، لمدة ١٤ يومًا.'],
+  forClient: ['Client login for', 'Acceso de cliente para', 'ورود مشتری برای', 'دخول العميل لـ'],
+  pickClient: ['Pick a client', 'Elige un cliente', 'یک مشتری انتخاب کنید', 'اختر عميلًا'],
+  createInv: ['Create invite link', 'Crear enlace de invitación', 'ساخت لینک دعوت', 'إنشاء رابط دعوة'],
+  pending: ['Pending invites', 'Invitaciones pendientes', 'دعوت‌های در انتظار', 'دعوات معلّقة'],
+  none: ['None yet.', 'Ninguna aún.', 'هنوز هیچ.', 'لا شيء بعد.'],
+  copy: ['Copy link', 'Copiar enlace', 'کپی لینک', 'نسخ الرابط'],
+  copied: ['Copied', 'Copiado', 'کپی شد', 'تم النسخ'],
+  revoke: ['Revoke', 'Revocar', 'لغو', 'إلغاء الدعوة'],
+  expires: ['expires', 'caduca', 'انقضا', 'تنتهي'],
+  used: ['used', 'usada', 'استفاده شد', 'مستخدمة'],
+  staffOnlyTeam: ['Ask the account owner to invite staff. You can invite client logins.', 'Pide al propietario que invite al personal. Tú puedes invitar accesos de cliente.', 'برای دعوت کارمند از مالک بخواهید. شما می‌توانید مشتری دعوت کنید.', 'اطلب من مالك الحساب دعوة الموظفين. يمكنك دعوة حسابات دخول العملاء.'],
+  tryDemo: ['Try the demo', 'Probar la demo', 'نسخه نمایشی', 'جرّب النسخة التجريبية'],
 } as const;
 type K = keyof typeof T;
-const LI: Record<UiLang, 0 | 1 | 2> = { en: 0, es: 1, fa: 2 };
+const LI: Record<UiLang, 0 | 1 | 2 | 3> = { en: 0, es: 1, fa: 2, ar: 3 };
 const useT = () => {
   const [lang] = useUiLang();
-  return { lang, t: (k: K) => T[k][LI[lang]], dir: lang === 'fa' ? 'rtl' as const : 'ltr' as const };
+  return { lang, t: (k: K) => T[k][LI[lang]], dir: (lang === 'fa' || lang === 'ar') ? 'rtl' as const : 'ltr' as const };
 };
-const ERR: Record<string, [string, string, string]> = {
-  'email-used': ['That email already has an account — sign in instead.', 'Ese correo ya tiene cuenta: inicia sesión.', 'این ایمیل قبلاً حساب دارد — وارد شوید.'],
-  'weak-password': ['Use at least 8 characters.', 'Usa al menos 8 caracteres.', 'حداقل ۸ نویسه.'],
-  popup: ['The Google window was closed before finishing.', 'La ventana de Google se cerró antes de terminar.', 'پنجره گوگل قبل از پایان بسته شد.'],
-  'provider-off': ['That sign-in method is not switched on yet.', 'Ese método de acceso aún no está activado.', 'این روش ورود هنوز فعال نیست.'],
-  'bad-code': ['That invite link or code was not found.', 'No se encontró ese enlace o código.', 'این لینک یا کد دعوت پیدا نشد.'],
-  'used-code': ['That invite was already used.', 'Esa invitación ya se usó.', 'این دعوت قبلاً استفاده شده است.'],
-  'wrong-email': ['That invite is for a different email address.', 'Esa invitación es para otro correo.', 'این دعوت برای ایمیل دیگری است.'],
+const ERR: Record<string, [string, string, string, string]> = {
+  'email-used': ['That email already has an account — sign in instead.', 'Ese correo ya tiene cuenta: inicia sesión.', 'این ایمیل قبلاً حساب دارد — وارد شوید.', 'هذا البريد لديه حساب بالفعل — سجّل الدخول بدلًا من ذلك.'],
+  'weak-password': ['Use at least 8 characters.', 'Usa al menos 8 caracteres.', 'حداقل ۸ نویسه.', 'استخدم ٨ أحرف على الأقل.'],
+  popup: ['The Google window was closed before finishing.', 'La ventana de Google se cerró antes de terminar.', 'پنجره گوگل قبل از پایان بسته شد.', 'أُغلقت نافذة Google قبل الانتهاء.'],
+  'provider-off': ['That sign-in method is not switched on yet.', 'Ese método de acceso aún no está activado.', 'این روش ورود هنوز فعال نیست.', 'طريقة تسجيل الدخول هذه غير مفعّلة بعد.'],
+  'bad-code': ['That invite link or code was not found.', 'No se encontró ese enlace o código.', 'این لینک یا کد دعوت پیدا نشد.', 'لم يُعثر على رابط الدعوة أو الرمز.'],
+  'used-code': ['That invite was already used.', 'Esa invitación ya se usó.', 'این دعوت قبلاً استفاده شده است.', 'تم استخدام هذه الدعوة بالفعل.'],
+  'wrong-email': ['That invite is for a different email address.', 'Esa invitación es para otro correo.', 'این دعوت برای ایمیل دیگری است.', 'هذه الدعوة لعنوان بريد مختلف.'],
 };
 const errMsg = (lang: UiLang, e: string | null) => (!e ? '' : ERR[e] ? ERR[e][LI[lang]] : errText(lang, e));
 
@@ -122,8 +122,8 @@ function LangSwitch() {
   const [lang] = useUiLang();
   return (
     <div className="q-lang" role="group" aria-label="Language">
-      {(['en', 'es', 'fa'] as UiLang[]).map((l) => (
-        <button key={l} type="button" className={lang === l ? 'active' : ''} onClick={() => setUiLang(l)} data-testid={`acc-lang-${l}`}>{l === 'fa' ? 'فا' : l.toUpperCase()}</button>
+      {(['en', 'es', 'fa', 'ar'] as UiLang[]).map((l) => (
+        <button key={l} type="button" className={lang === l ? 'active' : ''} onClick={() => setUiLang(l)} data-testid={`acc-lang-${l}`}>{l === 'fa' ? 'فا' : l === 'ar' ? 'عر' : l.toUpperCase()}</button>
       ))}
     </div>
   );
@@ -304,8 +304,8 @@ export function ProfileFields({ p, set, disabled }: { p: AccountProfile; set: (p
       <label className="fd-field"><span>{t('ports')}</span><input value={p.ports.join(', ')} disabled={disabled} onChange={(e) => set({ ...p, ports: e.target.value.split(',').map((x) => x.trimStart()).slice(0, 12) })} dir="ltr" data-testid="onb-ports" /></label>
       <div className="fd-field"><span>{t('lang')}</span>
         <div className="q-lang" role="group">
-          {(['en', 'es', 'fa'] as const).map((l) => (
-            <button key={l} type="button" disabled={disabled} className={p.lang === l ? 'active' : ''} onClick={() => { set({ ...p, lang: l }); setUiLang(l); }} data-testid={`onb-lang-${l}`}>{l === 'fa' ? 'فارسی' : l === 'es' ? 'Español' : 'English'}</button>
+          {(['en', 'es', 'fa', 'ar'] as const).map((l) => (
+            <button key={l} type="button" disabled={disabled} className={p.lang === l ? 'active' : ''} onClick={() => { set({ ...p, lang: l }); setUiLang(l); }} data-testid={`onb-lang-${l}`}>{l === 'fa' ? 'فارسی' : l === 'ar' ? 'العربية' : l === 'es' ? 'Español' : 'English'}</button>
           ))}
         </div>
       </div>
@@ -498,7 +498,7 @@ export function AccountView() {
               const url = joinUrl(i.join.split('.')[0], i.code);
               return (
                 <li key={i.code} data-testid={`invite-${i.email}`}>
-                  <div><bdi dir="ltr">{i.email}</bdi> · {lbl(i.role)} <span className="fd-muted fd-small">· {t('expires')} {new Date(i.expiresAt).toLocaleDateString(lang === 'fa' ? 'fa-IR' : lang)}</span></div>
+                  <div><bdi dir="ltr">{i.email}</bdi> · {lbl(i.role)} <span className="fd-muted fd-small">· {t('expires')} {new Date(i.expiresAt).toLocaleDateString(lang === 'fa' ? 'fa-IR' : lang === 'ar' ? 'ar-EG' : lang)}</span></div>
                   <code dir="ltr" data-testid="invite-link">{url}</code>
                   <div className="fd-entry-btns">
                     <button type="button" className="btn sm" onClick={() => copy(url, i.code)} data-testid="invite-copy">{copied === i.code ? t('copied') : t('copy')}</button>

@@ -447,6 +447,45 @@ with sync_playwright() as p:
     cut = ph.evaluate("() => { const e = document.querySelector('.nd-crumb-page'); return e ? e.scrollWidth > e.clientWidth + 1 : true }")
     check('phone: page title in top bar not cut off', not cut)
     ph.context.close()
+    # ── Arabic (ar): RTL everywhere, Arabic font, Arabic-Indic digits, no English dictionary strings left ──
+    import json as _json, os as _os
+    EN_UI = set(_json.load(open(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), 'en-ui-strings.json'))))
+    a = b.new_context(viewport={'width': 1440, 'height': 900}).new_page()
+    a.on('pageerror', lambda e: errs.append(str(e)))
+    a.goto(URL + ('&' if '?' in URL else '?') + 'demo', wait_until='networkidle')
+    if a.locator('[data-testid=start-demo]').count(): a.click('[data-testid=start-demo]')
+    a.click('[data-testid=ui-lang-ar]'); a.wait_for_timeout(300)
+    LEFT = """(en) => { const out = []; const w = document.createTreeWalker(document.querySelector('.nd-main') || document.body, NodeFilter.SHOW_TEXT);
+      while (w.nextNode()) { const n = w.currentNode; const t = n.textContent.trim(); const el = n.parentElement;
+        if (!t || !el || el.closest('textarea, pre, .mono, code, [lang=fa], [dir=ltr] bdi, [data-ud]') || !el.offsetParent) continue; if (en.includes(t)) out.push(t); }
+      return [...new Set(out)]; }"""
+    def ar_page(name, prep=None):
+        if prep: prep()
+        a.wait_for_timeout(350)
+        rtl = a.evaluate("() => document.querySelector('.app').dir === 'rtl' && getComputedStyle(document.querySelector('.nd-page')).direction === 'rtl'")
+        left = a.evaluate(LEFT, sorted(EN_UI))
+        check(f'ar {name}: RTL, no English UI strings left' + (f' {left[:6]}' if left else ''), rtl and not left)
+    ar_page('jobs')
+    check('ar: Arabic font (IBM Plex Sans Arabic)', 'IBM Plex Sans Arabic' in a.evaluate("() => getComputedStyle(document.querySelector('.app')).fontFamily"))
+    summ = a.locator('.j-summary').inner_text()
+    check('ar: Arabic-Indic digits like FA (no Western digits in tiles)', any(ch in summ for ch in '٠١٢٣٤٥٦٧٨٩') and not any(ch in summ for ch in '0123456789'))
+    check('ar: sidebar labels in Arabic', 'الشحنات' in a.locator('[data-testid=sidebar]').inner_text())
+    a.locator('button.j-row').first.click(); ar_page('job drawer'); a.keyboard.press('Escape')
+    for v in ['finance', 'clients', 'agents', 'pipeline']:
+        ar_page(v, lambda v=v: a.click(f"[data-testid={'tab-agents' if v == 'agents' else 'nav-' + v}]"))
+    ar_page('quote (empty)', lambda: a.click('[data-testid=nav-quote]'))
+    ar_page('quote (priced sample)', lambda: a.locator('.q-samples button').first.click())
+    ar_page('portal login', lambda: a.click('[data-testid=nav-portal]'))
+    a.click('[data-testid=ui-lang-en]')
+    a.context.close()
+    for pl in ['es', 'fa', 'ar']:
+        pc = b.new_context(viewport={'width': 390, 'height': 844}); pc.add_init_script(f"localStorage.setItem('fd-ui-lang','{pl}')")
+        ph = pc.new_page(); ph.goto(URL + ('&' if '?' in URL else '?') + 'demo', wait_until='networkidle')
+        if ph.locator('[data-testid=start-demo]').count(): ph.click('[data-testid=start-demo]')
+        ph.wait_for_timeout(300)
+        cut = ph.evaluate("() => { const e = document.querySelector('.nd-crumb-page'); return e ? e.scrollWidth > e.clientWidth + 1 : true }")
+        check(f'phone ({pl}): page title in top bar not cut off', not cut)
+        pc.close()
     b.close()
 
 check('no page errors', not errs)

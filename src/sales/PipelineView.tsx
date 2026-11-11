@@ -7,6 +7,7 @@ import { stepIndex } from '../jobs/steps';
 import { store, useStore, type QuoteRecord } from '../clients/store';
 import { useBilling } from '../billing/store';
 import { pnl } from '../billing/model';
+import { MODE_L, type QLang } from '../quote/optlabels';
 import { COORDS, haversineKm } from '../quote/geo';
 import { useUiLang, type UiLang } from '../ui/lang';
 import { Art } from '../ui/Art';
@@ -17,38 +18,38 @@ type Stage = 'inquiry' | 'quoted' | 'won' | 'lost';
 const STAGES: Stage[] = ['inquiry', 'quoted', 'won', 'lost'];
 
 const T = {
-  inquiry: ['Inquiry', 'Consulta', 'استعلام'],
-  quoted: ['Quoted', 'Cotizado', 'قیمت داده شده'],
-  won: ['Won / Booked', 'Ganado / Reservado', 'برنده / رزرو شده'],
-  lost: ['Lost', 'Perdido', 'از دست رفته'],
-  inquiryHint: ['Jobs still finding a rate (E1–E3, I1–I2).', 'Expedientes aún buscando tarifa (E1–E3, I1–I2).', 'پرونده‌هایی که هنوز دنبال نرخ هستند (E1–E3، I1–I2).'],
-  quotedHint: ['Quotes sent, waiting for the customer.', 'Cotizaciones enviadas, esperando al cliente.', 'قیمت‌های ارسال‌شده، در انتظار مشتری.'],
-  wonHint: ['Accepted quotes and booked jobs. Job figures come from its billing.', 'Cotizaciones aceptadas y expedientes reservados. Las cifras del expediente vienen de su facturación.', 'قیمت‌های پذیرفته‌شده و پرونده‌های رزروشده. ارقام پرونده از صورتحساب آن است.'],
-  lostHint: ['Quotes the customer turned down.', 'Cotizaciones rechazadas por el cliente.', 'قیمت‌هایی که مشتری نپذیرفت.'],
-  value: ['Value', 'Valor', 'ارزش'],
-  margin: ['Margin', 'Margen', 'حاشیه سود'],
-  notPriced: ['not priced yet', 'sin precio aún', 'هنوز قیمت‌گذاری نشده'],
-  noMargin: ['margin not recorded', 'margen no registrado', 'حاشیه ثبت نشده'],
-  marginKnown: ['margin known on', 'margen conocido en', 'حاشیه معلوم برای'],
-  of: ['of', 'de', 'از'],
-  empty: ['Nothing here yet.', 'Nada todavía.', 'هنوز موردی نیست.'],
-  sample: ['SAMPLE', 'EJEMPLO', 'نمونه'],
-  sampleNote: ['Sample jobs and quotes — illustrative only. New quotes from the Quote page and new jobs appear here automatically.', 'Expedientes y cotizaciones de ejemplo, solo ilustrativos. Las nuevas cotizaciones y expedientes aparecen aquí automáticamente.', 'پرونده‌ها و قیمت‌های نمونه — فقط برای نمایش. قیمت‌ها و پرونده‌های جدید خودکار اینجا می‌آیند.'],
-  quote: ['Quote', 'Cotización', 'پیشنهاد قیمت'],
-  job: ['Job', 'Expediente', 'پرونده'],
-  fromQuote: ['from quote', 'de la cotización', 'از پیشنهاد'],
-  options: ['options', 'opciones', 'گزینه'],
-  transit: ['transit', 'tránsito', 'ترانزیت'],
-  days: ['d', 'd', 'روز'],
-  straight: ['km straight line (not the sailing route)', 'km en línea recta (no la ruta de navegación)', 'کیلومتر خط مستقیم (نه مسیر دریانوردی)'],
-  straightAir: ['km great-circle', 'km ortodrómicos', 'کیلومتر دایره عظیمه'],
-  markWon: ['Mark won', 'Marcar ganada', 'برنده شد'],
-  markLost: ['Mark lost', 'Marcar perdida', 'از دست رفت'],
-  open: ['Open', 'Abrir', 'باز کردن'],
-  otherCcy: ['plus other currencies:', 'más otras monedas:', 'به‌علاوه ارزهای دیگر:'],
-  newQuote: ['+ New quote', '+ Nueva cotización', '+ پیشنهاد جدید'],
+  inquiry: ['Inquiry', 'Consulta', 'استعلام', 'استفسار'],
+  quoted: ['Quoted', 'Cotizado', 'قیمت داده شده', 'تم التسعير'],
+  won: ['Won / Booked', 'Ganado / Reservado', 'برنده / رزرو شده', 'فاز / محجوز'],
+  lost: ['Lost', 'Perdido', 'از دست رفته', 'خاسر'],
+  inquiryHint: ['Jobs still finding a rate (E1–E3, I1–I2).', 'Expedientes aún buscando tarifa (E1–E3, I1–I2).', 'پرونده‌هایی که هنوز دنبال نرخ هستند (E1–E3، I1–I2).', 'شحنات ما زالت تبحث عن سعر (E1–E3، I1–I2).'],
+  quotedHint: ['Quotes sent, waiting for the customer.', 'Cotizaciones enviadas, esperando al cliente.', 'قیمت‌های ارسال‌شده، در انتظار مشتری.', 'عروض مُرسلة، بانتظار العميل.'],
+  wonHint: ['Accepted quotes and booked jobs. Job figures come from its billing.', 'Cotizaciones aceptadas y expedientes reservados. Las cifras del expediente vienen de su facturación.', 'قیمت‌های پذیرفته‌شده و پرونده‌های رزروشده. ارقام پرونده از صورتحساب آن است.', 'عروض مقبولة وشحنات محجوزة. أرقام الشحنة تأتي من فوترتها.'],
+  lostHint: ['Quotes the customer turned down.', 'Cotizaciones rechazadas por el cliente.', 'قیمت‌هایی که مشتری نپذیرفت.', 'عروض رفضها العميل.'],
+  value: ['Value', 'Valor', 'ارزش', 'القيمة'],
+  margin: ['Margin', 'Margen', 'حاشیه سود', 'الهامش'],
+  notPriced: ['not priced yet', 'sin precio aún', 'هنوز قیمت‌گذاری نشده', 'لم يُسعَّر بعد'],
+  noMargin: ['margin not recorded', 'margen no registrado', 'حاشیه ثبت نشده', 'الهامش غير مسجّل'],
+  marginKnown: ['margin known on', 'margen conocido en', 'حاشیه معلوم برای', 'الهامش معروف لـ'],
+  of: ['of', 'de', 'از', 'من'],
+  empty: ['Nothing here yet.', 'Nada todavía.', 'هنوز موردی نیست.', 'لا شيء هنا بعد.'],
+  sample: ['SAMPLE', 'EJEMPLO', 'نمونه', 'عيّنة'],
+  sampleNote: ['Sample jobs and quotes — illustrative only. New quotes from the Quote page and new jobs appear here automatically.', 'Expedientes y cotizaciones de ejemplo, solo ilustrativos. Las nuevas cotizaciones y expedientes aparecen aquí automáticamente.', 'پرونده‌ها و قیمت‌های نمونه — فقط برای نمایش. قیمت‌ها و پرونده‌های جدید خودکار اینجا می‌آیند.', 'شحنات وعروض عيّنة — للتوضيح فقط. العروض الجديدة من صفحة التسعير والشحنات الجديدة تظهر هنا تلقائيًا.'],
+  quote: ['Quote', 'Cotización', 'پیشنهاد قیمت', 'عرض سعر'],
+  job: ['Job', 'Expediente', 'پرونده', 'الشحنة'],
+  fromQuote: ['from quote', 'de la cotización', 'از پیشنهاد', 'من العرض'],
+  options: ['options', 'opciones', 'گزینه', 'خيارات'],
+  transit: ['transit', 'tránsito', 'ترانزیت', 'العبور'],
+  days: ['d', 'd', 'روز', 'يوم'],
+  straight: ['km straight line (not the sailing route)', 'km en línea recta (no la ruta de navegación)', 'کیلومتر خط مستقیم (نه مسیر دریانوردی)', 'كم خط مستقيم (ليس مسار الإبحار)'],
+  straightAir: ['km great-circle', 'km ortodrómicos', 'کیلومتر دایره عظیمه', 'كم دائرة عظمى'],
+  markWon: ['Mark won', 'Marcar ganada', 'برنده شد', 'تحديد كفائز'],
+  markLost: ['Mark lost', 'Marcar perdida', 'از دست رفت', 'تحديد كخاسر'],
+  open: ['Open', 'Abrir', 'باز کردن', 'فتح'],
+  otherCcy: ['plus other currencies:', 'más otras monedas:', 'به‌علاوه ارزهای دیگر:', 'بالإضافة إلى عملات أخرى:'],
+  newQuote: ['+ New quote', '+ Nueva cotización', '+ پیشنهاد جدید', '+ عرض سعر جديد'],
 } as const;
-const LI: Record<UiLang, 0 | 1 | 2> = { en: 0, es: 1, fa: 2 };
+const LI: Record<UiLang, 0 | 1 | 2 | 3> = { en: 0, es: 1, fa: 2, ar: 3 };
 
 interface Card {
   key: string;
@@ -74,7 +75,7 @@ interface Card {
   at: number;
 }
 
-const fmt = (lang: UiLang, n: number) => n.toLocaleString(lang === 'fa' ? 'fa-IR' : lang === 'es' ? 'es-ES' : 'en-US', { maximumFractionDigits: 0 });
+const fmt = (lang: UiLang, n: number) => n.toLocaleString(lang === 'fa' ? 'fa-IR' : lang === 'ar' ? 'ar-EG' : lang === 'es' ? 'es-ES' : 'en-US', { maximumFractionDigits: 0 });
 const isInquiry = (j: Job) => stepIndex(j.step) <= (j.dir === 'export' ? 3 : 2);
 const split = (route: string) => {
   const [a, b] = route.split('→').map((x) => x.trim());
@@ -141,7 +142,7 @@ export function PipelineView({ onOpenJob, onOpenClient, onNewQuote }: { onOpenJo
 
   const anySample = cards.some((c) => c.sample);
   return (
-    <div className="pl-view" dir={lang === 'fa' ? 'rtl' : 'ltr'} lang={lang} data-testid="pipeline">
+    <div className="pl-view" dir={(lang === 'fa' || lang === 'ar') ? 'rtl' : 'ltr'} lang={lang} data-testid="pipeline">
       <div className="pl-top">
         {anySample && <p className="pl-note"><span className="j-sample">{L('sample')}</span> {L('sampleNote')}</p>}
         <button type="button" className="btn sm primary" onClick={onNewQuote} data-testid="pl-new-quote">{L('newQuote')}</button>
@@ -177,8 +178,8 @@ export function PipelineView({ onOpenJob, onOpenClient, onNewQuote }: { onOpenJo
                         {c.sample && <span className="j-sample sm">{L('sample')}</span>}
                       </div>
                       <strong className="pl-client">{c.client}</strong>
-                      <div className="pl-route"><bdi>{c.pol}</bdi> <span aria-hidden="true">{lang === 'fa' ? '←' : '→'}</span> <bdi>{c.pod}</bdi></div>
-                      <div className="pl-meta"><bdi>{c.mode}</bdi>{c.units ? <> · <bdi>{c.units}</bdi></> : null}{c.nOptions > 1 ? <> · {fmt(lang, c.nOptions)} {L('options')}</> : null}</div>
+                      <div className="pl-route"><bdi>{c.pol}</bdi> <span aria-hidden="true">{(lang === 'fa' || lang === 'ar') ? '←' : '→'}</span> <bdi>{c.pod}</bdi></div>
+                      <div className="pl-meta"><bdi>{modeLabel(lang, c.mode)}</bdi>{c.units ? <> · <bdi>{c.units}</bdi></> : null}{c.nOptions > 1 ? <> · {fmt(lang, c.nOptions)} {L('options')}</> : null}</div>
                       {(km != null || c.transit != null) && (
                         <div className="pl-geo">
                           {km != null && <span>{fmt(lang, km)} {air ? L('straightAir') : L('straight')}</span>}
@@ -210,4 +211,10 @@ export function PipelineView({ onOpenJob, onOpenClient, onNewQuote }: { onOpenJo
       </div>
     </div>
   );
+}
+
+/** Stored quote modes are EN labels ("Ocean FCL"); show them in the UI language. Free text passes through. */
+function modeLabel(lang: string, mode: string): string {
+  const k = (Object.keys(MODE_L.en) as (keyof typeof MODE_L.en)[]).find((m) => MODE_L.en[m] === mode);
+  return k ? MODE_L[(lang in MODE_L ? lang : 'en') as QLang][k] : mode;
 }
