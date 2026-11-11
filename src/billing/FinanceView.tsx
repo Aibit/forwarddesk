@@ -114,7 +114,7 @@ export function FinanceView({ onOpenJob }: { onOpenJob: (id: string) => void }) 
                 {rows.map(({ l, inv }) => {
                   const st = invState(l, inv, now);
                   return (
-                    <tr key={inv.id} data-testid="fin-row">
+                    <tr key={`${l.jobId}-${inv.id}`} data-testid="fin-row">
                       <td><bdi className="mono">{inv.no}</bdi></td>
                       <td><button type="button" className="b-link mono" onClick={() => onOpenJob(l.jobId)} data-testid={`fin-job-${l.jobId}`}>{l.jobId}</button></td>
                       <td>{inv.party}</td>

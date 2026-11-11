@@ -2,6 +2,7 @@
 import type { Job } from '../jobs/data';
 import { chargeAmount, CHARGE_LABEL } from '../jobs/logic';
 import type { Tariffs } from '../jobs/tariffs';
+import { stepIndex } from '../jobs/steps';
 
 export const DAY = 86400000;
 export type Terms = 'prepaid' | 'collect';
@@ -142,11 +143,13 @@ export function invTotal(l: Ledger, inv: Invoice): number {
 export const invPaid = (l: Ledger, inv: Invoice) => round2(l.payments.filter((p) => p.invoiceId === inv.id).reduce((s, p) => s + p.amount, 0));
 export const invOpen = (l: Ledger, inv: Invoice) => (inv.status === 'void' ? 0 : Math.max(0, round2(invTotal(l, inv) - invPaid(l, inv))));
 export const invDue = (inv: Invoice) => inv.issuedAt + inv.dueDays * DAY;
+/** Overdue once the due date has passed; 'due on receipt' (0 days) gets the rest of that day. */
+export const isOverdue = (inv: Invoice, now: number) => now > invDue(inv) + (inv.dueDays === 0 ? DAY : 0);
 export function invState(l: Ledger, inv: Invoice, now: number): 'draft' | 'void' | 'paid' | 'partial' | 'overdue' | 'open' {
   if (inv.status === 'void' || inv.status === 'draft') return inv.status;
   const open = invOpen(l, inv);
   if (open <= 0.005) return 'paid';
-  if (now > invDue(inv)) return 'overdue';
+  if (isOverdue(inv, now)) return 'overdue';
   return invPaid(l, inv) > 0 ? 'partial' : 'open';
 }
 
@@ -178,6 +181,9 @@ export function migrateLegacy(job: Job, base: Ledger | undefined, t: Tariffs, no
     (job.collect.collected ? paidIds : openIds).push('loc-collect');
   }
   if (!lines.length) return { ...l0, localMigrated: true };
+  // Local charges are invoiced once known: export from the draft B/L (E19), import from the arrival notice (I10).
+  // Earlier, the unpaid ones wait on a DRAFT invoice (not counted as unpaid, but it still holds the release).
+  const chargesDue = stepIndex(job.step) >= (job.dir === 'export' ? 19 : 10);
   const nos = [...takenNos];
   const invoices: Invoice[] = [];
   const payments: Payment[] = [];
@@ -185,11 +191,11 @@ export function migrateLegacy(job: Job, base: Ledger | undefined, t: Tariffs, no
     if (!ids.length) return;
     const no = nextNo('INV', nos);
     nos.push(no);
-    const id = `inv-loc-${paid ? 'p' : 'o'}`;
-    const inv: Invoice = { id, no, kind: 'invoice', party: job.customer, currency: 'USD', lineIds: ids, issuedAt: now, dueDays: 0, status: 'issued' };
+    const id = `inv-loc-${job.id}-${paid ? 'p' : 'o'}`;
+    const inv: Invoice = { id, no, kind: 'invoice', party: job.customer, currency: 'USD', lineIds: ids, issuedAt: now, dueDays: 0, status: paid || chargesDue ? 'issued' : 'draft' };
     invoices.push(inv);
     for (const x of lines) if (ids.includes(x.id)) x.invoiceId = id;
-    if (paid) payments.push({ id: `pay-loc`, invoiceId: id, amount: round2(lines.filter((x) => ids.includes(x.id)).reduce((s, x) => s + lineSell(x), 0)), at: now, method: 'Recorded before invoicing', ref: '' });
+    if (paid) payments.push({ id: `pay-loc-${job.id}`, invoiceId: id, amount: round2(lines.filter((x) => ids.includes(x.id)).reduce((s, x) => s + lineSell(x), 0)), at: now, method: 'Recorded before invoicing', ref: '' });
   };
   mk(paidIds, true);
   mk(openIds, false);
@@ -217,7 +223,7 @@ export function balanceOf(l: Ledger, now: number): JobBalance {
     if (inv.kind !== 'invoice' || inv.status !== 'issued') continue;
     const o = invOpen(l, inv);
     if (o <= 0.005) continue;
-    invoices.push({ no: inv.no, currency: inv.currency, total: invTotal(l, inv), open: o, due: invDue(inv), overdue: now > invDue(inv) });
+    invoices.push({ no: inv.no, currency: inv.currency, total: invTotal(l, inv), open: o, due: invDue(inv), overdue: isOverdue(inv, now) });
     const v = toBase(l, o, inv.currency);
     if (v == null) missing[inv.currency] = round2((missing[inv.currency] ?? 0) + o);
     else open += v;
@@ -287,6 +293,7 @@ export function releaseGate(_job: Job, l: Ledger): Gate {
 export type Bucket = 'current' | 'd30' | 'd60' | 'd90' | 'd90p';
 export const BUCKETS: Bucket[] = ['current', 'd30', 'd60', 'd90', 'd90p'];
 export function bucketOf(inv: Invoice, now: number): Bucket {
+  if (!isOverdue(inv, now)) return 'current';
   const late = Math.floor((now - invDue(inv)) / DAY);
   if (late <= 0) return 'current';
   if (late <= 30) return 'd30';

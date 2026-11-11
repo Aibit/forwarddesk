@@ -43,7 +43,7 @@ with sync_playwright() as p:
     check('create dialog closes back to demo', tid('signin-dialog').count() == 0)
     check('account page hidden in demo', tid('nav-account').count() == 0)
 
-    check('sidebar has 8 pages', pg.locator('.nd-item').count() == 8)
+    check('sidebar has 7 pages (Desk + Pitch replaced by Sales pipeline)', pg.locator('.nd-item').count() == 7 and tid('nav-desk').count() == 0 and tid('nav-pitch').count() == 0)
     check('demo mode pill', tid('auth-demo').is_visible())
     check('page header with drawing', tid('page-header').locator('svg').count() > 0)
     check('jobs summary tiles', tid('jobs-summary').locator('.j-tile').count() == 6)
@@ -222,11 +222,22 @@ with sync_playwright() as p:
     data = open(path, 'rb').read()
     check('customer PDF downloads', data[:4] == b'%PDF' and len(data) > 10000)
 
-    tid('nav-desk').click(); pg.wait_for_timeout(200)
-    pg.locator('.sticky-actions .btn.primary').click(); pg.wait_for_timeout(6000)
-    check('desk builds quote options', pg.locator('.match-ticket').count() > 0)
-    tid('nav-pitch').click(); pg.wait_for_timeout(300)
-    check('pitch view renders', pg.locator('.sales-sim').count() == 1)
+    tid('nav-pipeline').click(); pg.wait_for_timeout(300)
+    check('pipeline: 4 stages', all(tid(f'pl-col-{k}').count() == 1 for k in ['inquiry', 'quoted', 'won', 'lost']))
+    check('pipeline: real jobs + quotes, labelled SAMPLE', tid('pl-card-FD-E-1047').count() == 1 and tid('pl-card-FD-Q-SAMPLE-097').count() == 1 and 'SAMPLE' in tid('pipeline').inner_text())
+    check('pipeline: inquiry = job still finding a rate', tid('pl-col-inquiry').locator('[data-testid=pl-card-FD-E-1047]').count() == 1)
+    check('pipeline: lost quote in Lost', tid('pl-col-lost').locator('[data-testid=pl-card-FD-Q-SAMPLE-097]').count() == 1)
+    check('pipeline: won quote merged with its booked job', tid('pl-col-won').locator('[data-testid=pl-card-FD-E-1042]').count() == 1 and 'FD-Q-SAMPLE-094' in tid('pl-card-FD-E-1042').inner_text())
+    check('pipeline: no road-freight prototype data', all(x not in tid('pipeline').inner_text() for x in ['RFQ-10', 'Riyadh', 'kg ·']))
+    check('pipeline: sea distance flagged as straight line', 'straight line' in tid('pipeline').inner_text())
+    nq = tid('pl-count-quoted').inner_text()
+    tid('pl-won-FD-Q-SAMPLE-099').click(); pg.wait_for_timeout(200)
+    check('pipeline: mark won moves quote (merged with its booked job)', 'FD-Q-SAMPLE-099' in tid('pl-col-won').inner_text() and tid('pl-count-quoted').inner_text() != nq)
+    tid('ui-lang-fa').click(); pg.wait_for_timeout(200)
+    check('pipeline: FA + RTL', tid('pipeline').get_attribute('dir') == 'rtl' and 'استعلام' in tid('pipeline').inner_text())
+    tid('ui-lang-es').click(); pg.wait_for_timeout(200)
+    check('pipeline: ES', 'Consulta' in tid('pipeline').inner_text() and 'Perdido' in tid('pipeline').inner_text())
+    tid('ui-lang-en').click(); pg.wait_for_timeout(200)
 
     tid('auth-signin').click(); pg.wait_for_timeout(200)
     check('sign-in dialog with drawing', tid('signin-dialog').locator('.fd-modal-art svg').count() == 1)
@@ -270,8 +281,10 @@ with sync_playwright() as p:
     check('FX entered clears warning', tid('missing-fx').count() == 0)
     tid('new-invoice').click(); pg.wait_for_timeout(200)
     drafts = tid('invoice-table').locator('[data-testid^=issue-INV-]')
-    check('invoice drafted from uninvoiced lines', drafts.count() == 1)
-    drafts.first.click(); pg.wait_for_timeout(200)
+    check('invoice drafted from uninvoiced lines', drafts.count() >= 1)
+    for _ in range(4):
+        if not drafts.count(): break
+        drafts.first.click(); pg.wait_for_timeout(200)
     with pg.expect_download() as dl:
         tid('invoice-table').locator('[data-testid^=pdf-INV-]').first.click()
     data = open(dl.value.path(), 'rb').read()
@@ -280,8 +293,7 @@ with sync_playwright() as p:
         btn = tid('invoice-table').locator('[data-testid^=pay-INV-]')
         if not btn.count(): break
         btn.first.click(); tid('pay-save').click(); pg.wait_for_timeout(150)
-    for k in ['bl', 'thc']:
-        if tid(f'localpaid-{k}').count(): tid(f'localpaid-{k}').click(); pg.wait_for_timeout(100)
+    check('no separate local-charges panel (they are invoice lines)', tid('local-charges').count() == 0 and tid('localpaid-bl').count() == 0)
     check('all client invoices paid', tid('invoice-table').locator('[data-testid^=pay-INV-]').count() == 0)
     check('cheques rule text present', 'empty container' in tid('job-billing').inner_text())
     tid('job-tab-docs').click(); pg.wait_for_timeout(200)
@@ -309,7 +321,7 @@ with sync_playwright() as p:
     check('vendor bills filter', 'BILL-' in tid('fin-table').inner_text())
     tid('code-new').fill('FUM'); tid('code-add').click(); pg.wait_for_timeout(100)
     check('charge catalog accepts new code', 'FUM' in tid('charge-catalog').inner_text())
-    tid('fin-job-FD-E-1038').click(); pg.wait_for_timeout(300)
+    tid('fin-job-FD-E-1038').first.click(); pg.wait_for_timeout(300)
     check('finance row opens the job', tid('job-detail').is_visible())
     pg.keyboard.press('Escape'); pg.wait_for_timeout(200)
     tid('nav-finance').click(); tid('ui-lang-fa').click(); pg.wait_for_timeout(200)
@@ -357,8 +369,41 @@ with sync_playwright() as p:
     r.click('[data-testid=tab-agents]'); r.wait_for_timeout(300)
     opts = rt('agents-f-country').locator('option').all_inner_texts()
     check('review: country filter has no UAE duplicate', not ('UAE' in opts and 'United Arab Emirates' in opts))
-    r.click('[data-testid=nav-desk]'); r.wait_for_timeout(400)
-    check('review: no dev instructions on Desk', 'python3' not in r.inner_text('body') and 'Demo: veto' not in r.inner_text('body'))
+    r.click('[data-testid=nav-pipeline]'); r.wait_for_timeout(400)
+    check('review: no dev instructions on Sales pipeline', 'python3' not in r.inner_text('body') and 'Demo: veto' not in r.inner_text('body'))
+    # ── One unpaid figure: Jobs, Clients, Finance and the client portal agree per client and per job ──
+    import re as _re
+    money = lambda s: round(float(_re.sub(r'[^0-9.]', '', s.split('+')[0]) or 0), 2)
+    r.click('[data-testid=ui-lang-en]'); r.click('[data-testid=nav-jobs]'); r.wait_for_timeout(300)
+    tile = r.locator('.j-tile', has_text='Unpaid, blocks release')
+    check('release tile renamed', tile.count() == 1)
+    check('import job counted in release block (DO)', r.locator('[data-testid=release-block-FD-I-0912]').count() == 1 and 'delivery order' in r.inner_text('[data-testid=release-block-FD-I-0912]'))
+    cards = r.locator('[data-testid^=release-block-FD-]')
+    card_sum = round(sum(money(c.locator('[data-testid=job-balance-total]').inner_text()) for c in cards.all()), 2)
+    check('release tile = sum of blocked jobs', money(tile.locator('.j-tile-value').inner_text()) == card_sum and card_sum > 0)
+    jobs_by = {}
+    for jid, cust in [('FD-E-1042', 'Customer A'), ('FD-E-1038', 'Customer B'), ('FD-E-1031', 'Customer B'), ('FD-I-0912', 'Customer E'), ('FD-I-0921', 'Customer F')]:
+        r.click(f'[data-testid=job-{jid}]'); r.wait_for_timeout(250)
+        tot = r.locator('[data-testid=job-detail] [data-testid=job-balance-total]')
+        jobs_by[cust] = round(jobs_by.get(cust, 0) + (money(tot.inner_text()) if tot.count() else 0), 2)
+        r.keyboard.press('Escape'); r.wait_for_timeout(200)
+    r.click('[data-testid=nav-clients]'); r.wait_for_timeout(300)
+    cl = {c: (money(r.inner_text(f'[data-testid="client-unpaid-{c}"]')) if r.locator(f'[data-testid="client-unpaid-{c}"]').count() else 0) for c in jobs_by}
+    r.click('[data-testid=nav-finance]'); r.wait_for_timeout(300)
+    fi = {c: (money(r.inner_text(f'[data-testid="fin-client-bal-{c}"]')) if r.locator(f'[data-testid="fin-client-bal-{c}"]').count() else 0) for c in jobs_by}
+    po = {}
+    for c in jobs_by:
+        q = b.new_context(viewport={'width': 1280, 'height': 900}).new_page()
+        q.goto(URL + ('&' if '?' in URL else '?') + 'demo', wait_until='networkidle')
+        if q.locator('[data-testid=start-demo]').count(): q.click('[data-testid=start-demo]')
+        q.click('[data-testid=ui-lang-en]'); q.click('[data-testid=nav-portal]'); q.wait_for_timeout(300)
+        q.locator('tr', has_text=c).first.locator('button').click(); q.locator('button[type=submit]').first.click(); q.wait_for_timeout(400)
+        q.click('[data-testid=ui-lang-es]'); q.click('[data-testid=ui-lang-en]'); q.wait_for_timeout(200)
+        t = q.locator('[data-testid=portal-unpaid-total]')
+        po[c] = money(t.inner_text()) if t.count() else 0
+        q.context.close()
+    print('  unpaid per client  jobs:', jobs_by, ' clients:', cl, ' finance:', fi, ' portal:', po)
+    check('same unpaid per client in Jobs, Clients, Finance and portal', all(jobs_by[c] == cl[c] == fi[c] == po[c] for c in jobs_by) and sum(jobs_by.values()) > 0)
     r.click('[data-testid=auth-create]'); r.wait_for_timeout(200)
     cn = rt('compliance-note').inner_text() if rt('compliance-note').count() else ''
     check('review: sign-up note is current (no Firebase / sanctions)', 'Firebase' not in cn and 'anction' not in cn)
