@@ -4,6 +4,7 @@ import { useState, type FormEvent } from 'react';
 import { backendAvailable } from './config';
 import { getSession, signIn, signOut, setSession, useSession } from './session';
 import './auth.css';
+import { AccountDialog } from './Accounts';
 
 type L3 = 'en' | 'es' | 'fa';
 const T = {
@@ -33,6 +34,8 @@ const T = {
     'انطباق: سرور آنلاین Google Firebase است (شرکت آمریکایی؛ داده‌های ورود در آمریکا پردازش می‌شود). تا روشن شدن مسائل تحریم فقط از داده نمونه استفاده کنید.',
   ],
   dismiss: ['Dismiss', 'Cerrar', 'بستن'],
+  create: ['Create account', 'Crear cuenta', 'ساخت حساب'],
+  owner: ['owner', 'propietario', 'مالک'],
 } as const;
 type K = keyof typeof T;
 const I: Record<L3, 0 | 1 | 2> = { en: 0, es: 1, fa: 2 };
@@ -97,27 +100,28 @@ export function SignInDialog({ onClose, initialLang = 'en' }: { onClose: () => v
 /** Header control: Demo mode (default) ↔ signed-in live account. */
 export function AuthBar() {
   const s = useSession();
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState<false | 'signin' | 'create'>(false);
   const [lang] = useUiLang<L3>();
   return (
     <div className="fd-auth" data-testid="auth-bar">
       {s.mode === 'live' ? (
         <>
-          <span className="fd-pill live" title={s.email ?? ''} data-testid="auth-live">● {at(lang, 'live')} · <bdi>{s.email}</bdi> · {at(lang, s.role === 'client' ? 'client' : 'staff')}</span>
-          <button type="button" className="btn ghost sm" onClick={() => void signOut()} data-testid="auth-signout">{at(lang, 'backToDemo')}</button>
+          <span className="fd-pill live" title={s.email ?? ''} data-testid="auth-live">● <bdi>{s.orgName ?? at(lang, 'live')}</bdi> · <bdi>{s.email}</bdi> · {s.owner ? at(lang, 'owner') : at(lang, s.role === 'client' ? 'client' : 'staff')}</span>
+          <button type="button" className="btn ghost sm" onClick={() => void signOut()} data-testid="auth-signout">{at(lang, 'signOut')}</button>
         </>
       ) : s.mode === 'connecting' ? (
         <span className="fd-pill">{at(lang, 'connecting')}</span>
       ) : (
         <>
           <span className="fd-pill demo" title={at(lang, 'demoTip')} data-testid="auth-demo">{at(lang, 'demo')}</span>
-          <button type="button" className="btn ghost sm" onClick={() => setOpen(true)} data-testid="auth-signin">{at(lang, 'signIn')}</button>
+          <button type="button" className="btn ghost sm" onClick={() => setOpen('signin')} data-testid="auth-signin">{at(lang, 'signIn')}</button>
+          <button type="button" className="btn primary sm" onClick={() => setOpen('create')} data-testid="auth-create">{at(lang, 'create')}</button>
         </>
       )}
       {s.error && s.mode !== 'connecting' && !open && (
         <span className="fd-toast" data-testid="auth-error">{errText(lang, s.error)} <button type="button" className="q-linklike" onClick={() => setSession({ error: null })}>{at(lang, 'dismiss')}</button></span>
       )}
-      {open && <SignInDialog onClose={() => setOpen(false)} initialLang={lang} />}
+      {open && <AccountDialog tab={open} onClose={() => setOpen(false)} />}
     </div>
   );
 }

@@ -207,7 +207,18 @@ export function AgentsDbView() {
                 </tr>
               );
             })}
-            {sorted.length === 0 && <tr><td colSpan={8} className="c-muted fd-empty-cell"><Art name="map" className="fd-empty-art" /><div>{L('noMatch')}</div></td></tr>}
+            {sorted.length === 0 && list.length === 0 && (
+              <tr><td colSpan={8} className="c-muted fd-empty-cell" data-testid="agents-empty">
+                <Art name="map" className="fd-empty-art" />
+                <div className="fd-empty-big">{lang === 'fa' ? 'هنوز نماینده‌ای ندارید' : lang === 'es' ? 'Aún no tienes agentes' : 'No agents yet'}</div>
+                <div>{lang === 'fa' ? 'اولین نماینده را دستی اضافه کنید یا فهرست خود را از CSV وارد کنید.' : lang === 'es' ? 'Añade tu primer agente a mano o importa tu lista desde un CSV.' : 'Add your first agent by hand, or import your list from a CSV.'}</div>
+                <div className="fd-empty-btns">
+                  <button type="button" className="btn primary" onClick={() => setEditing(newDbAgent())} data-testid="agents-empty-add">{L('add')}</button>
+                  <button type="button" className="btn ghost" onClick={() => fileRef.current?.click()} data-testid="agents-empty-import">{L('importCsv')}</button>
+                </div>
+              </td></tr>
+            )}
+            {sorted.length === 0 && list.length > 0 && <tr><td colSpan={8} className="c-muted fd-empty-cell"><Art name="map" className="fd-empty-art" /><div>{L('noMatch')}</div></td></tr>}
           </tbody>
         </table>
         <p className="crm-foot c-muted">{L('hiddenNote')}</p>

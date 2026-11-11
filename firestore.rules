@@ -5,7 +5,9 @@ rules_version = '2';
 // DATA MODEL (all business data lives under one org document)
 //   userOrgs/{uid}                       { orgId }                       -> which org a signed-in user belongs to
 //   orgs/{orgId}                         { name, ownerUid, company }     -> the forwarder company
-//   orgs/{orgId}/members/{uid}           { role: 'staff'|'client', clientId?, email }
+//   orgs/{orgId}/members/{uid}           { role: 'owner'|'staff'|'client', clientId?, email, invite? }
+//   orgs/{orgId}/invites/{code}          { email, role: 'staff'|'client', clientId?, createdBy, createdAt, expiresAt, usedBy?, usedAt? }
+//                                        join-by-link/code: the invited (verified) email creates its own member doc
 //   orgs/{orgId}/clients/{cid}           full client record incl. margin — STAFF ONLY
 //   orgs/{orgId}/clientPublic/{cid}      { name, contact, lang }         -> what the client may see about itself
 //   orgs/{orgId}/lanes/{laneId}          lane profile, { clientId, source: 'desk'|'portal', ... }
@@ -26,8 +28,10 @@ rules_version = '2';
 //   orgs/{orgId}/settings/{key}          tariffs (customer-facing fees), msdsRules (read: members, write: staff)
 //                                        tariffsPrivate (line rebate %) — STAFF ONLY
 //
-// Roles are never self-assigned: members/{uid} is written by staff only, except the one-time
-// bootstrap where the creator of an org (ownerUid == auth.uid) adds themself as staff.
+// Roles are never self-assigned: members/{uid} is written by staff/owner only, except
+//  - self-serve sign-up: a verified user with no org yet creates orgs/{id} with ownerUid == auth.uid and adds themself as owner;
+//  - join: a verified user whose email matches an unused, unexpired invite creates their member doc with exactly the invited role.
+// 'owner' counts as staff everywhere (CRM, billing); only the owner manages staff, invites and member removal.
 
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -37,7 +41,22 @@ service cloud.firestore {
     function memberPath(orgId) { return /databases/$(database)/documents/orgs/$(orgId)/members/$(request.auth.uid); }
     function isMember(orgId) { return signedIn() && exists(memberPath(orgId)); }
     function member(orgId) { return get(memberPath(orgId)).data; }
-    function isStaff(orgId) { return isMember(orgId) && member(orgId).role == 'staff'; }
+    function isStaff(orgId) { return isMember(orgId) && member(orgId).role in ['staff', 'owner']; }
+    function isAdmin(orgId) { return isMember(orgId) && (member(orgId).role == 'owner' || isOwner(orgId)); }
+    function verified() { return signedIn() && request.auth.token.email_verified == true; }
+    function myEmail() { return request.auth.token.email.lower(); }
+    function invitePath(orgId, code) { return /databases/$(database)/documents/orgs/$(orgId)/invites/$(code); }
+    function invite(orgId, code) { return get(invitePath(orgId, code)).data; }
+    // Self-join with an invite: exact role (+ clientId), matching verified email, unused and unexpired.
+    function joinOk(orgId, uid, d) {
+      return uid == request.auth.uid && verified() && 'invite' in d && str(d.invite, 64)
+        && exists(invitePath(orgId, d.invite))
+        && invite(orgId, d.invite).usedBy == null
+        && invite(orgId, d.invite).email == myEmail()
+        && invite(orgId, d.invite).expiresAt > request.time
+        && d.role == invite(orgId, d.invite).role
+        && (d.role == 'staff' || d.clientId == invite(orgId, d.invite).clientId);
+    }
     function isClient(orgId) { return isMember(orgId) && member(orgId).role == 'client'; }
     function isClientOf(orgId, cid) { return isClient(orgId) && member(orgId).clientId == cid; }
     function isOwner(orgId) {
@@ -50,15 +69,27 @@ service cloud.firestore {
 
     // ---------- validators ----------
     function validMember(d) {
-      return d.keys().hasOnly(['role', 'clientId', 'email', 'createdAt'])
-        && d.role in ['staff', 'client']
-        && (d.role == 'staff' || str(d.clientId, 64))
+      return d.keys().hasOnly(['role', 'clientId', 'email', 'createdAt', 'name', 'invite'])
+        && d.role in ['owner', 'staff', 'client']
+        && (d.role != 'client' || str(d.clientId, 64))
+        && optStr(d, 'name', 120) && optStr(d, 'invite', 64)
         && optStr(d, 'clientId', 64) && optStr(d, 'email', 200);
     }
     function validOrg(d) {
-      return d.keys().hasOnly(['name', 'ownerUid', 'company', 'createdAt', 'demo'])
-        && str(d.name, 120) && d.ownerUid is string
-        && (!('company' in d) || d.company is map);
+      return d.keys().hasOnly(['name', 'ownerUid', 'company', 'createdAt', 'demo', 'country', 'baseCurrency', 'ports', 'lang'])
+        && str(d.name, 120) && d.name.size() > 0 && d.ownerUid is string
+        && (!('company' in d) || d.company is map)
+        && optStr(d, 'country', 80) && optStr(d, 'baseCurrency', 8)
+        && (!('ports' in d) || (d.ports is list && d.ports.size() <= 12))
+        && (!('lang' in d) || d.lang in ['en', 'es', 'fa']);
+    }
+    function validInvite(d, code) {
+      return d.keys().hasOnly(['email', 'role', 'clientId', 'createdBy', 'createdAt', 'expiresAt', 'usedBy', 'usedAt'])
+        && code.matches('^[A-Za-z0-9]{16,40}$')
+        && str(d.email, 200) && d.email == d.email.lower() && d.email.matches('^[^@ ]+@[^@ ]+$')
+        && d.role in ['staff', 'client'] && (d.role == 'staff' || str(d.clientId, 64))
+        && d.createdBy == request.auth.uid && d.expiresAt is timestamp && d.expiresAt > request.time
+        && (!('usedBy' in d) || d.usedBy == null);
     }
     // Lane written by a client from the portal. Every field typed and size-capped.
     function validVolume(v) {
@@ -153,12 +184,15 @@ service cloud.firestore {
 
     // ---------- top-level ----------
     match /userOrgs/{uid} {
-      allow read: if signedIn() && request.auth.uid == uid;
+      allow read: if signedIn() && (request.auth.uid == uid || isStaff(resource.data.orgId));
       // Staff of the target org (or the org owner during bootstrap) link a user to the org.
       allow create: if signedIn()
         && request.resource.data.keys().hasOnly(['orgId'])
         && str(request.resource.data.orgId, 64)
-        && (isStaff(request.resource.data.orgId) || (uid == request.auth.uid && isOwner(request.resource.data.orgId)));
+        && (isStaff(request.resource.data.orgId)
+            || (uid == request.auth.uid && isOwner(request.resource.data.orgId))
+            // joined by invite: link yourself to the org you are now a member of
+            || (uid == request.auth.uid && isMember(request.resource.data.orgId) && 'invite' in member(request.resource.data.orgId)));
       // Moving a user between orgs needs staff rights in BOTH orgs.
       allow update: if signedIn()
         && request.resource.data.keys().hasOnly(['orgId'])
@@ -169,18 +203,43 @@ service cloud.firestore {
 
     match /orgs/{orgId} {
       allow read: if isMember(orgId);
-      // Bootstrap: only the 'demo' org can be created, once, and the creator becomes owner.
-      allow create: if signedIn() && orgId == 'demo'
-        && validOrg(request.resource.data) && request.resource.data.ownerUid == request.auth.uid;
+      // Bootstrap: the 'demo' org (seeded once), or self-serve sign-up: a verified user who is not yet in any org
+      // creates a real company account and is its owner. Real accounts never carry the demo flag.
+      allow create: if signedIn() && validOrg(request.resource.data) && request.resource.data.ownerUid == request.auth.uid
+        && (orgId == 'demo'
+            || (verified() && orgId.matches('^[a-z0-9]{12,32}$')
+                && !exists(/databases/$(database)/documents/userOrgs/$(request.auth.uid))
+                && (!('demo' in request.resource.data) || request.resource.data.demo == false)));
       allow update: if isStaff(orgId) && validOrg(request.resource.data) && unchanged('ownerUid');
       allow delete: if false;
 
       match /members/{uid} {
         allow read: if isStaff(orgId) || (signedIn() && request.auth.uid == uid);
         allow create: if validMember(request.resource.data)
-          && (isStaff(orgId) || (uid == request.auth.uid && isOwner(orgId) && request.resource.data.role == 'staff'));
-        allow update: if isStaff(orgId) && validMember(request.resource.data);
-        allow delete: if isStaff(orgId) && uid != request.auth.uid;
+          && ((isAdmin(orgId) && request.resource.data.role in ['staff', 'client'])
+              || (isStaff(orgId) && request.resource.data.role == 'client')
+              || (uid == request.auth.uid && isOwner(orgId) && request.resource.data.role in ['staff', 'owner'])
+              || joinOk(orgId, uid, request.resource.data));
+        // Nobody can make someone owner or demote the owner; staff manage client logins, the owner manages staff.
+        allow update: if validMember(request.resource.data)
+          && request.resource.data.role != 'owner' && resource.data.role != 'owner'
+          && (isAdmin(orgId) || (isStaff(orgId) && resource.data.role == 'client' && request.resource.data.role == 'client'));
+        allow delete: if signedIn() && uid != request.auth.uid && resource.data.role != 'owner'
+          && (isAdmin(orgId) || (isStaff(orgId) && resource.data.role == 'client'));
+      }
+
+      // Team invites. The code is the secret: anyone signed in may fetch one by code (not list).
+      match /invites/{code} {
+        allow get: if signedIn();
+        allow list: if isStaff(orgId);
+        allow create: if validInvite(request.resource.data, code)
+          && (isAdmin(orgId) || (isStaff(orgId) && request.resource.data.role == 'client'));
+        // The invited user marks it used, right after creating their own member doc with it.
+        allow update: if verified() && resource.data.usedBy == null && resource.data.email == myEmail()
+          && changedOnly(['usedBy', 'usedAt'])
+          && request.resource.data.usedBy == request.auth.uid && request.resource.data.usedAt == request.time
+          && isMember(orgId) && member(orgId).invite == code;
+        allow delete: if isAdmin(orgId) || (isStaff(orgId) && resource.data.role == 'client');
       }
 
       // Staff-only: full client record (margin %, internal notes).

@@ -13,7 +13,8 @@
     "seed:emulator": "FIREBASE_EMULATOR=1 tsx scripts/seed.ts",
     "seed": "tsx scripts/seed.ts",
     "check:denials": "tsx scripts/denial-check.ts",
-    "dev:emulator": "VITE_FB_EMULATOR=1 vite"
+    "dev:emulator": "VITE_FB_EMULATOR=1 vite",
+    "e2e:realmode": "python3 scripts/realmode-e2e.py"
   },
   "dependencies": {
     "firebase": "^13.2.0",

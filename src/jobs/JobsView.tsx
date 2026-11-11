@@ -108,8 +108,8 @@ export function JobsView({ onDraftQuote, onOpenClient, openRequest }: { onDraftQ
     <div className="jobs-view" dir={lang === 'fa' ? 'rtl' : 'ltr'} lang={lang}>
       <div className="j-top">
         <div className="j-title">
-          <span className="j-sample">{L('sampleData')}</span>
-          <span className="j-note">{L('sampleNote')}</span>
+          {(!isLive() || jobs.some((j) => j.sample)) && <><span className="j-sample" data-testid="jobs-sample">{L('sampleData')}</span>
+          <span className="j-note">{L('sampleNote')}</span></>}
         </div>
         <button type="button" className="btn sm primary" onClick={() => setNewJob(true)} data-testid="job-new">{L('newJob')}</button>
         <div className="q-lang j-lang" role="group" aria-label="Language">
@@ -222,7 +222,7 @@ export function JobsView({ onDraftQuote, onOpenClient, openRequest }: { onDraftQ
               );
             })}
           </div>
-          <p className="j-foot">{L('buildOrder')}</p>
+          {!isLive() && <p className="j-foot">{L('buildOrder')}</p>}
         </section>
 
         <section className="q-panel j-tracker" aria-label={L('deadlines')} data-testid="deadline-tracker">
@@ -462,7 +462,7 @@ function JobDrawerBody({ job, lang, now, tariffs, T, onClose, onDraftQuote, onOp
               <bdi className="mono">{job.id}</bdi>
               <span className={`j-dir ${job.dir}`}>{L(job.dir)}</span>
               <span className={`j-owner ${stepDef(job.step).holder}`}>{L(stepDef(job.step).holder)}</span>
-              <span className="j-sample sm">{L('sampleData')}</span>
+              {(!isLive() || job.sample) && <span className="j-sample sm">{L('sampleData')}</span>}
             </div>
             <h2>
               <bdi>{job.pol} → {job.pod}</bdi>

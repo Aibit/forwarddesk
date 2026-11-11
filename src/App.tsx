@@ -11,7 +11,8 @@ import { JobsView } from './jobs/JobsView';
 import { ClientsView } from './clients/ClientsView';
 import { PortalView } from './clients/PortalView';
 import { AgentsDbView } from './agents/AgentsDbView';
-import { AuthBar, ComplianceNote } from './backend/AuthBar';
+import { AuthBar } from './backend/AuthBar';
+import { AccountDialog, AccountView, GettingStarted, JOIN_KEY, OnboardingWizard, StartScreen, VerifyScreen } from './backend/Accounts';
 import { useSession } from './backend/session';
 import { clientForJob, getStore } from './clients/store';
 import { AGENT_META, initialCapacity, initialRfqs } from './data';
@@ -66,7 +67,7 @@ function App() {
   const [busy, setBusy] = useState(false);
   const [showRfqForm, setShowRfqForm] = useState(false);
   const [showCapForm, setShowCapForm] = useState(false);
-  const [viewMode, setViewMode] = useState<'jobs' | 'finance' | 'clients' | 'agents' | 'portal' | 'quote' | 'desk' | 'pitch'>('jobs');
+  const [viewMode, setViewMode] = useState<ViewKey>('jobs');
   const [quoteSeed, setQuoteSeed] = useState<{ text: string; n: number; clientId?: string | null; laneId?: string | null } | null>(null);
   const [clientReq, setClientReq] = useState<{ id: string; n: number } | null>(null);
   const [jobReq, setJobReq] = useState<{ id: string; n: number } | null>(null);
@@ -74,10 +75,24 @@ function App() {
   const [uiLang] = useUiLang();
   const [navOpen, setNavOpen] = useState(false);
   const clientOnly = sess.mode === 'live' && sess.role === 'client';
+  // Two-mode entry: start screen until the visitor picks "Try the demo" (remembered) or signs in. ?demo skips it.
+  const [entry, setEntry] = useState<string | null>(() => localStorage.getItem('fd.entry') ?? (new URLSearchParams(location.search).has('demo') ? 'demo' : null));
+  const [resuming] = useState(() => localStorage.getItem('fd.live') === '1');
+  const [acctDlg, setAcctDlg] = useState<null | 'create' | 'signin'>(null);
+  useEffect(() => {
+    const m = location.hash.match(/^#join=(.+)$/);
+    if (!m) return;
+    sessionStorage.setItem(JOIN_KEY, decodeURIComponent(m[1]));
+    history.replaceState(null, '', location.pathname + location.search);
+    setAcctDlg('create');
+  }, []);
+  useEffect(() => {
+    if (viewMode === 'account' && !(sess.mode === 'live' && sess.role === 'staff')) setViewMode('jobs');
+  }, [viewMode, sess.mode, sess.role]);
   useEffect(() => {
     if (clientOnly) setViewMode('portal');
   }, [clientOnly]);
-  const lite = viewMode === 'quote' || viewMode === 'jobs' || viewMode === 'finance' || viewMode === 'clients' || viewMode === 'agents' || viewMode === 'portal';
+  const lite = viewMode === 'account' || viewMode === 'quote' || viewMode === 'jobs' || viewMode === 'finance' || viewMode === 'clients' || viewMode === 'agents' || viewMode === 'portal';
   const openClient = (id: string | null | undefined) => {
     if (!id) return;
     setClientReq((r) => ({ id, n: (r?.n ?? 0) + 1 }));
@@ -642,9 +657,21 @@ function App() {
   );
   const shownView: ViewKey = clientOnly ? 'portal' : viewMode;
 
+  if (sess.mode === 'verify') return <VerifyScreen />;
+  if (sess.mode === 'onboard') return <OnboardingWizard />;
+  if (!entry && (sess.mode === 'demo' || (sess.mode === 'connecting' && !resuming))) {
+    return (
+      <>
+        <StartScreen onDemo={() => { localStorage.setItem('fd.entry', 'demo'); setEntry('demo'); }} onAccount={setAcctDlg} />
+        {acctDlg && <AccountDialog tab={acctDlg} onClose={() => setAcctDlg(null)} />}
+      </>
+    );
+  }
+
   return (
     <div className={`app nd ${navOpen ? 'nav-open' : ''}`} dir={uiLang === 'fa' ? 'rtl' : 'ltr'} lang={uiLang} data-view={shownView}>
-      <Sidebar view={shownView} onPick={pick} open={navOpen} onClose={() => setNavOpen(false)} clientOnly={clientOnly} />
+      <Sidebar view={shownView} onPick={pick} open={navOpen} onClose={() => setNavOpen(false)} clientOnly={clientOnly} account={sess.mode === 'live' && sess.role === 'staff'} />
+      {acctDlg && <AccountDialog tab={acctDlg} onClose={() => setAcctDlg(null)} />}
       <div className="nd-main">
       <header className="topbar nd-top">
         <button type="button" className="nd-iconbtn nd-burger" onClick={() => setNavOpen(true)} aria-label={ui('menu', uiLang)} data-testid="nav-open"><Icon name="menu" /></button>
@@ -657,15 +684,12 @@ function App() {
           <AuthBar />
         </div>
       </header>
-      {sess.mode === 'live' && sess.role === 'staff' && (
-        <div className="fd-livebar" data-testid="live-bar">
-          <strong>Live backend · org “{sess.orgId}”</strong>
-          <ComplianceNote />
-        </div>
-      )}
+
       <div className="nd-scroll" data-testid="page-scroll">
       <div className="nd-page">
       <PageHeader view={shownView} compact={!lite}>{!lite ? deskActions : null}</PageHeader>
+      {(viewMode === 'jobs' || viewMode === 'agents' || viewMode === 'clients') && <GettingStarted onGo={(v) => pick(v)} />}
+      {!clientOnly && viewMode === 'account' && sess.mode === 'live' && <AccountView />}
 
       {!clientOnly && viewMode === 'jobs' && (
         <JobsView

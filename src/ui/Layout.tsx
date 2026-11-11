@@ -3,7 +3,7 @@ import { Art, Icon, type ArtName, type NavIcon } from './Art';
 import { useUiLang, type UiLang } from './lang';
 import { useTheme } from './theme';
 
-export type ViewKey = 'jobs' | 'finance' | 'clients' | 'agents' | 'portal' | 'quote' | 'desk' | 'pitch';
+export type ViewKey = 'jobs' | 'finance' | 'clients' | 'agents' | 'portal' | 'quote' | 'desk' | 'pitch' | 'account';
 
 const NAV: Record<ViewKey, { label: [string, string, string]; sub: [string, string, string]; art: ArtName; icon: NavIcon }> = {
   jobs: {
@@ -41,6 +41,11 @@ const NAV: Record<ViewKey, { label: [string, string, string]; sub: [string, stri
     sub: ['Customer RFQs, buy-side capacity and quote building.', 'RFQ de clientes, capacidad de compra y armado de cotizaciones.', 'درخواست‌های مشتری، ظرفیت خرید و ساخت قیمت.'],
     art: 'containers', icon: 'desk',
   },
+  account: {
+    label: ['Account', 'Cuenta', 'حساب'],
+    sub: ['Your company profile, your team and invite links.', 'El perfil de tu empresa, tu equipo y los enlaces de invitación.', 'مشخصات شرکت، تیم و لینک‌های دعوت.'],
+    art: 'containers', icon: 'account',
+  },
   pitch: {
     label: ['Pitch', 'Pitch', 'ارائه'],
     sub: ['Route, distance and transit time for the sales conversation.', 'Ruta, distancia y tránsito para la conversación de venta.', 'مسیر، مسافت و زمان ترانزیت برای گفتگوی فروش.'],
@@ -65,7 +70,7 @@ const GROUPS: { key: 'workspace' | 'sales'; items: ViewKey[] }[] = [
   { key: 'sales', items: ['quote', 'desk', 'pitch'] },
 ];
 
-export function Sidebar({ view, onPick, open, onClose, clientOnly }: { view: ViewKey; onPick: (v: ViewKey) => void; open: boolean; onClose: () => void; clientOnly: boolean }) {
+export function Sidebar({ view, onPick, open, onClose, clientOnly, account = false }: { view: ViewKey; onPick: (v: ViewKey) => void; open: boolean; onClose: () => void; clientOnly: boolean; account?: boolean }) {
   const [lang, setLang] = useUiLang();
   const [theme, setTheme] = useTheme();
   return (
@@ -81,7 +86,7 @@ export function Sidebar({ view, onPick, open, onClose, clientOnly }: { view: Vie
         </div>
         <nav className="nd-nav" role="group" aria-label="Jobs, Clients, Quote, Desk or Pitch view">
           {GROUPS.map((g) => {
-            const items = clientOnly ? g.items.filter((k) => k === 'portal') : g.items;
+            const items = clientOnly ? g.items.filter((k) => k === 'portal') : account && g.key === 'workspace' ? [...g.items, 'account' as ViewKey] : g.items;
             if (!items.length) return null;
             return (
               <div className="nd-group" key={g.key}>
