@@ -1,0 +1,23 @@
+{
+  "name": "forwarddesk-wa-server",
+  "version": "0.1.0",
+  "private": true,
+  "description": "ForwardDesk WhatsApp inbox service: WhatsApp Cloud API (Meta) or 360dialog webhooks, sending, conversations. SQLite storage.",
+  "type": "module",
+  "engines": { "node": ">=22.13" },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "start": "node dist/src/index.js",
+    "dev": "tsx watch src/index.ts",
+    "test": "tsx --test test/*.test.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "mock": "tsx test/mock-cloud.ts",
+    "simulate": "tsx scripts/simulate-inbound.ts",
+    "templates:export": "tsx scripts/export-templates.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  }
+}

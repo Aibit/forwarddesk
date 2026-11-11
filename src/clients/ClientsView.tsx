@@ -19,7 +19,8 @@ import { MsdsRulesEditor } from './Msds';
 import { demoLogin } from './portal';
 import './clients.css';
 import { LogoMark } from '../ui/Brand';
-import { PhoneField, WaButton, WaInboxNote, WaLogList } from '../whatsapp/WhatsApp';
+import { PhoneField, WaButton, WaLogList } from '../whatsapp/WhatsApp';
+import { WaServerSettings } from '../inbox/Settings';
 import { clientRecipients, jobCtx } from '../whatsapp/context';
 import { useWaLog, waFor } from '../whatsapp/log';
 import { wt } from '../whatsapp/i18n';
@@ -434,7 +435,7 @@ function CompanyForm({ co, L, lang, onClose }: { co: Company; L: (k: CKey) => st
             </span>
           </Field>
         </div>
-        <WaInboxNote />
+        <WaServerSettings compact />
         <div className="c-form-actions">
           <span style={{ flex: 1 }} />
           <button type="button" className="btn sm ghost" onClick={onClose}>{L('cancel')}</button>

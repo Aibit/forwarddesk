@@ -31,7 +31,7 @@ export function EmptyArt({ name, children, className = '' }: { name: ArtName; ch
 
 /* Small sidebar icons, line style, drawn on a 24px grid. */
 const P = { fill: 'none', stroke: 'currentColor', strokeWidth: 1.7, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const };
-export type NavIcon = 'account' | 'jobs' | 'clients' | 'agents' | 'portal' | 'quote' | 'pipeline' | 'finance' | 'menu' | 'sun' | 'moon' | 'close' | 'news';
+export type NavIcon = 'account' | 'jobs' | 'clients' | 'agents' | 'portal' | 'quote' | 'pipeline' | 'finance' | 'menu' | 'sun' | 'moon' | 'close' | 'news' | 'inbox';
 export function Icon({ name }: { name: NavIcon }) {
   const body = (() => {
     switch (name) {
@@ -57,6 +57,8 @@ export function Icon({ name }: { name: NavIcon }) {
         return <path d="M6 6l12 12M18 6L6 18" {...P} />;
       case 'sun':
         return <><circle cx="12" cy="12" r="4" {...P} /><path d="M12 2.8v2M12 19.2v2M2.8 12h2M19.2 12h2M5.5 5.5l1.4 1.4M17.1 17.1l1.4 1.4M5.5 18.5l1.4-1.4M17.1 6.9l1.4-1.4" {...P} /></>;
+      case 'inbox': // chat bubble
+        return <><path d="M4.5 5.5h15a1.5 1.5 0 0 1 1.5 1.5v8.5a1.5 1.5 0 0 1-1.5 1.5H10l-4.5 3.5V17h-1A1.5 1.5 0 0 1 3 15.5V7a1.5 1.5 0 0 1 1.5-1.5z" {...P} /><path d="M7.5 10h9M7.5 13h6" {...P} /></>;
       case 'news': // sparkle
         return <><path d="M12 3.5l1.8 5.2 5.2 1.8-5.2 1.8L12 17.5l-1.8-5.2L5 10.5l5.2-1.8z" {...P} /><path d="M18.5 16v4M16.5 18h4" {...P} /></>;
       case 'moon':

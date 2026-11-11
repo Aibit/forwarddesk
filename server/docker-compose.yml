@@ -1,0 +1,19 @@
+# Example for one EU server (e.g. Hetzner): the service behind Caddy, which gets a free HTTPS certificate
+# automatically. Replace wa.example.com with your own (sub)domain pointing at the server.
+services:
+  wa:
+    build: .
+    env_file: .env
+    volumes:
+      - wa-data:/data
+    restart: unless-stopped
+  caddy:
+    image: caddy:2-alpine
+    ports: ["80:80", "443:443"]
+    command: caddy reverse-proxy --from wa.example.com --to wa:8080
+    volumes:
+      - caddy-data:/data
+    restart: unless-stopped
+volumes:
+  wa-data:
+  caddy-data:

@@ -21,6 +21,8 @@ import { Icon } from './ui/Art';
 import { useUiLang } from './ui/lang';
 import { LogoMark } from './ui/Brand';
 import { WhatsNewView } from './WhatsNew';
+import { InboxView } from './inbox/InboxView';
+import { useInbox, refreshBackend } from './inbox/state';
 
 function App() {
   const [viewMode, setViewMode] = useState<ViewKey>('jobs');
@@ -37,6 +39,10 @@ function App() {
   const [acctDlg, setAcctDlg] = useState<null | 'create' | 'signin'>(null);
   const jobs = useJobs();
   const tariffs = useTariffs();
+  const inboxNav = useInbox().nav;
+  // Inbox data source follows the session: sample conversations in the demo, the WhatsApp service when connected.
+  useEffect(() => { if (sess.mode === 'demo' || sess.mode === 'live') refreshBackend(); }, [sess.mode]);
+  useEffect(() => { if (inboxNav) { setViewMode('inbox'); setNavOpen(false); } }, [inboxNav]);
   useEffect(() => {
     const m = location.hash.match(/^#join=(.+)$/);
     if (!m) return;
@@ -123,6 +129,7 @@ function App() {
       {(viewMode === 'portal' || clientOnly) && <PortalView />}
       {!clientOnly && viewMode === 'agents' && <AgentsDbView />}
       {!clientOnly && viewMode === 'whatsnew' && <WhatsNewView />}
+      {!clientOnly && viewMode === 'inbox' && <InboxView onOpenJob={openJob} />}
       {!clientOnly && viewMode === 'quote' && <QuoteView seed={quoteSeed} onOpenClient={openClient} />}
       {!clientOnly && viewMode === 'pipeline' && (
         <PipelineView onOpenJob={openJob} onOpenClient={openClient} onNewQuote={() => { setQuoteSeed((q) => ({ text: '', n: (q?.n ?? 0) + 1 })); setViewMode('quote'); }} />

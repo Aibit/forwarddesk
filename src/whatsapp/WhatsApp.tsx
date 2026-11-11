@@ -211,15 +211,3 @@ export function PhoneField({ value, onChange, label, hint, testid }: { value: st
 }
 
 /** Settings placeholder for step 2 (two-way inbox via an official WhatsApp Business provider). */
-export function WaInboxNote() {
-  const [ui] = useUiLang();
-  return (
-    <section className="wa-inbox" data-testid="wa-inbox-note">
-      <span className="wa-head-ic"><WaIcon size={22} /></span>
-      <div>
-        <h3>{wt(ui, 'inboxH')} <span className="wa-soon">{wt(ui, 'soon')}</span></h3>
-        <p>{wt(ui, 'inboxP')}</p>
-      </div>
-    </section>
-  );
-}

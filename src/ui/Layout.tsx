@@ -4,14 +4,21 @@ import { useUiLang, type UiLang } from './lang';
 import { useTheme } from './theme';
 import { LogoMark } from './Brand';
 import { hasUnread } from '../releaseNotes';
+import { useInbox, totalUnread } from '../inbox/state';
+import { it as ibt, num as ibNum } from '../inbox/i18n';
 
-export type ViewKey = 'jobs' | 'finance' | 'clients' | 'agents' | 'portal' | 'quote' | 'pipeline' | 'account' | 'whatsnew';
+export type ViewKey = 'jobs' | 'finance' | 'clients' | 'agents' | 'portal' | 'quote' | 'pipeline' | 'account' | 'whatsnew' | 'inbox';
 
 const NAV: Record<ViewKey, { label: [string, string, string, string]; sub: [string, string, string, string]; art: ArtName; icon: NavIcon }> = {
   jobs: {
     label: ['Jobs', 'Expedientes', 'پرونده‌ها', 'الشحنات'],
     sub: ['Deadlines, free time and money at risk across every shipment.', 'Plazos, días libres y dinero en riesgo en cada envío.', 'مهلت‌ها، روزهای آزاد و پول در خطر در همه محموله‌ها.', 'المواعيد النهائية والفترة المجانية والأموال المعرّضة للخطر في كل شحنة.'],
     art: 'crane', icon: 'jobs',
+  },
+  inbox: {
+    label: ['Inbox', 'Bandeja', 'صندوق پیام', 'صندوق الوارد'],
+    sub: ['WhatsApp conversations with clients and agents, linked to their jobs.', 'Conversaciones de WhatsApp con clientes y agentes, vinculadas a sus expedientes.', 'گفت‌وگوهای واتساپ با مشتریان و نمایندگان، پیوندخورده به پرونده‌ها.', 'محادثات واتساب مع العملاء والوكلاء، مرتبطة بشحناتهم.'],
+    art: 'map', icon: 'inbox',
   },
   finance: {
     label: ['Finance', 'Finanzas', 'مالی', 'المالية'],
@@ -69,13 +76,15 @@ export const navLabel = (k: ViewKey, l: UiLang) => NAV[k].label[LI[l]];
 export const ui = (k: keyof typeof UI, l: UiLang) => UI[k][LI[l]];
 
 const GROUPS: { key: 'workspace' | 'sales'; items: ViewKey[] }[] = [
-  { key: 'workspace', items: ['jobs', 'finance', 'clients', 'agents', 'portal'] },
+  { key: 'workspace', items: ['jobs', 'inbox', 'finance', 'clients', 'agents', 'portal'] },
   { key: 'sales', items: ['quote', 'pipeline'] },
 ];
 
 export function Sidebar({ view, onPick, open, onClose, clientOnly, account = false }: { view: ViewKey; onPick: (v: ViewKey) => void; open: boolean; onClose: () => void; clientOnly: boolean; account?: boolean }) {
   const [lang, setLang] = useUiLang();
   const [theme, setTheme] = useTheme();
+  const inbox = useInbox();
+  const unread = totalUnread(inbox.convs);
   return (
     <>
       <aside className={`nd-side ${open ? 'open' : ''}`} aria-label="ForwardDesk" data-testid="sidebar">
@@ -105,6 +114,7 @@ export function Sidebar({ view, onPick, open, onClose, clientOnly, account = fal
                   >
                     <Icon name={NAV[k].icon} />
                     <span>{navLabel(k, lang)}</span>
+                    {k === 'inbox' && unread > 0 && <span className="nd-badge" data-testid="nav-inbox-unread" aria-label={ibt(lang, 'unreadN', { n: unread })}>{ibNum(lang, unread)}</span>}
                   </button>
                 ))}
               </div>

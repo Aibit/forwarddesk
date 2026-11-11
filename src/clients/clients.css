@@ -64,7 +64,9 @@
 
 .c-modal-bg { position: fixed; inset: 0; background: var(--overlay); z-index: 60; display: grid; place-items: center; padding: 1rem; }
 .c-modal { width: min(760px, 100%); max-height: calc(100vh - 2rem); overflow: auto; }
-.c-form { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem 0.75rem; }
+.c-form { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0.5rem 0.75rem; }
+.c-form > * { min-width: 0; }
+.c-form .c-in { box-sizing: border-box; max-width: 100%; }
 .c-field { display: flex; flex-direction: column; gap: 0.2rem; font-size: 0.7rem; color: var(--muted); }
 .c-field.wide { grid-column: 1 / -1; }
 .c-in { background: var(--bg); color: var(--text); border: 1px solid var(--border-strong); border-radius: 2px; padding: 0.35rem 0.45rem; font: inherit; font-size: 0.84rem; }

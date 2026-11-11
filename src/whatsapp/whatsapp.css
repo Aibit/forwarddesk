@@ -38,7 +38,9 @@
 .btn.wa-open[disabled] { opacity: 0.5; }
 @media (max-width: 560px) { .wa-row { grid-template-columns: 1fr; } .wa-modal { padding: 0.9rem; } }
 
-.wa-phone-row { display: flex; gap: 0.4rem; }
+.wa-phone-row { display: flex; gap: 0.4rem; min-width: 0; }
+.wa-phone-row > select { flex: 0 0 auto; max-width: 45%; }
+.wa-phone-row > input { flex: 1 1 auto; min-width: 0; }
 .wa-cc { flex: 0 0 auto; max-width: 11rem; }
 .wa-num { flex: 1; min-width: 0; font-family: var(--mono); }
 

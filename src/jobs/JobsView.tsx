@@ -1,3 +1,4 @@
+import { JobWaThreads } from '../inbox/JobThreads';
 import { useUiLang } from '../ui/lang';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { JobDocs } from '../billing/JobDocs';
@@ -509,6 +510,7 @@ function JobDrawerBody({ job, lang, now, tariffs, T, onClose, onDraftQuote, onOp
           <WaButton recipients={clientR} templates={JOB_TPLS} ctx={waCtx} defaultTpl={waTpl} link={{ jobId: job.id, clientId: client?.id ?? null }} fallbackLang={client?.lang ?? 'en'} label={wt(lang, 'wa')} testid="job-client" />
             {agentR.length > 0 && <WaButton recipients={agentR} templates={['general', 'arrival', 'draftBl', 'cutoff48']} ctx={waCtx} defaultTpl="general" link={{ jobId: job.id }} fallbackLang="en" label={`${wt(lang, 'wa')} · ${L('agent')}`} testid="job-agent" />}
         </div>
+        <JobWaThreads jobId={job.id} />
         <div className="b-tabs" role="tablist" data-testid="job-tabs">
           {(['overview', 'docs', 'billing'] as const).map((k) => (
             <button key={k} type="button" role="tab" aria-selected={tab === k} className={tab === k ? 'active' : ''} onClick={() => setTab?.(k)} data-testid={`job-tab-${k}`}>

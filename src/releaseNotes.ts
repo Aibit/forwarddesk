@@ -15,6 +15,18 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '0.9', date: '2026-11-11',
+    title: ['WhatsApp inbox', 'Bandeja de WhatsApp', 'صندوق پیام واتساپ', 'صندوق وارد واتساب'],
+    bullets: [
+      ['New Inbox page: two-way WhatsApp conversations with clients and agents, with unread counts and delivery ticks from the statuses WhatsApp reports.', 'Nueva página Bandeja: conversaciones de WhatsApp en ambos sentidos con clientes y agentes, con contador de no leídos y marcas de entrega según los estados que informa WhatsApp.', 'صفحه جدید صندوق پیام: گفت‌وگوی دوطرفه واتساپ با مشتریان و نمایندگان، با شمار پیام‌های خوانده‌نشده و تیک تحویل بر اساس وضعیت گزارش‌شده از واتساپ.', 'صفحة صندوق الوارد الجديدة: محادثات واتساب ثنائية الاتجاه مع العملاء والوكلاء، مع عدد الرسائل غير المقروءة وعلامات التسليم وفق الحالات التي يبلغ عنها واتساب.'],
+      ['A 24-hour reply-window indicator; when the window is closed you pick an approved template in the client’s language (EN/ES/FA/AR).', 'Indicador de la ventana de respuesta de 24 horas; con la ventana cerrada se elige una plantilla aprobada en el idioma del cliente (EN/ES/FA/AR).', 'نشانگر پنجره پاسخ ۲۴ ساعته؛ وقتی پنجره بسته است، یک قالب تأییدشده به زبان مشتری (EN/ES/FA/AR) انتخاب می‌کنید.', 'مؤشر لنافذة الرد خلال ٢٤ ساعة؛ وعند إغلاقها تختار قالبًا معتمدًا بلغة العميل (EN/ES/FA/AR).'],
+      ['Conversations link to the client or agent by phone number and to a job by its reference in the message, or by your choice. Attach the job’s invoice or B/L PDF.', 'Las conversaciones se vinculan al cliente o agente por el número y a un expediente por su referencia en el mensaje, o a su elección. Adjunte el PDF de la factura o del B/L del expediente.', 'گفت‌وگوها با شماره تلفن به مشتری یا نماینده و با شماره پرونده در متن پیام (یا انتخاب شما) به پرونده پیوند می‌خورند. PDF فاکتور یا بارنامه پرونده را پیوست کنید.', 'ترتبط المحادثات بالعميل أو الوكيل عبر رقم الهاتف، وبالشحنة عبر مرجعها في الرسالة أو باختيارك. أرفق ملف PDF للفاتورة أو البوليصة.'],
+      ['WhatsApp threads also appear in the job drawer.', 'Las conversaciones de WhatsApp también aparecen en el panel del expediente.', 'گفت‌وگوهای واتساپ در پنل پرونده هم دیده می‌شوند.', 'تظهر محادثات واتساب أيضًا في لوحة الشحنة.'],
+      ['The demo shows sample conversations with a mock provider; nothing is sent. Real use needs the ForwardDesk WhatsApp service and an official WhatsApp Business number; until then the WhatsApp buttons keep opening your own WhatsApp.', 'La demo muestra conversaciones de muestra con un proveedor simulado; no se envía nada. Para uso real hace falta el servicio de WhatsApp de ForwardDesk y un número oficial de WhatsApp Business; mientras tanto, los botones de WhatsApp siguen abriendo su propio WhatsApp.', 'دمو گفت‌وگوهای نمونه با ارائه‌دهنده آزمایشی نشان می‌دهد و چیزی ارسال نمی‌شود. استفاده واقعی به سرویس واتساپ ForwardDesk و یک شماره رسمی واتساپ بیزینس نیاز دارد؛ تا آن زمان دکمه‌های واتساپ همچنان واتساپ خودتان را باز می‌کنند.', 'يعرض العرض التجريبي محادثات نموذجية مع مزوّد تجريبي ولا يُرسل شيئًا. يتطلب الاستخدام الفعلي خدمة واتساب من ForwardDesk ورقم واتساب للأعمال رسميًا؛ وحتى ذلك الحين تبقى أزرار واتساب تفتح واتساب الخاص بك.'],
+    ],
+    commits: [],
+  },
+  {
     version: '0.8', date: '2026-11-11',
     title: ['WhatsApp messages, English-only screens, What’s new', 'Mensajes de WhatsApp, pantallas sin mezcla de idiomas y Novedades', 'پیام واتساپ، صفحه‌های تک‌زبانه و «تازه‌ها»', 'رسائل واتساب وشاشات بلغة واحدة وصفحة «الجديد»'],
     bullets: [
@@ -25,7 +37,7 @@ export const RELEASES: Release[] = [
       ['Persian terms now appear only when the app is in Persian.', 'Los términos en persa solo aparecen cuando la app está en persa.', 'اصطلاحات فارسی فقط وقتی برنامه فارسی است نمایش داده می‌شوند.', 'لم تعد المصطلحات الفارسية تظهر إلا عندما تكون الواجهة بالفارسية.'],
       ['This “What’s new” page.', 'Esta página de «Novedades».', 'همین صفحه «تازه‌ها».', 'صفحة «الجديد» هذه.'],
     ],
-    commits: [],
+    commits: ['9ebb314'],
   },
   {
     version: '0.7', date: '2026-11-11',

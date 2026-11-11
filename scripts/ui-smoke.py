@@ -45,7 +45,7 @@ with sync_playwright() as p:
     check('create dialog closes back to demo', tid('signin-dialog').count() == 0)
     check('account page hidden in demo', tid('nav-account').count() == 0)
 
-    check('sidebar has 7 pages (Desk + Pitch replaced by Sales pipeline)', pg.locator('.nd-nav .nd-item').count() == 7 and tid('nav-desk').count() == 0 and tid('nav-pitch').count() == 0)
+    check('sidebar has 8 pages (Desk + Pitch replaced by Sales pipeline; Inbox added)', pg.locator('.nd-nav .nd-item').count() == 8 and tid('nav-desk').count() == 0 and tid('nav-pitch').count() == 0)
     check('demo mode pill', tid('auth-demo').is_visible())
     check('page header with drawing', tid('page-header').locator('svg').count() > 0)
     check('jobs summary tiles', tid('jobs-summary').locator('.j-tile').count() == 6)
@@ -623,7 +623,7 @@ with sync_playwright() as p:
     if wtid('clients-back').count(): wtid('clients-back').click(); w.wait_for_timeout(150)
     wtid('edit-company').click(); w.wait_for_timeout(200)
     note = wtid('wa-inbox-note')
-    check('WA: settings shows "WhatsApp inbox (coming soon)"', note.is_visible() and 'coming soon' in note.inner_text().lower() and 'Business' in note.inner_text())
+    check('WA: settings shows the WhatsApp inbox connection (no more "coming soon")', note.is_visible() and wtid('wa-server-settings').is_visible() and 'coming soon' not in note.inner_text().lower() and 'WhatsApp Business' in note.inner_text() and wtid('wa-server-url').is_visible())
     check('WA: inbox note is region-agnostic (no Iran)', 'iran' not in note.inner_text().lower())
     w.keyboard.press('Escape'); w.mouse.click(5, 5); w.wait_for_timeout(150)
 
@@ -640,6 +640,101 @@ with sync_playwright() as p:
     wtid('ui-lang-en').click()
     wc.close()
 
+
+    # ── WhatsApp inbox (step 2): SAMPLE conversations + mock provider in the demo ──
+    ic = b.new_context(viewport={'width': 1440, 'height': 900}, accept_downloads=True)
+    x = ic.new_page(); x.on('pageerror', lambda e: errs.append(str(e)))
+    x.goto(URL + ('&' if '?' in URL else '?') + 'demo', wait_until='networkidle')
+    if x.locator('[data-testid=start-demo]').count(): x.click('[data-testid=start-demo]')
+    x.wait_for_timeout(300)
+    xt = lambda t: x.locator(f'[data-testid="{t}"]')
+    navs = [e.get_attribute('data-testid') for e in x.locator('.nd-nav .nd-item').all()]
+    check(f'Inbox: sidebar item right after Jobs {navs[:3]}', navs[:2] == ['nav-jobs', 'nav-inbox'])
+    check('Inbox: sidebar unread count (3 in the sample)', xt('nav-inbox-unread').inner_text().strip() == '3')
+    xt('nav-inbox').click(); x.wait_for_timeout(400)
+    check('Inbox: page renders with SAMPLE label + mock-provider note', xt('inbox').is_visible() and xt('inbox-sample-pill').is_visible() and 'Nothing is sent' in xt('inbox-sample-note').inner_text())
+    convs = x.locator('[data-testid^=inbox-conv-]')
+    check('Inbox: 4 sample conversations', convs.count() == 4)
+    check('Inbox: per-conversation unread badge', xt('inbox-conv-2').locator('[data-testid=inbox-unread]').inner_text().strip() == '2')
+    xt('inbox-filter-unread').click(); x.wait_for_timeout(100); n_unread = convs.count()
+    xt('inbox-filter-unlinked').click(); x.wait_for_timeout(100); n_unl = convs.count()
+    xt('inbox-filter-all').click(); x.wait_for_timeout(100)
+    check(f'Inbox: filters unread={n_unread} not-linked={n_unl}', n_unread == 2 and n_unl == 1)
+    xt('inbox-search').fill('Customer F'); x.wait_for_timeout(100)
+    check('Inbox: search', convs.count() == 1 and xt('inbox-conv-3').count() == 1)
+    xt('inbox-search').fill(''); x.wait_for_timeout(100)
+    # open window thread
+    xt('inbox-conv-1').click(); x.wait_for_timeout(400)
+    check('Inbox: thread + 24h window open indicator', xt('inbox-window').get_attribute('data-open') == '1' and 'Reply window open' in xt('inbox-window').inner_text() and x.locator('[data-testid=inbox-msg]').count() == 4)
+    check('Inbox: opening clears unread (sidebar 3 → 2)', xt('nav-inbox-unread').inner_text().strip() == '2')
+    ticks = x.locator('[data-testid=inbox-tick]')
+    titles = [t.get_attribute('title') or '' for t in ticks.all()]
+    check('Inbox: delivery ticks rendered from message status', x.locator('[data-testid=inbox-tick][data-status=read]').count() >= 1)
+    check('Inbox: sample ticks never claim real delivery (tooltip says sample)', titles and all('Sample status' in t for t in titles))
+    check('Inbox: job link from message text', xt('inbox-job-link').input_value() == 'FD-E-1042' and 'found in a message' in xt('inbox-job-source').inner_text())
+    xt('inbox-text').fill('Gate-in confirmed for 09:00.'); xt('inbox-send').click(); x.wait_for_timeout(300)
+    last = x.locator('[data-testid=inbox-msg]').last
+    check('Inbox: send inside window → "Sample: not sent" (mock provider)', last.get_attribute('data-status') == 'sample' and 'Sample: not sent' in last.inner_text() and 'Gate-in confirmed' in last.inner_text() and xt('inbox-text').input_value() == '')
+    xt('inbox-attach').click(); x.wait_for_timeout(200)
+    items = x.locator('[data-testid=inbox-attach-item]')
+    check(f'Inbox: attach menu lists the job PDFs ({items.count()})', xt('inbox-attach-menu').is_visible() and items.count() >= 1)
+    if items.count():
+        lbl = items.first.inner_text(); items.first.click(); x.wait_for_timeout(1500)
+        last = x.locator('[data-testid=inbox-msg]').last
+        check(f'Inbox: attached PDF sent as a document ({lbl})', '.pdf' in last.inner_text().lower() and last.get_attribute('data-status') == 'sample')
+    # closed window → template picker
+    xt('inbox-conv-3').click(); x.wait_for_timeout(400)
+    check('Inbox: closed window → amber indicator, no free text box', xt('inbox-window').get_attribute('data-open') == '0' and xt('inbox-text').count() == 0 and xt('inbox-tpl').is_visible())
+    opts = x.locator('[data-testid=inbox-tpl-select] option').all_inner_texts()
+    check(f'Inbox: template registry (6 utility alerts) {opts}', len(opts) == 6 and 'Free time ending' in opts and 'Arrival notice' in opts)
+    check("Inbox: template defaults to the client's language (ES)", 'active' in (xt('inbox-tpl-lang-es').get_attribute('class') or '') and xt('inbox-tpl-preview').inner_text().startswith('Hola'))
+    xt('inbox-tpl-select').select_option('arrival'); x.wait_for_timeout(150)
+    for i in range(4):
+        if not xt(f'inbox-tpl-var-{i}').input_value().strip(): xt(f'inbox-tpl-var-{i}').fill('18 nov')
+    check('Inbox: template variables filled from the job', xt('inbox-tpl-var-0').input_value() == 'FD-I-0921')
+    xt('inbox-tpl-lang-ar').click(); x.wait_for_timeout(150)
+    for i in range(4):
+        if not xt(f'inbox-tpl-var-{i}').input_value().strip(): xt(f'inbox-tpl-var-{i}').fill('١٨ نوفمبر')
+    check('Inbox: AR template preview is RTL', xt('inbox-tpl-preview').get_attribute('dir') == 'rtl' and 'إشعار وصول' in xt('inbox-tpl-preview').inner_text())
+    xt('inbox-tpl-send').click(); x.wait_for_timeout(300)
+    last = x.locator('[data-testid=inbox-msg]').last
+    check('Inbox: template sent (sample) with template tag', last.get_attribute('data-status') == 'sample' and last.locator('[data-testid=inbox-msg-tpl]').count() == 1)
+    # failed status is amber, never red
+    xt('inbox-conv-4').click(); x.wait_for_timeout(300)
+    ft = x.locator('[data-testid=inbox-tick][data-status=failed]')
+    col = ft.evaluate("e => getComputedStyle(e).color") if ft.count() else ''
+    check(f'Inbox: "Not delivered" shown in amber, not red ({col})', ft.count() == 1 and col.replace(' ', '') == 'rgb(138,90,16)' and 'Not delivered' in ft.inner_text())
+    check('Inbox: no error-red classes', x.locator('.ib .red, .ib .veto').count() == 0)
+    # staff link-to-job
+    xt('inbox-conv-2').click(); x.wait_for_timeout(300)
+    xt('inbox-job-link').select_option('FD-E-1047'); x.wait_for_timeout(300)
+    check('Inbox: staff links a conversation to a job', 'set by staff' in xt('inbox-job-source').inner_text() and 'FD-E-1047' in xt('inbox-conv-2').inner_text())
+    found = x.evaluate(SCRIPT, 'en')
+    check('Inbox EN: no Arabic-script UI text' + (f' {found[:4]}' if found else ''), not found)
+    # job drawer shows threads → open in inbox
+    xt('nav-jobs').click(); x.wait_for_timeout(300); xt('job-FD-E-1042').click(); x.wait_for_timeout(300)
+    check('Inbox: job drawer shows its WhatsApp thread', xt('job-wa-threads').is_visible() and xt('job-wa-thread-1').count() == 1)
+    check('Inbox: step-1 wa.me buttons stay as the fallback', xt('wa-btn-job-client').is_visible())
+    xt('job-wa-open-inbox').first.click(); x.wait_for_timeout(400)
+    check('Inbox: "Open in Inbox" opens that conversation', xt('inbox').is_visible() and 'Sample contact A' in xt('inbox-thread').inner_text())
+    # ES
+    xt('ui-lang-es').click(); x.wait_for_timeout(300)
+    found = x.evaluate(SCRIPT, 'es')
+    check('Inbox ES: Spanish labels, no Arabic-script UI text', 'Bandeja' in x.locator('.nd-crumb-page').inner_text() and 'Ventana de respuesta' in xt('inbox-window').inner_text() and not found)
+    # AR
+    xt('ui-lang-ar').click(); x.wait_for_timeout(350)
+    rtl = x.evaluate("() => document.querySelector('.app').dir === 'rtl' && getComputedStyle(document.querySelector('.ib-grid')).direction === 'rtl'")
+    left_ = x.evaluate(LEFT, sorted(EN_UI))
+    check('Inbox AR: RTL, Arabic labels, no English UI strings left' + (f' {left_[:6]}' if left_ else ''), rtl and 'صندوق الوارد' in x.locator('.nd-crumb-page').inner_text() and not left_)
+    found = x.evaluate(SCRIPT, 'ar')
+    check('Inbox AR: no Persian-only letters in the UI' + (f' {found[:4]}' if found else ''), not found)
+    xt('inbox-conv-4').click(); x.wait_for_timeout(300)
+    left_ = x.evaluate(LEFT, sorted(EN_UI))
+    check('Inbox AR: template picker translated' + (f' {left_[:6]}' if left_ else ''), xt('inbox-tpl').is_visible() and 'انتهاء الفترة المجانية' in x.locator('[data-testid=inbox-tpl-select] option').all_inner_texts() and not left_)
+    check('Inbox AR: closed-window text in Arabic', 'نافذة الرد مغلقة' in xt('inbox-window').inner_text())
+    xt('ui-lang-en').click()
+    # settings in AR/EN: no "coming soon"
+    ic.close()
     # ── What's new (release notes) ──
     nc = b.new_context(viewport={'width': 1440, 'height': 900})
     n = nc.new_page(); n.on('pageerror', lambda e: errs.append(str(e)))
