@@ -15,6 +15,18 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '0.11', date: '2026-11-12',
+    title: ['Update the client as the booking moves on', 'Actualizar al cliente cuando avanza la reserva', 'اطلاع به مشتری با پیشرفت بوکینگ', 'تحديث العميل مع تقدّم الحجز'],
+    bullets: [
+      ['New booking no longer asks for a step: a new booking starts at the first step of its direction.', 'Nueva reserva ya no pide un paso: una reserva nueva empieza en el primer paso de su sentido.', 'فرم بوکینگ جدید دیگر مرحله نمی‌پرسد: بوکینگ جدید از مرحله اول جهت خود شروع می‌شود.', 'لم يعد نموذج الحجز الجديد يطلب خطوة: يبدأ الحجز الجديد من الخطوة الأولى لاتجاهه.'],
+      ['In the booking, “Update client” moves it to the next step (or one you pick) and opens the matching client message, ready to send on WhatsApp or from the Inbox. The step timeline stays in view.', 'En la reserva, «Actualizar al cliente» la pasa al siguiente paso (o al que elija) y abre el mensaje para el cliente, listo para enviar por WhatsApp o desde la bandeja. La línea de pasos sigue a la vista.', 'در بوکینگ، «اطلاع به مشتری» آن را به مرحله بعد (یا مرحله دلخواه) می‌برد و پیام مناسب مشتری را باز می‌کند تا از واتساپ یا صندوق پیام بفرستید. خط زمانی مراحل همچنان دیده می‌شود.', 'في الحجز، ينقل «تحديث العميل» الحجز إلى الخطوة التالية (أو التي تختارها) ويفتح رسالة العميل المناسبة، جاهزة للإرسال عبر واتساب أو من صندوق الوارد. يبقى الخط الزمني للخطوات ظاهرًا.'],
+      ['Tariffs on phones: one tariff per row, with the name, who sets it, then the amount and unit, nothing overlapping. The table is labelled 2026/27.', 'Tarifas en el móvil: una tarifa por fila, con el nombre, quién la fija y después el importe y la unidad, sin solaparse. La tabla se titula 2026/27.', 'تعرفه‌ها در گوشی: هر تعرفه در یک ردیف، با نام، مرجع تعیین و سپس مبلغ و واحد، بدون هم‌پوشانی. عنوان جدول ۲۰۲۶/۲۷ است.', 'التعرفات على الهاتف: تعرفة واحدة في كل صف، بالاسم والجهة التي تحددها ثم المبلغ والوحدة، دون تداخل. عنوان الجدول ٢٠٢٦/٢٧.'],
+      ['The Inbox list fits narrow phone screens, and booking rows wrap instead of cutting text.', 'La lista de la bandeja cabe en pantallas estrechas y las filas de reservas se ajustan en vez de cortar el texto.', 'فهرست صندوق پیام در صفحه‌های باریک گوشی جا می‌شود و ردیف‌های بوکینگ به‌جای بریدن متن، به خط بعد می‌روند.', 'تتسع قائمة صندوق الوارد لشاشات الهاتف الضيقة، وتلتف صفوف الحجوزات بدل قطع النص.'],
+      ['If you are on an older copy of the app, a note asks you to reload.', 'Si está usando una copia antigua de la app, un aviso le pide recargar.', 'اگر نسخه قدیمی برنامه باز باشد، پیامی برای بارگذاری دوباره نمایش داده می‌شود.', 'إذا كنت تستخدم نسخة أقدم من التطبيق، يطلب منك تنبيه إعادة التحميل.'],
+    ],
+    commits: [],
+  },
+  {
     version: '0.10', date: '2026-11-11',
     title: ['Compare shipping options, export to Excel, Bookings', 'Comparar opciones de envío, exportar a Excel, Reservas', 'مقایسه گزینه‌های حمل، خروجی اکسل، بوکینگ‌ها', 'مقارنة خيارات الشحن والتصدير إلى إكسل والحجوزات'],
     bullets: [
@@ -25,7 +37,7 @@ export const RELEASES: Release[] = [
       ['Dates are written the same way in every language, with that language’s month names and digits.', 'Las fechas se escriben igual en todos los idiomas, con los nombres de mes y cifras de cada idioma.', 'تاریخ‌ها در همه زبان‌ها یکسان نوشته می‌شوند، با نام ماه‌ها و ارقام همان زبان.', 'تُكتب التواريخ بالطريقة نفسها في كل اللغات، بأسماء الأشهر والأرقام الخاصة بكل لغة.'],
       ['Demo options and rates are SAMPLE figures, not real carrier rates.', 'Las opciones y tarifas de la demo son de MUESTRA, no tarifas reales.', 'گزینه‌ها و نرخ‌های دمو نمونه هستند، نه نرخ واقعی خطوط.', 'خيارات وأسعار العرض التجريبي أرقام عيّنة وليست أسعارًا حقيقية لشركات الشحن.'],
     ],
-    commits: [],
+    commits: ['7c0aedf'],
   },
   {
     version: '0.9', date: '2026-11-11',

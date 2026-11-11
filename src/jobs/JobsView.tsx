@@ -1,4 +1,5 @@
 import { JobWaThreads } from '../inbox/JobThreads';
+import { useInbox } from '../inbox/state';
 import { useUiLang } from '../ui/lang';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { JobDocs } from '../billing/JobDocs';
@@ -19,9 +20,9 @@ import { MsdsChip, MsdsSlot } from '../clients/Msds';
 import { store as clientStore, type Client } from '../clients/store';
 import { useAgentsDb } from '../agents/db';
 import { ledgerFor } from '../billing/store';
-import { WaButton, WaIcon, WaLogItem } from '../whatsapp/WhatsApp';
+import { WaButton, WaDialog, WaIcon, WaLogItem } from '../whatsapp/WhatsApp';
 import { agentRecipients, clientRecipients, jobCtx } from '../whatsapp/context';
-import { JOB_TPLS, suggestTpl } from '../whatsapp/templates';
+import { JOB_TPLS, suggestTpl, tplForStep } from '../whatsapp/templates';
 import { useWaLog, waFor } from '../whatsapp/log';
 import { wt } from '../whatsapp/i18n';
 import type { Agent } from '../clients/store';
@@ -331,7 +332,7 @@ export function JobsView({ onDraftQuote, onOpenClient, openRequest }: { onDraftQ
       <div className="j-bottom">
         <section className="q-panel j-tariffs" data-testid="tariffs">
           <div className="q-head">
-            <h2>{T('tariffs')} · {tariffs.year}</h2>
+            <h2>{T('tariffs')} · <bdi data-testid="tariffs-year">{tariffs.year.replace(/\d/g, (d) => num(lang, Number(d)))}</bdi></h2>
             <button type="button" className="btn ghost sm" onClick={() => setTariffs({ ...DEFAULT_TARIFFS })}>{L('reset')}</button>
           </div>
           <p className="j-foot">{L('tariffsNote')}</p>
@@ -463,6 +464,11 @@ function JobDrawerBody({ job, lang, now, tariffs, T, onClose, onDraftQuote, onOp
   const waCtx = jobCtx(job, { company, ledger: ledgerFor(job), tariffs, now, openBalance: blk.open > 0.005 ? blk.open : undefined });
   const clientR = clientRecipients(client ?? null);
   const agentR = agentRecipients(agent ?? null, agentsDb.list);
+  const ib = useInbox();
+  const inboxConv = ib.backend ? ib.convs.find((c) => c.jobId === job.id) ?? (client ? ib.convs.find((c) => c.clientId === client.id) : undefined) : undefined;
+  const [upd, setUpd] = useState(false);
+  const [moved, setMoved] = useState<{ from: string; to: string } | null>(null);
+  const [msgStep, setMsgStep] = useState<string | null>(null);
   const waTpl = suggestTpl(waCtx, { blocking: blk.blocking, draftBlPending: job.docs.some((d) => d.key === 'draftBl' && (d.status === 'waiting' || d.status === 'pending')), isImportArrival: job.dir === 'import' && !!job.vessel && !job.vessel.sailed });
   return (
     <div className="j-drawer-wrap" onClick={onClose}>
@@ -490,13 +496,16 @@ function JobDrawerBody({ job, lang, now, tariffs, T, onClose, onDraftQuote, onOp
             </p>
           </div>
           <div className="j-d-actions">
+            <button type="button" className="btn primary" onClick={() => { setUpd(true); setMoved(null); }} data-testid="job-update">
+              {L('updateClient')}
+            </button>
             {onOpenClient && (
               <button type="button" className="btn ghost" onClick={onOpenClient} data-testid="open-client">
                 {L('clientDash')} →
               </button>
             )}
             {canQuote && (
-              <button type="button" className="btn primary" onClick={onDraftQuote} data-testid="draft-quote">
+              <button type="button" className="btn ghost" onClick={onDraftQuote} data-testid="draft-quote">
                 {L('draftQuote')} →
               </button>
             )}
@@ -506,6 +515,22 @@ function JobDrawerBody({ job, lang, now, tariffs, T, onClose, onDraftQuote, onOp
           </div>
         </header>
 
+        {upd && <UpdateClientPanel job={job} lang={lang} onCancel={() => setUpd(false)} onMoved={(from, to, write) => { setUpd(false); setMoved({ from, to }); if (write) setMsgStep(to); }} />}
+        {moved && !upd && (
+          <div className="j-upd-done" role="status" data-testid="ju-done">
+            <span>✓ {L('movedTo')} <bdi className="j-code">{moved.to}</bdi> {stepDef(moved.to)?.[lang]}</span>
+            <button type="button" className="btn ghost sm" onClick={() => setMsgStep(moved.to)} data-testid="ju-write">{L('writeAgain')}</button>
+          </div>
+        )}
+        {msgStep && (
+          <WaDialog
+            recipients={clientR} templates={JOB_TPLS} ctx={{ ...waCtx, step: msgStep }} defaultTpl={tplForStep(msgStep, waCtx)}
+            link={{ jobId: job.id, clientId: client?.id ?? null }} fallbackLang={client?.lang ?? 'en'}
+            title={<>{L('updateClient')} · <bdi>{msgStep}</bdi> {stepDef(msgStep)?.[lang]}</>}
+            inbox={inboxConv ? { convId: inboxConv.id, label: L('sendFromInbox') } : null}
+            onClose={() => setMsgStep(null)} testid="job-update"
+          />
+        )}
         <div className="j-d-wa" data-testid="job-wa">
           <WaButton recipients={clientR} templates={JOB_TPLS} ctx={waCtx} defaultTpl={waTpl} link={{ jobId: job.id, clientId: client?.id ?? null }} fallbackLang={client?.lang ?? 'en'} label={wt(lang, 'wa')} testid="job-client" />
             {agentR.length > 0 && <WaButton recipients={agentR} templates={['general', 'arrival', 'draftBl', 'cutoff48']} ctx={waCtx} defaultTpl="general" link={{ jobId: job.id }} fallbackLang="en" label={`${wt(lang, 'wa')} · ${L('agent')}`} testid="job-agent" />}
@@ -694,13 +719,11 @@ function NewJobForm({ lang, clients, onClose, onCreated }: { lang: Lang; clients
   const [commodity, setCommodity] = useState('');
   const [line, setLine] = useState('');
   const [equip, setEquip] = useState('1×20');
-  const steps = stepsFor(dir);
-  const [step, setStep] = useState('E5');
+  const first = stepsFor(dir)[0];
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const flip = (d: 'export' | 'import') => {
     setDir(d);
-    setStep(d === 'export' ? 'E5' : 'I3');
     if (d === 'import') { setPod('Bandar Abbas'); if (pol === 'Bandar Abbas') setPol(''); } else { setPol('Bandar Abbas'); if (pod === 'Bandar Abbas') setPod(''); }
   };
   const c = clients.find((x) => x.id === cid);
@@ -710,9 +733,9 @@ function NewJobForm({ lang, clients, onClose, onCreated }: { lang: Lang; clients
     const id = `FD-${dir === 'export' ? 'E' : 'I'}-${String(Date.now()).slice(-5)}`;
     const now = Date.now();
     const j: Job = {
-      id, dir, customer: c.jobName ?? c.name, clientId: c.id, commodity: commodity.trim(), pol: pol.trim(), pod: pod.trim(), line: line.trim() || '—', step,
+      id, dir, customer: c.jobName ?? c.name, clientId: c.id, commodity: commodity.trim(), pol: pol.trim(), pod: pod.trim(), line: line.trim() || '—', step: first.code,
       containers: [], plannedEquipment: equip.trim() || undefined, charges: [], cheques: [], docs: [{ key: 'booking', status: 'pending' }],
-      log: [{ at: now, text: `${step} Job created on the desk` }], sample: true,
+      log: [{ at: now, text: `${first.code} Booking created on the desk` }], sample: true,
     };
     setBusy(true);
     try {
@@ -741,13 +764,70 @@ function NewJobForm({ lang, clients, onClose, onCreated }: { lang: Lang; clients
         <label>{L('commodityJ')}<input value={commodity} onChange={(e) => setCommodity(e.target.value)} data-testid="nj-commodity" /></label>
         <label>{L('lineJ')}<input value={line} onChange={(e) => setLine(e.target.value)} placeholder="Line A (sample)" data-testid="nj-line" /></label>
         <label>{L('equipment')}<input value={equip} onChange={(e) => setEquip(e.target.value)} data-testid="nj-equip" /></label>
-        <label>{L('startStep')}<select value={step} onChange={(e) => setStep(e.target.value)} data-testid="nj-step">{steps.map((st) => <option key={st.code} value={st.code}>{st.code} · {st[lang]}</option>)}</select></label>
       </div>
+      <p className="j-foot" data-testid="nj-starts">{L('startsAt')}: <bdi className="j-code">{first.code}</bdi> {first[lang]}.</p>
       <p className="j-foot">{L('newJobNote')} {isLive() ? L('savedLive') : L('savedLocal')}.</p>
       {err && <p className="q-amber">{err}</p>}
       <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
         <button type="button" className="btn ghost sm" onClick={onClose}>{L('cancelJ')}</button>
         <button type="button" className="btn primary sm" disabled={!ok || busy} onClick={() => void create()} data-testid="nj-create">{L('createJob')}</button>
+      </div>
+    </section>
+  );
+}
+
+/** Drawer action: move the booking to the next step (or another one) and then write to the client. */
+function UpdateClientPanel({ job, lang, onCancel, onMoved }: { job: Job; lang: Lang; onCancel: () => void; onMoved: (from: string, to: string, write: boolean) => void }) {
+  const L = (k: Key) => tr(lang, k);
+  const steps = stepsFor(job.dir);
+  const cur = stepIndex(job.step);
+  const next = steps[cur] ?? null;
+  const [to, setTo] = useState(next?.code ?? job.step);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const target = stepDef(to);
+  const go = async (write: boolean) => {
+    if (to === job.step) return;
+    setBusy(true);
+    try {
+      await jobsStore.setStep(job.id, to, { at: Date.now(), text: `${job.step} → ${to}` });
+      onMoved(job.step, to, write);
+    } catch (e) {
+      setErr(String((e as Error).message ?? e));
+    } finally {
+      setBusy(false);
+    }
+  };
+  const now = stepDef(job.step);
+  return (
+    <section className="j-upd" data-testid="ju-panel">
+      <h3>{L('updateTitle')}</h3>
+      <div className="j-upd-row">
+        <div className="j-upd-box" data-testid="ju-now">
+          <span className="j-upd-label">{L('nowAt')}</span>
+          <strong><bdi className="j-code">{job.step}</bdi> {now?.[lang]}</strong>
+        </div>
+        <span className="j-upd-arrow" aria-hidden="true">{lang === 'fa' || lang === 'ar' ? '←' : '→'}</span>
+        <label className="j-upd-box">
+          <span className="j-upd-label">{L('moveTo')}</span>
+          <select className="c-in" value={to} onChange={(e) => setTo(e.target.value)} data-testid="ju-step">
+            {steps.map((st) => (
+              <option key={st.code} value={st.code} disabled={st.code === job.step}>
+                {st.code} · {st[lang]}{next && st.code === next.code ? ` (${L('nextStepTag')})` : ''}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+      {!next && <p className="j-foot">{L('lastStepDone')}</p>}
+      <p className="j-foot">{L('updateNote')}</p>
+      {err && <p className="q-amber">{err}</p>}
+      <div className="j-upd-actions">
+        <button type="button" className="btn ghost" onClick={onCancel} data-testid="ju-cancel">{L('cancelJ')}</button>
+        <button type="button" className="btn ghost" disabled={busy || to === job.step} onClick={() => void go(false)} data-testid="ju-move-only">{L('moveOnly')}</button>
+        <button type="button" className="btn primary" disabled={busy || to === job.step} onClick={() => void go(true)} data-testid="ju-apply">
+          {L('moveAndWrite')} · <bdi>{target?.code}</bdi>
+        </button>
       </div>
     </section>
   );

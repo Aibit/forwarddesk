@@ -15,7 +15,7 @@ export const saveServerCfg = (c: ServerCfg | null) => {
   refreshBackend();
 };
 
-interface State { backend: InboxBackend | null; mode: 'sample' | 'server' | 'none'; convs: Conv[]; error: string | null; loaded: boolean; nav: { id: number; n: number } | null }
+interface State { backend: InboxBackend | null; mode: 'sample' | 'server' | 'none'; convs: Conv[]; error: string | null; loaded: boolean; nav: { id: number; n: number; draft?: string } | null }
 let st: State = { backend: null, mode: 'none', convs: [], error: null, loaded: false, nav: null };
 const subs = new Set<() => void>();
 const set = (p: Partial<State>) => { st = { ...st, ...p }; subs.forEach((f) => f()); };
@@ -50,4 +50,4 @@ export async function reloadConvs() {
 export const patchConv = (c: Conv) => set({ convs: st.convs.map((x) => (x.id === c.id ? { ...x, ...c } : x)) });
 export const totalUnread = (convs: Conv[]) => convs.reduce((a, c) => a + (c.unread || 0), 0);
 /** Ask the app to show the Inbox with this conversation open. */
-export const openInInbox = (id: number) => set({ nav: { id, n: (st.nav?.n ?? 0) + 1 } });
+export const openInInbox = (id: number, draft?: string) => set({ nav: { id, n: (st.nav?.n ?? 0) + 1, draft } });

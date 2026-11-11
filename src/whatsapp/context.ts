@@ -70,6 +70,7 @@ export function jobCtx(job: Job, opts: { company?: Company | null; ledger?: Ledg
     job: job.id,
     route: `${job.pol} → ${job.pod}`,
     dir: job.dir,
+    step: job.step,
     vessel: job.vessel?.name,
     pod: job.pod,
     containers: (soon.length ? soon.map((x) => x.c.no) : job.containers.map((c) => c.no)),

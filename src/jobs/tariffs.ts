@@ -27,7 +27,7 @@ export interface Tariffs {
 export type TariffKey = Exclude<keyof Tariffs, 'year' | 'currency'>;
 
 export const DEFAULT_TARIFFS: Tariffs = {
-  year: '1405 (2026/27)',
+  year: '2026/27',
   currency: 'USD',
   demurrage20Tier1: 20,
   demurrage20Tier2: 40,
@@ -63,10 +63,18 @@ export const TARIFF_ROWS: { key: TariffKey; setBy: 'sa' | 'po' | 'line'; unit: s
 ];
 
 const KEY = 'fd-tariffs-v1';
+/** Gregorian only: tables saved before 0.11 carried a Jalali year ("1405 (2026/27)"); keep just the Gregorian part. */
+export function gregorianYear(y: string): string {
+  const v = String(y ?? '').trim();
+  const m = v.match(/(20\d{2}\s*\/\s*\d{2,4})/);
+  if (m) return m[1].replace(/\s+/g, '');
+  return /^[1۱][34۳۴][0-9۰-۹]{2}\b/.test(v) ? DEFAULT_TARIFFS.year : v;
+}
+const clean = (t: Tariffs): Tariffs => ({ ...t, year: gregorianYear(t.year) });
 function readLocal(): Tariffs {
   try {
     const raw = localStorage.getItem(KEY);
-    if (raw) return { ...DEFAULT_TARIFFS, ...(JSON.parse(raw) as Partial<Tariffs>) };
+    if (raw) return clean({ ...DEFAULT_TARIFFS, ...(JSON.parse(raw) as Partial<Tariffs>) });
   } catch {
     /* ignore */
   }
@@ -91,7 +99,7 @@ export function saveTariffs(t: Tariffs) {
   emit();
 }
 export function hydrateTariffs(t: Partial<Tariffs> | null) {
-  current = { ...DEFAULT_TARIFFS, ...(t ?? {}) };
+  current = clean({ ...DEFAULT_TARIFFS, ...(t ?? {}) });
   emit();
 }
 export function reloadTariffs() {

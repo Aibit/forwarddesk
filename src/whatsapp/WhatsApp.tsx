@@ -5,6 +5,7 @@ import { wt } from './i18n';
 import { CALLING_CODES, fmtPhone, isE164, normalizePhone, splitPhone, waDigits, waLink } from './phone';
 import { fillTpl, tplName, tplReady, type TplCtx, type TplKey, type WaLang } from './templates';
 import { waLog, type WaLogEntry } from './log';
+import { openInInbox } from '../inbox/state';
 import type { WaRecipient } from './context';
 import './whatsapp.css';
 
@@ -34,6 +35,10 @@ export interface WaButtonProps {
   className?: string;
   testid: string;
   onOpened?: (e: WaLogEntry) => void;
+  /** also offer sending from the Inbox: opens this conversation with the message in the composer */
+  inbox?: { convId: number; label: string } | null;
+  /** dialog heading (default: "Send on WhatsApp") */
+  title?: ReactNode;
 }
 
 /** "WhatsApp" button that opens the template picker. */
@@ -50,7 +55,7 @@ export function WaButton(p: WaButtonProps) {
   );
 }
 
-export function WaDialog({ recipients, templates, ctx, defaultTpl, link, fallbackLang = 'en', onClose, onOpened }: WaButtonProps & { onClose: () => void }) {
+export function WaDialog({ recipients, templates, ctx, defaultTpl, link, fallbackLang = 'en', onClose, onOpened, inbox, title }: WaButtonProps & { onClose: () => void }) {
   const [ui] = useUiLang();
   const firstOk = recipients.find((r) => isE164(r.number)) ?? recipients[0] ?? null;
   const [rid, setRid] = useState<string>(firstOk?.id ?? 'manual');
@@ -89,7 +94,7 @@ export function WaDialog({ recipients, templates, ctx, defaultTpl, link, fallbac
       <div className="wa-modal" role="dialog" aria-modal="true" aria-label={wt(ui, 'title')} dir={rtl(ui) ? 'rtl' : 'ltr'} lang={ui} onClick={(e) => e.stopPropagation()} data-testid="wa-dialog">
         <header className="wa-head">
           <span className="wa-head-ic"><WaIcon size={22} /></span>
-          <h2>{wt(ui, 'title')}</h2>
+          <h2>{title ?? wt(ui, 'title')}</h2>
           <button type="button" className="btn ghost sm" onClick={onClose} aria-label={wt(ui, 'cancel')}>✕</button>
         </header>
         <div className="wa-sec">
@@ -133,6 +138,7 @@ export function WaDialog({ recipients, templates, ctx, defaultTpl, link, fallbac
           <button type="button" className="btn ghost" onClick={() => void copy()} data-testid="wa-copy">{copied ? wt(ui, 'copied') : wt(ui, 'copy')}</button>
           <span className="wa-flex" />
           <button type="button" className="btn ghost" onClick={onClose}>{wt(ui, 'cancel')}</button>
+          {inbox && <button type="button" className="btn ghost" onClick={() => { openInInbox(inbox.convId, text); onClose(); }} data-testid="wa-inbox">{inbox.label}</button>}
           {href
             ? <a className="btn primary wa-open" href={href} target="_blank" rel="noopener noreferrer" onClick={opened} data-testid="wa-open"><WaIcon /> {wt(ui, 'open')}</a>
             : <button type="button" className="btn primary wa-open" disabled data-testid="wa-open"><WaIcon /> {wt(ui, 'open')}</button>}

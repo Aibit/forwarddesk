@@ -3,7 +3,7 @@
 .ib-banner { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; color: var(--muted); font-size: 15px; }
 .ib-warn { color: var(--amber-ink); background: var(--amber-dim); border: 1px solid var(--amber-line); border-radius: var(--radius-sm); padding: 6px 10px; margin: 0; font-size: 15px; }
 .ib-grid { display: grid; grid-template-columns: minmax(300px, 380px) 1fr; border: 1px solid var(--border); border-radius: var(--radius); min-height: 620px; height: calc(100vh - 330px); overflow: hidden; background: var(--bg, transparent); }
-.ib-list { border-inline-end: 1px solid var(--border); display: flex; flex-direction: column; min-height: 0; }
+.ib-list { border-inline-end: 1px solid var(--border); display: flex; flex-direction: column; min-height: 0; min-width: 0; }
 .ib-search { margin: 12px 12px 8px; width: auto; }
 .ib-filters { display: flex; gap: 4px; padding: 0 12px 10px; border-bottom: 1px solid var(--border); }
 .ib-filters button { border: 1px solid var(--border); background: transparent; border-radius: 999px; padding: 3px 12px; font: inherit; font-size: 14px; color: var(--muted); cursor: pointer; }
@@ -97,7 +97,8 @@
 .wa-srv-fallback { font-size: 13.5px; }
 .nd-badge { margin-inline-start: auto; background: var(--pass); color: #fff; border-radius: 999px; min-width: 20px; height: 20px; padding: 0 6px; display: inline-grid; place-items: center; font-size: 12px; font-weight: 600; }
 @media (max-width: 900px) {
-  .ib-grid { grid-template-columns: 1fr; height: auto; min-height: 0; }
+  .ib-grid { grid-template-columns: minmax(0, 1fr); height: auto; min-height: 0; }
+  .ib-list, .ib-thread { min-width: 0; }
   .ib.has-sel .ib-list { display: none; }
   .ib:not(.has-sel) .ib-thread { display: none; }
   .ib-back { display: inline-flex; }

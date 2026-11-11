@@ -42,6 +42,7 @@ export interface Writer {
   loadMsds(id: string): Promise<Blob | undefined>;
   deleteMsds(id: string): Promise<void>;
   createJob(j: Job): Promise<void>;
+  setJobStep(jobId: string, step: string, entry: { at: number; text: string; kind?: 'info' | 'warn' | 'alert' }): Promise<void>;
   approveDraftBl(jobId: string): void;
 }
 

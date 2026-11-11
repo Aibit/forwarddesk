@@ -91,7 +91,13 @@ export function InboxView({ onOpenJob }: { onOpenJob?: (id: string) => void }) {
   const endRef = useRef<HTMLDivElement>(null);
   const b = ib.backend;
 
-  useEffect(() => { if (ib.nav) setSel(ib.nav.id); }, [ib.nav]);
+  // A draft handed over from the booking drawer ("Update client"): fill the composer once that conversation is open.
+  const pendingDraft = useRef<{ id: number; text: string } | null>(null);
+  useEffect(() => {
+    if (!ib.nav) return;
+    if (ib.nav.draft) { pendingDraft.current = { id: ib.nav.id, text: ib.nav.draft }; if (sel === ib.nav.id) { setText(ib.nav.draft); pendingDraft.current = null; } }
+    setSel(ib.nav.id);
+  }, [ib.nav]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { void reloadConvs(); }, [b]);
   useEffect(() => { if (b?.kind === 'server') { b.status().then((s) => setStatus(s)).catch(() => setStatus(null)); } else setStatus(null); }, [b]);
   useEffect(() => { if (b) syncDirectory(b).catch(() => { /* shown via list errors */ }); }, [b, store.clients, agents.list, jobs]);
@@ -104,7 +110,8 @@ export function InboxView({ onOpenJob }: { onOpenJob?: (id: string) => void }) {
     } catch (e) { setErr(String((e as Error).message ?? e)); }
   };
   useEffect(() => {
-    setThread(null); setErr(null); setText(''); setAttachOpen(false);
+    setThread(null); setErr(null); setAttachOpen(false);
+    if (pendingDraft.current && pendingDraft.current.id === sel) { setText(pendingDraft.current.text); pendingDraft.current = null; } else setText('');
     if (sel == null || !b) return;
     void loadThread(sel);
     const c = ib.convs.find((x) => x.id === sel);

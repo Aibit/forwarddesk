@@ -217,3 +217,31 @@
 .j-wa-log-h { display: flex; align-items: center; gap: 0.4rem; font-weight: 600; margin-bottom: 0.4rem; flex-wrap: wrap; }
 .j-d-actions { flex-wrap: wrap; }
 .j-d-wa { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0.25rem 0 0.75rem; }
+
+/* Tariffs: two columns only when each tariff has room; on phones one tariff per row (label, source, then input + unit). */
+.j-tariff-grid { grid-template-columns: repeat(auto-fill, minmax(min(100%, 24rem), 1fr)); }
+.j-tariff-name { min-width: 0; overflow-wrap: anywhere; }
+@media (max-width: 720px) {
+  .j-tariff { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto auto; row-gap: 0.25rem; padding: 0.5rem 0; }
+  .j-tariff-name { font-size: 0.95rem; }
+  .j-tariff-by { grid-row: 2; font-size: 0.78rem; }
+  .j-tariff-in { grid-row: 3; grid-column: 1; flex-wrap: wrap; }
+  .j-tariff-in input { width: 7.5rem; font-size: 1rem; padding: 0.35rem 0.5rem; }
+  .j-unit { min-width: 0; font-size: 0.8rem; white-space: normal; }
+}
+
+/* Update client (drawer): move the booking on, then write to the client. */
+.j-upd { background: var(--panel); border: 1px solid var(--border-strong); border-radius: var(--radius); padding: 1rem 1.1rem; margin: 0.25rem 0 0.85rem; display: grid; gap: 0.7rem; }
+.j-upd h3 { margin: 0; font-size: 1.05rem; font-weight: 650; }
+.j-upd-row { display: flex; align-items: flex-end; gap: 0.75rem; flex-wrap: wrap; }
+.j-upd-box { display: grid; gap: 0.3rem; flex: 1 1 14rem; min-width: 0; font-size: 1rem; }
+.j-upd-box strong { font-size: 1.02rem; font-weight: 600; padding: 0.45rem 0; }
+.j-upd-box select { font-size: 1rem; padding: 0.5rem 0.6rem; width: 100%; }
+.j-upd-label { font-size: 0.8rem; color: var(--muted); }
+.j-upd-arrow { font-size: 1.3rem; color: var(--muted); padding-bottom: 0.5rem; }
+.j-upd .j-foot { margin: 0; font-size: 0.88rem; }
+.j-upd-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: flex-end; }
+.j-upd-done { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap; border: 1px solid var(--border); background: var(--panel); border-radius: var(--radius); padding: 0.6rem 0.9rem; margin: 0.25rem 0 0.85rem; font-size: 0.98rem; }
+@media (max-width: 560px) { .j-upd-arrow { display: none; } .j-upd-actions .btn { flex: 1 1 100%; } }
+/* Phones: board row sub-lines wrap instead of being cut. */
+@media (max-width: 720px) { .j-row .j-sub { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: anywhere; } }

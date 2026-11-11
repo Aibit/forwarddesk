@@ -2,11 +2,11 @@
 // Wording: professional, short, one ask per message. FA and AR wording was written in-house:
 // have a native speaker review it before regular use.
 import type { UiLang } from '../ui/lang';
-
+import { stepDef, stepIndex, stepsFor } from '../jobs/steps';
 export type WaLang = UiLang;
-export type TplKey = 'freeTime' | 'cutoff48' | 'payBeforeBl' | 'draftBl' | 'invoiceIssued' | 'arrival' | 'quoteSent' | 'general';
-export const JOB_TPLS: TplKey[] = ['freeTime', 'cutoff48', 'payBeforeBl', 'draftBl', 'invoiceIssued', 'arrival', 'general'];
-export const ALL_TPLS: TplKey[] = ['freeTime', 'cutoff48', 'payBeforeBl', 'draftBl', 'invoiceIssued', 'arrival', 'quoteSent', 'general'];
+export type TplKey = 'stepUpdate' | 'freeTime' | 'cutoff48' | 'payBeforeBl' | 'draftBl' | 'invoiceIssued' | 'arrival' | 'quoteSent' | 'general';
+export const JOB_TPLS: TplKey[] = ['stepUpdate', 'freeTime', 'cutoff48', 'payBeforeBl', 'draftBl', 'invoiceIssued', 'arrival', 'general'];
+export const ALL_TPLS: TplKey[] = ['stepUpdate', 'freeTime', 'cutoff48', 'payBeforeBl', 'draftBl', 'invoiceIssued', 'arrival', 'quoteSent', 'general'];
 
 export interface TplCtx {
   name?: string;
@@ -30,11 +30,14 @@ export interface TplCtx {
   release?: 'hbl' | 'do';
   quoteText?: string;
   quoteRef?: string;
+  /** booking step code (E1–E23 / I1–I16) for the booking update message */
+  step?: string;
   now?: number;
 }
 
 /** Template names, shown in the staff member's UI language. */
 export const TPL_NAME: Record<TplKey, [string, string, string, string]> = {
+  stepUpdate: ['Booking update (step)', 'Novedades de la reserva (paso)', 'به‌روزرسانی بوکینگ (مرحله)', 'تحديث الحجز (المرحلة)'],
   freeTime: ['Free time ending', 'Fin del tiempo libre', 'پایان فری‌تایم', 'انتهاء الفترة المجانية'],
   cutoff48: ['Cut-off reminder (48 h)', 'Recordatorio de cut-off (48 h)', 'یادآوری کات‌آف (۴۸ ساعت)', 'تذكير بالموعد النهائي (٤٨ ساعة)'],
   payBeforeBl: ['Pay before B/L release', 'Pago antes de liberar el B/L', 'پرداخت پیش از صدور بارنامه', 'الدفع قبل الإفراج عن بوليصة الشحن'],
@@ -81,6 +84,7 @@ export function tplReady(k: TplKey, c: TplCtx): boolean {
     case 'invoiceIssued': return !!c.invoiceNo && (c.invoiceAmount ?? c.amount) != null;
     case 'arrival': return c.eta != null && !!c.vessel;
     case 'quoteSent': return !!c.quoteText;
+    case 'stepUpdate': return !!c.step && !!stepDef(c.step);
     default: return true;
   }
 }
@@ -145,6 +149,18 @@ export function fillTpl(k: TplKey, lang: WaLang, c: TplCtx): string {
       fa: `طبق درخواست شما، پیشنهاد قیمت ما${ref}:\n\n${c.quoteText ?? ''}\n\nدر صورت تأیید، لطفاً اطلاع دهید.`,
       ar: `بناءً على طلبكم، نرسل لكم عرض السعر${ref}:\n\n${c.quoteText ?? ''}\n\nيُرجى إعلامنا بموافقتكم للمتابعة.`,
     },
+    stepUpdate: (() => {
+      const sd = c.step ? stepDef(c.step) : undefined;
+      if (!sd) return { en: '', es: '', fa: '', ar: '' };
+      const all = stepsFor(c.step!.startsWith('E') ? 'export' : 'import');
+      const nx = all[stepIndex(c.step!)];
+      return {
+        en: `Update on booking ${job}${route}.\nNow: ${sd.en} (${sd.code}).${nx ? `\nNext: ${nx.en} (${nx.code}).` : ''}\nWe will keep you posted.`,
+        es: `Novedades de la reserva ${job}${route}.\nAhora: ${sd.es} (${sd.code}).${nx ? `\nSiguiente: ${nx.es} (${nx.code}).` : ''}\nLes mantendremos informados.`,
+        fa: `به‌روزرسانی بوکینگ ${job}${route}.\nمرحله فعلی: ${sd.fa} (${sd.code}).${nx ? `\nمرحله بعد: ${nx.fa} (${nx.code}).` : ''}\nشما را در جریان خواهیم گذاشت.`,
+        ar: `تحديث بشأن الحجز ${job}${route}.\nالمرحلة الحالية: ${sd.ar} (${sd.code}).${nx ? `\nالمرحلة التالية: ${nx.ar} (${nx.code}).` : ''}\nسنبقيكم على اطلاع.`,
+      };
+    })(),
     general: { en: '', es: '', fa: '', ar: '' },
   };
   return `${hi}\n\n${body[k][lang] ? `${body[k][lang]}\n\n` : '\n\n'}${bye}`;
@@ -160,4 +176,12 @@ export function suggestTpl(c: TplCtx, step?: { draftBlPending?: boolean; blockin
   if (step?.isImportArrival && tplReady('arrival', c)) return 'arrival';
   if (tplReady('invoiceIssued', c)) return 'invoiceIssued';
   return 'general';
+}
+
+/** The client message that matches a booking moving to `step`: a specific alert when the step has one and its data is there, else the step update. */
+export function tplForStep(step: string, c: TplCtx): TplKey {
+  const ctx = { ...c, step };
+  const want: Partial<Record<string, TplKey>> = { E8: 'freeTime', E17: 'cutoff48', E18: 'cutoff48', E19: 'draftBl', E20: 'draftBl', E21: 'payBeforeBl', I10: 'arrival', I11: 'payBeforeBl', I12: 'payBeforeBl', I14: 'freeTime' };
+  const k = want[step];
+  return k && tplReady(k, ctx) ? k : 'stepUpdate';
 }

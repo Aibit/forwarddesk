@@ -606,3 +606,6 @@ body { overflow: hidden; }
 .wn-new { color: var(--blue-ink); font-weight: 600; font-size: 14px; }
 .wn-rel h2 { font-size: 22px; margin: 2px 0 8px; font-weight: 650; }
 .wn-rel ul { margin: 0; padding-inline-start: 22px; display: flex; flex-direction: column; gap: 6px; font-size: 17px; line-height: 1.55; }
+
+/* "Newer version available" (old cached build) */
+.fd-update { position: fixed; inset-inline: 0; bottom: 1rem; margin-inline: auto; width: fit-content; max-width: calc(100vw - 2rem); z-index: 400; display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; background: var(--panel, #fff); border: 1px solid var(--border-strong, #ddd); border-radius: 10px; box-shadow: 0 8px 24px rgba(15, 15, 15, 0.12); padding: 0.6rem 0.9rem; font-size: 0.98rem; }

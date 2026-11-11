@@ -10,6 +10,7 @@ import { AccountDialog, AccountView, GettingStarted, JOIN_KEY, OnboardingWizard,
 import { useSession } from './backend/session';
 import { clientForJob, getStore } from './clients/store';
 import './App.css';
+import { UpdateBanner } from './ui/UpdateBanner';
 import './ui/notion.css';
 import { FinanceView } from './billing/FinanceView';
 import './billing/billing.css';
@@ -105,6 +106,7 @@ function App() {
         </div>
       </header>
 
+      <UpdateBanner />
       <div className="nd-scroll" data-testid="page-scroll">
       <div className="nd-page">
       <PageHeader view={shownView} />

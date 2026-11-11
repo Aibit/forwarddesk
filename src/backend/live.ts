@@ -5,7 +5,7 @@ import {
   signInWithEmailAndPassword, signInWithPopup, signOut as fbSignOut, updateProfile, type Auth, type User,
 } from 'firebase/auth';
 import {
-  collection, connectFirestoreEmulator, deleteDoc, deleteField, doc, getDoc, initializeFirestore, onSnapshot, query, serverTimestamp,
+  arrayUnion, collection, connectFirestoreEmulator, deleteDoc, deleteField, doc, getDoc, initializeFirestore, onSnapshot, query, serverTimestamp,
   setDoc, updateDoc, where, writeBatch, Timestamp, type DocumentData, type Firestore, type Unsubscribe,
 } from 'firebase/firestore';
 import { FIREBASE_CONFIG, ORG_ID, USE_EMULATOR } from './config';
@@ -318,6 +318,10 @@ function writer(user: User, role: 'staff' | 'client', clientId: string | null): 
       b.set(d(`jobs/${j.id}`), { ...job, createdAt: Date.now() });
       if (internal) b.set(d(`jobInternal/${j.id}`), internal);
       await b.commit();
+    },
+    async setJobStep(jobId, step, entry) {
+      if (!staffOnly('job')) return;
+      await updateDoc(d(`jobs/${jobId}`), { step, log: arrayUnion(entry) });
     },
     approveDraftBl(jobId) {
       run(updateDoc(d(`jobs/${jobId}`), { portal: { draftBlApprovedAt: serverTimestamp(), by: user.uid } }));
