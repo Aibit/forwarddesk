@@ -101,3 +101,12 @@ select.b-in { width: auto; }
   .j-d-head h2 { font-size: 1.15rem; }
   .b-doc-grid { grid-template-columns: 1fr; }
 }
+/* Review fix: keep the charge table inside the job drawer on 1280–1440 px laptops. */
+.b-lines select.b-in { min-width: 0 !important; width: auto; padding-inline: 0.3rem; }
+.b-lines .b-in.wide { min-width: 9.5rem; }
+.b-lines .b-in:not(.sm):not(.xs):not(.wide) { min-width: 5.5rem; }
+.b-lines td, .b-lines th { padding-inline: 0.2rem; }
+.b-lines .b-in.sm { width: 4.4rem; }
+.b-lines .b-in.xs { width: 3rem; }
+.b-lines .b-in.wide { min-width: 9rem; }
+.b-lines .b-in:not(.sm):not(.xs):not(.wide) { min-width: 5rem; }

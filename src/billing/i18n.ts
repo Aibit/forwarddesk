@@ -84,7 +84,7 @@ const S = {
   markPaid: ['Mark paid', 'Marcar pagado', 'علامت پرداخت'],
   unpaid: ['Unpaid', 'Sin pagar', 'پرداخت نشده'],
   cheques: ['Guarantee cheques', 'Cheques de garantía', 'چک‌های تضمین'],
-  chequeRule: ['Cheques come back only when the empty container is returned (I15) — not when invoices are paid.', 'Los cheques se devuelven solo cuando el contenedor vacío vuelve (I15), no al pagar facturas.', 'چک‌ها فقط پس از عودت کانتینر خالی (I15) برمی‌گردند، نه با پرداخت فاکتور.'],
+  chequeRule: ['Cheques come back only when the empty container is returned — not when invoices are paid.', 'Los cheques se devuelven solo cuando el contenedor vacío vuelve, no al pagar facturas.', 'چک‌ها فقط پس از عودت کانتینر خالی برمی‌گردند، نه با پرداخت فاکتور.'],
   emptyBack: ['empty returned', 'vacío devuelto', 'خالی عودت شد'],
   emptyOut: ['empty not back yet', 'vacío aún fuera', 'خالی هنوز برنگشته'],
   invoicePdf: ['Invoice PDF', 'PDF factura', 'PDF فاکتور'],

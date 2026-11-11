@@ -174,7 +174,7 @@ function App() {
       } else {
         pushMsg(
           'System',
-          `Static mode: using seed desk data. Start python3 server.py for live ingest.`,
+          'SAMPLE desk data: RFQs and buy-side capacity are illustrative, not real offers.',
           'warn'
         );
       }
@@ -612,7 +612,7 @@ function App() {
       ? 'INGEST'
       : dataSource === 'tms-stub'
         ? 'TMS-STUB'
-        : 'SEED';
+        : 'SAMPLE';
 
   const pick = (v: ViewKey) => {
     if (v === 'jobs') setJobReq(null);
@@ -730,7 +730,7 @@ function App() {
               onClick={() => void runMatch('RFQ-1005')}
               title="Restricted commodity — expect BudgetWheels veto"
             >
-              Demo: veto
+              Try: restricted cargo
             </button>
             <button
               type="button"
@@ -739,7 +739,7 @@ function App() {
               onClick={() => void runMatch('RFQ-1004')}
               title="Hazmat — only SafeChem passes"
             >
-              Demo: hazmat
+              Try: hazmat cargo
             </button>
             <button
               type="button"
@@ -791,13 +791,11 @@ function App() {
       )}
 
       </div>
-      <footer className="ops-footer">
-        <span>
-          {viewMode === 'jobs' ? 'Dashboard + deadline tracker · read-only, alerts only · people act' : viewMode === 'clients' ? (sess.mode === 'live' ? 'Client setup + dashboard · live backend (sample data) · sample clients A–G' : 'Client setup + dashboard · saved in this browser only · sample clients A–G') : viewMode === 'agents' ? (sess.mode === 'live' ? 'Agent CRM · live backend, staff only · CSV import / export' : 'Agent CRM · saved in this browser only · CSV import / export') : viewMode === 'portal' ? (sess.mode === 'live' ? 'Customer-facing view · real account, scoped by security rules · sell prices only' : 'Customer-facing view · demo login, not secure · sell prices only') : viewMode === 'quote' ? 'Paste → read → ask → price → copy' : <><kbd>R</kbd> build quotes on selected RFQ</>}
-        </span>
-        <span>ForwardDesk · sales + quoting · pitch lane then lock buy/sell · human confirm</span>
-        <span>Schedules ≠ soft leftover</span>
-      </footer>
+      {!lite && (
+        <footer className="ops-footer">
+          <span><kbd>R</kbd> build quotes on selected RFQ</span>
+        </footer>
+      )}
       </div>
       </div>
 

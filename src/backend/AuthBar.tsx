@@ -29,9 +29,9 @@ const T = {
   offline: ['Cannot reach the server. Check the connection.', 'No se puede conectar con el servidor.', 'اتصال به سرور برقرار نشد.'],
   off: ['Online accounts are not configured in this build — Demo mode only.', 'Las cuentas en línea no están configuradas en esta versión — solo modo demo.', 'حساب آنلاین در این نسخه فعال نیست — فقط حالت نمایشی.'],
   compliance: [
-    'Compliance: the online backend is Google Firebase (US company; Firebase Auth data is processed in the US). Use sample / demo data only until the sanctions questions are cleared.',
-    'Cumplimiento: el backend en línea es Google Firebase (empresa de EE. UU.; los datos de Firebase Auth se procesan en EE. UU.). Usa solo datos de ejemplo hasta resolver las cuestiones de sanciones.',
-    'انطباق: سرور آنلاین Google Firebase است (شرکت آمریکایی؛ داده‌های ورود در آمریکا پردازش می‌شود). تا روشن شدن مسائل تحریم فقط از داده نمونه استفاده کنید.',
+    'Real accounts are in preview. Until they officially open, use sample data only — don\'t enter confidential customer data.',
+    'Las cuentas reales están en versión preliminar. Hasta su apertura oficial, usa solo datos de ejemplo; no introduzcas datos confidenciales de clientes.',
+    'حساب‌های واقعی در مرحله پیش‌نمایش هستند. تا افتتاح رسمی فقط از داده نمونه استفاده کنید و اطلاعات محرمانه مشتری وارد نکنید.',
   ],
   dismiss: ['Dismiss', 'Cerrar', 'بستن'],
   create: ['Create account', 'Crear cuenta', 'ساخت حساب'],
@@ -44,7 +44,7 @@ export const errText = (lang: L3, e: string | null) =>
   !e ? '' : e === 'bad-login' ? at(lang, 'badLogin') : e === 'no-org' ? at(lang, 'noOrg') : e === 'denied' ? at(lang, 'denied') : e === 'offline' ? at(lang, 'offline') : e === 'backend-off' ? at(lang, 'off') : e;
 
 export function ComplianceNote({ lang = 'en' }: { lang?: L3 }) {
-  return <p className="fd-compliance" data-testid="compliance-note" dir={lang === 'fa' ? 'rtl' : 'ltr'}>⚠ {at(lang, 'compliance')}</p>;
+  return <p className="fd-compliance" data-testid="compliance-note" dir={lang === 'fa' ? 'rtl' : 'ltr'}>{at(lang, 'compliance')}</p>;
 }
 
 export function SignInDialog({ onClose, initialLang = 'en' }: { onClose: () => void; initialLang?: L3 }) {

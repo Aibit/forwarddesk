@@ -101,6 +101,7 @@ function loadDemo() {
   docs = read<Record<string, JobDoc>>(KD, {});
   catalog = read<ChargeCode[] | null>(KC, null) ?? DEFAULT_CATALOG;
   live = false;
+  snap = { ledgers, docs, catalog };
 }
 if (typeof localStorage !== 'undefined') loadDemo();
 

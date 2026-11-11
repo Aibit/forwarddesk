@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState, type ChangeEvent, type ReactNode } from '
 import { type Job } from '../jobs/data';
 import { useJobs } from '../jobs/store';
 import { dur, fmtDay, num, usd } from '../jobs/i18n';
+import { DAY } from '../jobs/logic';
 import { loadTariffs, useTariffs } from '../jobs/tariffs';
 import { stepDef } from '../jobs/steps';
 import { ct, type CKey } from './i18n';
@@ -27,7 +28,7 @@ interface Props {
 
 export function ClientsView({ openRequest, onOpenJob, onNewQuote }: Props) {
   const { clients, company, quotes } = useStore();
-  const [lang, setLang] = useUiLang<CLang>();
+  const [lang] = useUiLang<CLang>();
   const [now, setNow] = useState(() => Date.now());
   const jobs: Job[] = useJobs();
   const tariffs = useTariffs();
@@ -55,7 +56,7 @@ export function ClientsView({ openRequest, onOpenJob, onNewQuote }: Props) {
     const label = n.kind === 'over' ? L('over') : n.kind === 'cutoff' ? L('cutoff') : L('free');
     return (
       <span className={`c-dl ${n.level}`}>
-        <bdi className="mono">{n.job.id}</bdi> · {label} <bdi className="mono">{dur(lang, n.ms, false)}</bdi>
+        <bdi className="mono">{n.job.id}</bdi> · {label} <bdi className="mono">{n.kind === 'over' ? `+${num(lang, Math.ceil(-n.ms / DAY))} ${D}` : dur(lang, n.ms, false)}</bdi>
       </span>
     );
   };
@@ -71,13 +72,6 @@ export function ClientsView({ openRequest, onOpenJob, onNewQuote }: Props) {
           <button type="button" className="btn sm primary" onClick={() => setEditing(newClient())} data-testid="add-client">{L('addClient')}</button>
           <button type="button" className="btn sm ghost" onClick={() => setEditCompany(true)} data-testid="edit-company">{L('yourCompany')}</button>
           <button type="button" className="btn sm ghost" onClick={() => setEditRules((v) => !v)} data-testid="edit-msds-rules">{lang === 'fa' ? 'قواعد MSDS' : lang === 'es' ? 'Reglas MSDS' : 'MSDS rules'}</button>
-          <div className="q-lang j-lang" role="group" aria-label="Language">
-            {(['en', 'es', 'fa'] as CLang[]).map((l) => (
-              <button key={l} type="button" className={lang === l ? 'active' : ''} onClick={() => setLang(l)} data-testid={`clients-lang-${l}`}>
-                {l === 'fa' ? 'FA فا' : l.toUpperCase()}
-              </button>
-            ))}
-          </div>
         </div>
       </div>
 
@@ -301,7 +295,7 @@ function JobDeadline({ j, lang, now, L }: { j: Job; lang: CLang; now: number; L:
   if (!k.next) return <span className="c-muted">{L('nothingDue')}</span>;
   const n = k.next;
   const label = n.kind === 'over' ? L('over') : n.kind === 'cutoff' ? L('cutoff') : L('free');
-  return <span className={`c-dl ${n.level}`}>{label} <bdi className="mono">{dur(lang, n.ms, n.kind === 'cutoff')}</bdi></span>;
+  return <span className={`c-dl ${n.level}`}>{label} <bdi className="mono">{n.kind === 'over' ? `+${num(lang, Math.ceil(-n.ms / DAY))} ${lang === 'fa' ? 'روز' : 'd'}` : dur(lang, n.ms, n.kind === 'cutoff')}</bdi></span>;
 }
 let tariffCache: ReturnType<typeof loadTariffs> | null = null;
 const loadTariffsCached = () => (tariffCache ??= loadTariffs());

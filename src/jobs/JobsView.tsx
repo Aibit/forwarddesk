@@ -19,7 +19,7 @@ import './jobs.css';
 const LIDX: Record<Lang, 0 | 1 | 2> = { en: 0, es: 1, fa: 2 };
 
 export function JobsView({ onDraftQuote, onOpenClient, openRequest }: { onDraftQuote: (text: string, customer?: string) => void; onOpenClient?: (customer: string) => void; openRequest?: { id: string; n: number } | null }) {
-  const [lang, setLang] = useUiLang<Lang>();
+  const [lang] = useUiLang<Lang>();
   const { clients } = useStore();
   /** E: agent at the port of discharge; I: agent at the port of loading (I2, I4–I8). */
   const agentOf = (j: Job) => agentForPort(clientForJob(clients, j.customer), j.dir === 'import' ? j.pol : j.pod);
@@ -112,13 +112,6 @@ export function JobsView({ onDraftQuote, onOpenClient, openRequest }: { onDraftQ
           <span className="j-note">{L('sampleNote')}</span></>}
         </div>
         <button type="button" className="btn sm primary" onClick={() => setNewJob(true)} data-testid="job-new">{L('newJob')}</button>
-        <div className="q-lang j-lang" role="group" aria-label="Language">
-          {(['en', 'es', 'fa'] as Lang[]).map((l) => (
-            <button key={l} type="button" className={lang === l ? 'active' : ''} onClick={() => setLang(l)} data-testid={`jobs-lang-${l}`}>
-              {l === 'fa' ? 'FA فا' : l.toUpperCase()}
-            </button>
-          ))}
-        </div>
       </div>
 
       {newJob && <NewJobForm lang={lang} clients={clients} onClose={() => setNewJob(false)} onCreated={(id) => { setNewJob(false); setOpenId(id); }} />}
