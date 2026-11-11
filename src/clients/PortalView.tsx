@@ -21,6 +21,7 @@ import { backendAvailable } from '../backend/config';
 import { signIn, signOut, useSession, getSession } from '../backend/session';
 import { errText } from '../backend/AuthBar';
 import './clients.css';
+import { LogoMark } from '../ui/Brand';
 
 const SESSION = 'fd.portal.session';
 const APPROVALS = 'fd.portal.approvals.v1';
@@ -60,7 +61,7 @@ export function PortalView() {
     if (!mine) return <div className="portal-view jobs-view" data-testid="portal-loading"><p className="c-muted">{pt(lang, 'loading')}</p></div>;
     return <Portal c={mine} lang={lang} setLang={setLang} onLogout={() => void signOut()} quotes={quotes} company={company} live />;
   }
-  if (!client) return <Login clients={clients} lang={lang} setLang={setLang} onLogin={login} companyName={company.name} />;
+  if (!client) return <Login clients={clients} lang={lang} setLang={setLang} onLogin={login} companyName={company.name} companyLogo={company.logo ?? null} />;
   return <Portal c={client} lang={lang} setLang={setLang} onLogout={logout} quotes={quotes} company={company} live={sess.mode === 'live'} />;
 }
 
@@ -76,7 +77,7 @@ function LangToggle({ lang, setLang }: { lang: CLang; setLang: (l: CLang) => voi
   );
 }
 
-function Login({ clients, lang, setLang, onLogin, companyName }: { clients: Client[]; lang: CLang; setLang: (l: CLang) => void; onLogin: (c: Client) => void; companyName: string }) {
+function Login({ clients, lang, setLang, onLogin, companyName, companyLogo }: { clients: Client[]; lang: CLang; setLang: (l: CLang) => void; onLogin: (c: Client) => void; companyName: string; companyLogo: string | null }) {
   const L = (k: PKey) => pt(lang, k);
   const [email, setEmail] = useState('');
   const [pw, setPw] = useState('');
@@ -104,7 +105,7 @@ function Login({ clients, lang, setLang, onLogin, companyName }: { clients: Clie
         <form className="q-panel p-login" onSubmit={submit}>
           <Art name="ship" className="fd-login-art" />
           <div className="p-brand">
-            <span className="c-logo-ph">FD</span>
+            {companyLogo ? <img src={companyLogo} alt="" className="c-logo" /> : <LogoMark size={40} className="c-logo-ph-mark" />}
             <div>
               <strong>{companyName || 'ForwardDesk'}</strong>
               <div className="c-muted">{L('portal')}</div>
@@ -170,7 +171,7 @@ function Portal({ c, lang, setLang, onLogout, quotes, company, live = false }: {
     <div className="portal-view jobs-view" dir={lang === 'fa' ? 'rtl' : 'ltr'} lang={lang} data-testid="portal">
       {live ? <div className="p-live" data-testid="portal-live-note">{L('liveNote')}</div> : <div className="p-demo">⚠ {L('demoWarn')}</div>}
       <div className="q-panel p-top">
-        {company.logo ? <img src={company.logo} alt="" className="c-logo" /> : <span className="c-logo-ph">FD</span>}
+        {company.logo ? <img src={company.logo} alt="" className="c-logo" /> : <LogoMark size={40} className="c-logo-ph-mark" />}
         <div className="p-top-txt">
           <strong>{company.name || 'ForwardDesk'}</strong> · {L('portal')}
           <div className="c-muted">{L('welcome')}, <strong data-testid="portal-client">{c.name}</strong> {c.sample && <span className="j-sample sm">{L('sample')}</span>}</div>

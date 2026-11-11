@@ -8,6 +8,7 @@ import { isoToday, quoteNumber } from './quoteno';
 import type { Company } from '../clients/store';
 import { msdsText, qfl, type QuoteFor } from './quotefor';
 import type { TradeBlock } from './trade';
+import FD_MARK_PNG from '../assets/brand/logo-mark-pdf.png?inline';
 
 export interface PdfInput {
   fields: QuoteFields;
@@ -409,14 +410,15 @@ export async function generateQuotePdf(inp: PdfInput): Promise<{ blob: Blob; fil
       } catch {
         hx = M;
       }
-    } else if (!co?.name) {
-      fillC(C.ink);
-      doc.roundedRect(M, 11, 11, 11, 1.6, 1.6, 'F');
-      fillC(C.amber);
-      doc.rect(M + 2.2, 19.2, 6.6, 0.9, 'F');
-      font('PlexB', 9.5, C.amber);
-      doc.text('FD', M + 5.5, 17.6, { align: 'center' });
-    } else hx = M;
+    } else {
+      // No customer logo set: ForwardDesk mark as the placeholder.
+      try {
+        doc.addImage(FD_MARK_PNG, 'PNG', M, 10.5, 12, 12);
+        hx = M + 14.5;
+      } catch {
+        hx = M;
+      }
+    }
     font('PlexB', 15, C.ink);
     let nsz = 15;
     const coName = co?.name || 'ForwardDesk';

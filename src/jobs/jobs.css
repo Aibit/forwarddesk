@@ -38,7 +38,9 @@
 
 /* main grid */
 .j-main { display: grid; grid-template-columns: minmax(0, 1.9fr) minmax(0, 1fr); gap: 0.75rem; align-items: start; }
-@media (max-width: 1100px) { .j-main { grid-template-columns: minmax(0, 1fr); } .j-summary { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+/* Below 1600 px the two columns get cramped: stack them, deadline tracker first (it is the daily to-do). */
+@media (max-width: 1599px) { .j-main { grid-template-columns: minmax(0, 1fr); } .j-main > .j-tracker { order: -1; } }
+@media (max-width: 1100px) { .j-summary { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 .jobs-view .q-head h2 { font-size: 0.8rem; }
 .jobs-view[dir='rtl'] .q-head h2 { letter-spacing: 0; font-size: 0.95rem; }
 

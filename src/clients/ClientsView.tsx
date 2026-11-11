@@ -18,6 +18,7 @@ import { LanesEditor } from './Lanes';
 import { MsdsRulesEditor } from './Msds';
 import { demoLogin } from './portal';
 import './clients.css';
+import { LogoMark } from '../ui/Brand';
 
 const INCOTERMS = ['EXW', 'FCA', 'FAS', 'FOB', 'CFR', 'CIF', 'CPT', 'CIP', 'DAP', 'DPU', 'DDP'];
 
@@ -78,7 +79,7 @@ export function ClientsView({ openRequest, onOpenJob, onNewQuote }: Props) {
       </div>
 
       <div className="q-panel c-company" data-testid="company-card">
-        {company.logo ? <img src={company.logo} alt="" className="c-logo" /> : <span className="c-logo-ph">FD</span>}
+        {company.logo ? <img src={company.logo} alt="" className="c-logo" /> : <LogoMark size={48} className="c-logo-ph-mark" />}
         <div className="c-company-txt">
           <strong>{L('yourCompany')}: </strong>
           {company.name ? (
@@ -414,7 +415,7 @@ function CompanyForm({ co, L, lang, onClose }: { co: Company; L: (k: CKey) => st
           <Field label={L('address')} wide><input className="c-in" value={d.address} onChange={(e) => up('address', e.target.value)} /></Field>
           <Field label={L('logo')} wide>
             <span className="c-logo-row">
-              {d.logo ? <img src={d.logo} alt="" className="c-logo lg" /> : <span className="c-logo-ph">FD</span>}
+              {d.logo ? <img src={d.logo} alt="" className="c-logo lg" /> : <LogoMark size={48} className="c-logo-ph-mark" />}
               <input type="file" accept="image/png,image/jpeg,image/webp" onChange={onLogo} data-testid="co-logo" />
               {d.logo && <button type="button" className="btn sm ghost" onClick={() => setD((x) => ({ ...x, logo: null }))}>{L('removeLogo')}</button>}
             </span>

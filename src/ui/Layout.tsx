@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { Art, Icon, type ArtName, type NavIcon } from './Art';
 import { useUiLang, type UiLang } from './lang';
 import { useTheme } from './theme';
+import { LogoMark } from './Brand';
 
 export type ViewKey = 'jobs' | 'finance' | 'clients' | 'agents' | 'portal' | 'quote' | 'pipeline' | 'account';
 
@@ -72,7 +73,7 @@ export function Sidebar({ view, onPick, open, onClose, clientOnly, account = fal
     <>
       <aside className={`nd-side ${open ? 'open' : ''}`} aria-label="ForwardDesk" data-testid="sidebar">
         <div className="nd-brand">
-          <span className="nd-logo">FD</span>
+          <LogoMark size={40} />
           <div className="nd-brand-txt">
             <strong>ForwardDesk</strong>
             <span>{ui('tagline', lang)}</span>

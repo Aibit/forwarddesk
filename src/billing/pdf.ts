@@ -3,6 +3,7 @@ import { jsPDF } from 'jspdf';
 import type { Job } from '../jobs/data';
 import type { Company } from '../clients/store';
 import { invOpen, invPaid, invTotal, invDue, type Invoice, type JobDoc, type Ledger } from './model';
+import FD_MARK_PNG from '../assets/brand/logo-mark-pdf.png?inline';
 
 type PL = 'en' | 'es';
 type RGB = [number, number, number];
@@ -79,6 +80,9 @@ async function base(lang: PL, sample: boolean, co: Company | null) {
       doc.addImage(co.logo, 'PNG', M, 12, w, h);
       x = M + w + 4;
     } catch { /* bad logo */ }
+  } else {
+    // No customer logo set: ForwardDesk mark as the placeholder.
+    try { doc.addImage(FD_MARK_PNG, 'PNG', M, 11, 13, 13); x = M + 17; } catch { /* keep text only */ }
   }
   font('B', 13, C.ink);
   doc.text(latin(co?.name || 'ForwardDesk'), x, 18);

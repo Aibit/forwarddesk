@@ -1,0 +1,14 @@
+{
+  "name": "ForwardDesk",
+  "short_name": "ForwardDesk",
+  "description": "Freight-forwarding desk: jobs, deadlines, quotes, billing.",
+  "start_url": "/forwarddesk/",
+  "scope": "/forwarddesk/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
+  "icons": [
+    { "src": "/forwarddesk/icons/app-icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/forwarddesk/icons/app-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}

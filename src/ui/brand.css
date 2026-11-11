@@ -1,0 +1,14 @@
+.fd-logo-mark, .fd-logo-lock { display: inline-flex; flex-shrink: 0; line-height: 0; }
+.fd-logo-mark img, .fd-logo-lock img { width: 100%; height: 100%; display: block; }
+.fd-logo-d { display: none !important; }
+:root[data-theme='dark'] .fd-logo-l { display: none !important; }
+:root[data-theme='dark'] .fd-logo-d { display: block !important; }
+/* top-bar crumb: mark only shows on phones, where it replaces the "ForwardDesk /" text so the page title has room */
+.nd-crumb-logo { display: none !important; }
+@media (max-width: 900px) {
+  .nd-crumb-logo { display: inline-flex !important; }
+  .nd-crumb .nd-crumb-root, .nd-crumb .nd-crumb-sep { display: none; }
+  .nd-crumb-page { font-size: 17px; }
+}
+.fd-modal-head .fd-modal-logo { margin-inline-end: 4px; }
+.c-logo-ph-mark { border-radius: 8px; }

@@ -11,6 +11,7 @@ import { useStore } from '../clients/store';
 import { useJobs } from '../jobs/store';
 import type { AccountProfile, TeamState } from './bridge';
 import './accounts.css';
+import { LogoLockup, LogoMark } from '../ui/Brand';
 
 const T = {
   brandSub: ['The freight forwarder’s desk: deadlines, agents, documents and billing in one place.', 'El escritorio del transitario: plazos, agentes, documentos y facturación en un solo lugar.', 'میز کار فورواردر: مهلت‌ها، نمایندگان، اسناد و صورتحساب در یک جا.'],
@@ -132,7 +133,7 @@ function Page({ children, testid }: { children: ReactNode; testid: string }) {
   return (
     <div className="fd-entry" dir={dir} lang={lang} data-testid={testid}>
       <div className="fd-entry-top">
-        <span className="fd-entry-brand"><span className="nd-logo">FD</span><strong>ForwardDesk</strong></span>
+        <span className="fd-entry-brand"><LogoLockup height={44} /></span>
         <LangSwitch />
       </div>
       {children}
@@ -213,6 +214,7 @@ export function AccountDialog({ tab: tab0, onClose }: { tab: 'create' | 'signin'
       <form className="fd-modal" onClick={(e) => e.stopPropagation()} onSubmit={submit} dir={dir} lang={lang} data-testid="signin-dialog" data-tab={tab}>
         <Art name="crane" className="fd-modal-art" />
         <div className="fd-modal-head">
+          <LogoMark size={34} className="fd-modal-logo" />
           <h2>{tab === 'create' ? t('createT') : tab === 'signin' ? t('signInT') : t('resetT')}</h2>
           <LangSwitch />
         </div>

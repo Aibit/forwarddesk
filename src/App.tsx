@@ -19,6 +19,7 @@ import { useTariffs } from './jobs/tariffs';
 import { Sidebar, PageHeader, navLabel, ui, type ViewKey } from './ui/Layout';
 import { Icon } from './ui/Art';
 import { useUiLang } from './ui/lang';
+import { LogoMark } from './ui/Brand';
 
 function App() {
   const [viewMode, setViewMode] = useState<ViewKey>('jobs');
@@ -85,6 +86,7 @@ function App() {
       <header className="topbar nd-top">
         <button type="button" className="nd-iconbtn nd-burger" onClick={() => setNavOpen(true)} aria-label={ui('menu', uiLang)} data-testid="nav-open"><Icon name="menu" /></button>
         <div className="nd-crumb">
+          <LogoMark size={28} className="nd-crumb-logo" />
           <span className="nd-crumb-root">ForwardDesk</span>
           <span className="nd-crumb-sep" aria-hidden="true">/</span>
           <span className="nd-crumb-page">{navLabel(shownView, uiLang)}</span>

@@ -27,12 +27,14 @@ import { ct } from '../clients/i18n';
 import { hsFromCommodity, hsFromText, msdsNeed, useMsdsRules, type MsdsMeta } from '../clients/msds';
 import { MsdsChip, MsdsSlot } from '../clients/Msds';
 import './quote.css';
+import { getUiLang, useUiLang } from '../ui/lang';
+import { isLive } from '../backend/bridge';
+import { agentStLabel, agentTag, linesText, scopeText, unitsText, basisLabel, issueText, modeLabel, qu, sideLabel, type UKey } from './uitext';
 
 type Lang = 'en' | 'es';
 type FieldKey = keyof QuoteFields;
 
 const MODE_LABEL: Record<QMode, string> = { fcl: 'Ocean FCL', lcl: 'Ocean LCL', air: 'Air', road: 'Road' };
-const SIDE_LABEL: Record<Side, string> = { origin: 'Origin', freight: 'Main freight', destination: 'Destination', customs: 'Customs' };
 const SIDE_ORDER: Side[] = ['origin', 'freight', 'destination', 'customs'];
 const PENDING: Partial<Record<string, { en: string; es: string }>> = {
   mode: { en: 'transport mode', es: 'modo de transporte' },
@@ -46,7 +48,6 @@ const PENDING: Partial<Record<string, { en: string; es: string }>> = {
   cargo: { en: 'commodity', es: 'tipo de mercancía' },
   dg: { en: 'DG status', es: 'si es mercancía peligrosa' },
 };
-const BASIS_LABEL: Record<string, string> = { per_container: 'cntr', per_kg: 'kg', per_wm: 'W/M', per_truck: 'truck', per_shipment: 'shpt' };
 
 const money = (n: number) => n.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 const money2 = (n: number) => n.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
@@ -242,7 +243,7 @@ function Chip({ label, value, status, evidence, editing, onEdit, editor }: ChipP
       {editing ? (
         <span className="q-chip-editor">{editor}</span>
       ) : (
-        <button type="button" className="q-chip-value" onClick={onEdit} title={evidence ? `Found: “${evidence}” — click to edit` : 'Click to edit'}>
+        <button type="button" className="q-chip-value" onClick={onEdit} title={(() => { const g = getUiLang(); const f = g === 'es' ? ['Encontrado', 'pulsa para editar', 'Pulsa para editar'] : g === 'fa' ? ['پیدا شد', 'برای ویرایش کلیک کنید', 'برای ویرایش کلیک کنید'] : ['Found', 'click to edit', 'Click to edit']; return evidence ? `${f[0]}: “${evidence}” — ${f[1]}` : f[2]; })()}>
           {value}
         </button>
       )}
@@ -274,6 +275,8 @@ export function QuoteView({ seed, onOpenClient }: { seed?: { text: string; n: nu
   const [sheet, setSheet] = useState<{ name: string; rows: number; skipped: { line: number; reason: string }[] } | null>(null);
   const [extraLocs, setExtraLocs] = useState<string[]>([]);
   const [lang, setLang] = useState<QLang>('en');
+  const [ui] = useUiLang();
+  const u = (k: UKey) => qu(ui, k);
   const [activeCarrier, setActiveCarrier] = useState<string | null>(null);
   const [offCarriers, setOffCarriers] = useState<string[]>([]);
   const [copied, setCopied] = useState<'quote' | 'questions' | null>(null);
@@ -404,11 +407,11 @@ export function QuoteView({ seed, onOpenClient }: { seed?: { text: string; n: nu
   const prefCount = options.filter((o) => rankOf(o.carrier) === 'preferred').length;
   const linesNote = client && allOptions.length > 1 && (prefCount || avoided.length) ? (
     <>
-      {prefCount ? `${client.name}'s preferred line${prefCount > 1 ? 's' : ''} shown first. ` : ''}
+      {prefCount ? linesText(ui, 'pref', client.name, prefCount) : ''}
       {avoided.length > 0 && (
         <>
-          {showAvoid ? `Showing ${avoided.length} line${avoided.length > 1 ? 's' : ''} ${client.name} avoids. ` : `${avoided.length} option${avoided.length > 1 ? 's' : ''} from line${avoided.length > 1 ? 's' : ''} ${client.name} avoids hidden (${avoided.map((o) => o.carrier).join(', ')}). `}
-          <button type="button" className="q-linklike" onClick={() => setShowAvoid((v) => !v)} data-testid="toggle-avoid">{showAvoid ? 'hide' : 'show'}</button>
+          {showAvoid ? linesText(ui, 'showing', client.name, avoided.length) : linesText(ui, 'hidden', client.name, avoided.length, avoided.map((o) => o.carrier).join(', '))}
+          <button type="button" className="q-linklike" onClick={() => setShowAvoid((v) => !v)} data-testid="toggle-avoid">{linesText(ui, showAvoid ? 'hide' : 'show', '', 0)}</button>
         </>
       )}
     </>
@@ -519,6 +522,7 @@ export function QuoteView({ seed, onOpenClient }: { seed?: { text: string; n: nu
   const dir: TradeDir = dirOverride ?? autoD ?? 'export';
   const tradeFor = (l: QLang) => (custOpts.length && fields.mode === 'fcl' ? tradeBlock(dir, fields, custOpts[0], tariffs, l, laneProfile?.payment ?? client?.paymentTerms ?? null) : null);
   const tb = tradeFor(lang);
+  const tbUi = ui === lang ? tb : tradeFor(ui);
   // Agent picker: import → agents at the POL, export → agents at the POD. Client's own list first, then the Agent CRM
   // (preferred → active → prospect → on hold; blacklisted, archived and sanctions-listed agents are never offered).
   const agentPort = dir === 'import' ? fields.origin : fields.destination;
@@ -644,38 +648,38 @@ export function QuoteView({ seed, onOpenClient }: { seed?: { text: string; n: nu
       <section className="q-left" aria-label="Customer request">
         <div className="q-panel">
           <div className="q-head">
-            <h2>Paste a customer request (email / WhatsApp)</h2>
+            <h2>{u('pasteH')}</h2>
             {elapsed != null && (
-              <span className={`q-timer ${doneMs != null ? 'done' : ''}`} title="From paste to copied quote">
-                {doneMs != null ? 'QUOTE READY IN ' : 'TIME TO QUOTE '}
+              <span className={`q-timer ${doneMs != null ? 'done' : ''}`} title={u('timerTitle')}>
+                {doneMs != null ? u('readyIn') : u('timeTo')}
                 <strong>{fmtElapsed(elapsed)}</strong>
               </span>
             )}
           </div>
           <div className="q-client" data-testid="quote-client">
-            <span className="q-muted">Client</span>
-            <select value={clientId ?? ''} onChange={(e) => applyClient(e.target.value || null)} data-testid="quote-client-select" aria-label="Client">
-              <option value="">— none —</option>
+            <span className="q-muted">{u('client')}</span>
+            <select value={clientId ?? ''} onChange={(e) => applyClient(e.target.value || null)} data-testid="quote-client-select" aria-label={u('client')}>
+              <option value="">{u('none')}</option>
               {clients.map((c) => (
-                <option key={c.id} value={c.id}>{c.name}{c.sample ? ' (sample)' : ''}</option>
+                <option key={c.id} value={c.id}>{c.name}{c.sample ? u('sample') : ''}</option>
               ))}
             </select>
             {client ? (
               <>
                 <span className="q-client-defs">
-                  {client.marginPct}% · {client.incoterm} · {client.lang.toUpperCase()} · {client.lines.length ? client.lines.join(', ') : 'any line'}{client.freeTimeRequest ? ` · ask ${client.freeTimeRequest} d free` : ''}
+                  {client.marginPct}% · {client.incoterm} · {client.lang.toUpperCase()} · {client.lines.length ? client.lines.join(', ') : u('anyLine')}{client.freeTimeRequest ? ` · ${u('ask')} ${client.freeTimeRequest} ${u('dFree')}` : ''}
                 </span>
-                {onOpenClient && <button type="button" className="q-linklike" onClick={() => onOpenClient(client.id)}>dashboard →</button>}
+                {onOpenClient && <button type="button" className="q-linklike" onClick={() => onOpenClient(client.id)}>{u('dashboard')}</button>}
               </>
             ) : (
-              <span className="q-client-defs">pick one to apply their margin, Incoterm, language and lines</span>
+              <span className="q-client-defs">{u('pickClient')}</span>
             )}
           </div>
           {client && client.lanes.length > 0 && (
             <div className="q-client q-lanes" data-testid="quote-lanes">
-              <span className="q-muted">Lanes</span>
+              <span className="q-muted">{u('lanes')}</span>
               {client.lanes.map((l, i) => (
-                <button key={l.id} type="button" className={`btn ghost sm ${laneProfile?.id === l.id ? 'active' : ''}`} onClick={() => applyLane(client.id, l)} data-testid={`quote-lane-${i}`} title={`${l.commodity} · ${fmtVolume(l, 'en')} · target ${fmtTarget(l, 'en')}`}>
+                <button key={l.id} type="button" className={`btn ghost sm ${laneProfile?.id === l.id ? 'active' : ''}`} onClick={() => applyLane(client.id, l)} data-testid={`quote-lane-${i}`} title={`${l.commodity} · ${fmtVolume(l, ui)} · ${u('target')} ${fmtTarget(l, ui)}`}>
                   {l.pol.replace(/ \(.*\)$/, '')} → {l.pod.replace(/ \(.*\)$/, '')} · {l.commodity.split(/[,(]/)[0].trim()}
                 </button>
               ))}
@@ -683,7 +687,7 @@ export function QuoteView({ seed, onOpenClient }: { seed?: { text: string; n: nu
           )}
           <textarea
             className="q-paste"
-            placeholder="e.g. hi need price 2x40HC Shanghai to Barcelona, ready 20 Nov, FOB…"
+            placeholder={u('placeholder')}
             value={text}
             onChange={(e: ChangeEvent<HTMLTextAreaElement>) => {
               const v = e.target.value;
@@ -703,7 +707,7 @@ export function QuoteView({ seed, onOpenClient }: { seed?: { text: string; n: nu
             rows={4}
           />
           <div className="q-samples">
-            <span className="q-muted">Try a sample:</span>
+            <span className="q-muted">{u('trySample')}</span>
             {SAMPLE_REQUESTS.map((s) => (
               <button key={s.id} type="button" className="btn ghost sm" onClick={() => startFresh(s.text)} title={s.text}>
                 {s.label}
@@ -711,7 +715,7 @@ export function QuoteView({ seed, onOpenClient }: { seed?: { text: string; n: nu
             ))}
             {text && (
               <button type="button" className="btn ghost sm" onClick={() => startFresh('')}>
-                Clear
+                {u('clear')}
               </button>
             )}
           </div>
@@ -721,26 +725,26 @@ export function QuoteView({ seed, onOpenClient }: { seed?: { text: string; n: nu
           <div className={`q-summary ${quote && quote.hasFreight ? 'priced' : 'unpriced'}`} data-testid="quote-summary">
             {quote && quote.hasFreight ? (
               <>
-                <span className="q-summary-tag">PRICED</span>
+                <span className="q-summary-tag">{u('priced')}</span>
                 <span className="mono">
-                  SELL <strong>${money(quote.sellTotal)}</strong> · margin ${money(quote.marginUsd)} ({quote.marginPct}%) · {quote.transitDays ?? '?'} d
-                  {options.length > 1 && <> · {options.length} options from ${money(Math.min(...options.map((o) => o.sellTotal)))}</>}
+                  {u('sellU')} <strong>${money(quote.sellTotal)}</strong> · {u('margin')} ${money(quote.marginUsd)} ({quote.marginPct}%) · {quote.transitDays ?? '?'} {u('d')}
+                  {options.length > 1 && <> · {options.length} {u('optionsFrom')} ${money(Math.min(...options.map((o) => o.sellTotal)))}</>}
                 </span>
                 <span className="q-summary-meta">
                   {issues.filter((i) => i.kind === 'missing').length === 0
                     ? issues.filter((i) => i.kind === 'ambiguous' || i.kind === 'confirm').length === 0
-                      ? 'all details present — ready to send'
-                      : `${issues.filter((i) => i.kind === 'ambiguous' || i.kind === 'confirm').length} to confirm with customer`
-                    : `${issues.filter((i) => i.kind === 'missing').length} missing`}
+                      ? u('allPresent')
+                      : `${issues.filter((i) => i.kind === 'ambiguous' || i.kind === 'confirm').length} ${u('toConfirmCust')}`
+                    : `${issues.filter((i) => i.kind === 'missing').length} ${u('missing')}`}
                 </span>
                 <button type="button" className="btn sm primary" onClick={() => quoteRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>
-                  View quote →
+                  {u('viewQuote')}
                 </button>
               </>
             ) : (
               <>
-                <span className="q-summary-tag">NOT PRICED</span>
-                <span>{!quote ? 'Needs mode, origin and destination.' : `No freight rate for ${fields.origin} → ${fields.destination} in this rate sheet.`}</span>
+                <span className="q-summary-tag">{u('notPriced')}</span>
+                <span>{!quote ? u('needsMode') : `${u('noRateFor')} ${fields.origin} → ${fields.destination} ${u('inSheet')}`}</span>
               </>
             )}
           </div>
@@ -749,57 +753,57 @@ export function QuoteView({ seed, onOpenClient }: { seed?: { text: string; n: nu
         {text.trim() && (
           <div className="q-panel">
             <div className="q-head">
-              <h2>What it read</h2>
-              <span className="q-muted">click any field to fix it</span>
+              <h2>{u('whatRead')}</h2>
+              <span className="q-muted">{u('clickFix')}</span>
             </div>
             <div className="q-chips">
-              <Chip label="Mode" status={statusOf('mode')} evidence={parsed.evidence.mode} editing={editing === 'mode'} onEdit={() => setEditing('mode')}
-                value={fields.mode ? MODE_LABEL[fields.mode] : '—'}
-                editor={sel('mode', fields.mode ?? '', (Object.keys(MODE_LABEL) as QMode[]).map((m) => ({ v: m, l: MODE_LABEL[m] })), (v) => setField('mode', (v || null) as QMode | null))} />
-              <Chip label="Origin" status={statusOf('origin')} evidence={parsed.evidence.origin} editing={editing === 'origin'} onEdit={() => setEditing('origin')}
+              <Chip label={u('fMode')} status={statusOf('mode')} evidence={parsed.evidence.mode} editing={editing === 'mode'} onEdit={() => setEditing('mode')}
+                value={fields.mode ? modeLabel(ui, fields.mode) : '—'}
+                editor={sel('mode', fields.mode ?? '', (Object.keys(MODE_LABEL) as QMode[]).map((m) => ({ v: m, l: modeLabel(ui, m) })), (v) => setField('mode', (v || null) as QMode | null))} />
+              <Chip label={u('fOrigin')} status={statusOf('origin')} evidence={parsed.evidence.origin} editing={editing === 'origin'} onEdit={() => setEditing('origin')}
                 value={fields.origin ?? '—'}
                 editor={sel('origin', fields.origin ?? '', allLocations.map((l) => ({ v: l, l })), (v) => setField('origin', v || null))} />
-              <Chip label="Destination" status={statusOf('destination')} evidence={parsed.evidence.destination} editing={editing === 'destination'} onEdit={() => setEditing('destination')}
+              <Chip label={u('fDest')} status={statusOf('destination')} evidence={parsed.evidence.destination} editing={editing === 'destination'} onEdit={() => setEditing('destination')}
                 value={fields.destination ?? '—'}
                 editor={sel('destination', fields.destination ?? '', allLocations.map((l) => ({ v: l, l })), (v) => setField('destination', v || null))} />
               {(fields.mode === 'fcl' || fields.mode === 'road' || Object.keys(fields.equipment).length > 0) && (
-                <Chip label="Equipment" status={statusOf('equipment')} evidence={parsed.evidence.equipment} editing={editing === 'equipment'} onEdit={() => setEditing('equipment')}
+                <Chip label={u('fEquip')} status={statusOf('equipment')} evidence={parsed.evidence.equipment} editing={editing === 'equipment'} onEdit={() => setEditing('equipment')}
                   value={equipmentText(fields.equipment) || '—'}
                   editor={inp('equipment', equipmentText(fields.equipment), (v) => setField('equipment', parseEquipmentInput(v)))} />
               )}
-              <Chip label="Weight" status={statusOf('weightKg')} evidence={parsed.evidence.weightKg} editing={editing === 'weightKg'} onEdit={() => setEditing('weightKg')}
-                value={fields.weightKg != null ? `${fields.weightKg.toLocaleString('en-US')} kg${fields.mode === 'fcl' ? ' / cntr' : fields.mode === 'road' && parsed.weightPerUnit ? ' / truck' : ''}` : '—'}
+              <Chip label={u('fWeight')} status={statusOf('weightKg')} evidence={parsed.evidence.weightKg} editing={editing === 'weightKg'} onEdit={() => setEditing('weightKg')}
+                value={fields.weightKg != null ? `${fields.weightKg.toLocaleString('en-US')} kg${fields.mode === 'fcl' ? u('perCntr') : fields.mode === 'road' && parsed.weightPerUnit ? u('perTruck') : ''}` : '—'}
                 editor={inp('weightKg', fields.weightKg != null ? String(fields.weightKg) : '', (v) => setField('weightKg', numOrNull(v)), 'number')} />
-              <Chip label="Volume" status={statusOf('volumeCbm')} evidence={parsed.evidence.volumeCbm} editing={editing === 'volumeCbm'} onEdit={() => setEditing('volumeCbm')}
+              <Chip label={u('fVolume')} status={statusOf('volumeCbm')} evidence={parsed.evidence.volumeCbm} editing={editing === 'volumeCbm'} onEdit={() => setEditing('volumeCbm')}
                 value={fields.volumeCbm != null ? `${fields.volumeCbm} cbm` : '—'}
                 editor={inp('volumeCbm', fields.volumeCbm != null ? String(fields.volumeCbm) : '', (v) => setField('volumeCbm', numOrNull(v)), 'number')} />
               {fields.mode === 'air' && (
                 <div className="q-chip q-ok q-derived">
-                  <span className="q-chip-label">Chargeable</span>
+                  <span className="q-chip-label">{u('fCharge')}</span>
                   <span className="q-chip-static">{chargeableKg(fields.weightKg, fields.volumeCbm) ?? '—'} kg</span>
                   <span className="q-chip-hint">1:6000</span>
                 </div>
               )}
-              <Chip label="Pieces" status="ok" evidence={parsed.evidence.pieces} editing={editing === 'pieces'} onEdit={() => setEditing('pieces')}
+              <Chip label={u('fPieces')} status="ok" evidence={parsed.evidence.pieces} editing={editing === 'pieces'} onEdit={() => setEditing('pieces')}
                 value={fields.pieces ?? '—'}
                 editor={inp('pieces', fields.pieces != null ? String(fields.pieces) : '', (v) => setField('pieces', numOrNull(v)), 'number')} />
-              <Chip label="Incoterm" status={statusOf('incoterm')} evidence={parsed.evidence.incoterm} editing={editing === 'incoterm'} onEdit={() => setEditing('incoterm')}
+              <Chip label={u('fInco')} status={statusOf('incoterm')} evidence={parsed.evidence.incoterm} editing={editing === 'incoterm'} onEdit={() => setEditing('incoterm')}
                 value={fields.incoterm ?? '—'}
                 editor={sel('incoterm', fields.incoterm ?? '', INCOTERMS.map((i) => ({ v: i, l: i })), (v) => setField('incoterm', v || null))} />
-              <Chip label="Ready" status={statusOf('readyDate')} evidence={parsed.evidence.readyDate} editing={editing === 'readyDate'} onEdit={() => setEditing('readyDate')}
-                value={fmtDate(fields.readyDate, 'en')}
+              <Chip label={u('fReady')} status={statusOf('readyDate')} evidence={parsed.evidence.readyDate} editing={editing === 'readyDate'} onEdit={() => setEditing('readyDate')}
+                value={fmtDate(fields.readyDate, ui)}
                 editor={inp('readyDate', fields.readyDate && fields.readyDate !== 'ASAP' ? fields.readyDate : '', (v) => setField('readyDate', v || null), 'date')} />
-              <Chip label="Cargo" status={statusOf('cargo')} evidence={parsed.evidence.cargo} editing={editing === 'cargo'} onEdit={() => setEditing('cargo')}
+              <Chip label={u('fCargo')} status={statusOf('cargo')} evidence={parsed.evidence.cargo} editing={editing === 'cargo'} onEdit={() => setEditing('cargo')}
                 value={fields.cargo ?? '—'}
                 editor={inp('cargo', fields.cargo ?? '', (v) => setField('cargo', v.trim() || null))} />
-              <Chip label="DG" status={statusOf('dg')} evidence={parsed.evidence.dg} editing={editing === 'dg'} onEdit={() => setEditing('dg')}
-                value={<>{fields.dg === 'yes' || laneProfile?.dg ? 'Yes — DG' : fields.dg === 'no' ? 'No' : 'Unknown'} <MsdsChip hs={hsQ} dg={laneProfile?.dg ? 'yes' : fields.dg} meta={msdsMeta} lang="en" /></>}
-                editor={sel('dg', fields.dg, [{ v: 'no', l: 'No' }, { v: 'yes', l: 'Yes — DG' }, { v: 'unknown', l: 'Unknown' }], (v) => setField('dg', (v || 'unknown') as DgState))} />
+              <Chip label={u('fDg')} status={statusOf('dg')} evidence={parsed.evidence.dg} editing={editing === 'dg'} onEdit={() => setEditing('dg')}
+                value={<>{fields.dg === 'yes' || laneProfile?.dg ? u('yesDg') : fields.dg === 'no' ? u('no') : u('unknown')} <MsdsChip hs={hsQ} dg={laneProfile?.dg ? 'yes' : fields.dg} meta={msdsMeta} lang={ui} /></>}
+                editor={sel('dg', fields.dg, [{ v: 'no', l: u('no') }, { v: 'yes', l: u('yesDg') }, { v: 'unknown', l: u('unknown') }], (v) => setField('dg', (v || 'unknown') as DgState))} />
             </div>
             <div className="q-msds" data-testid="quote-msds">
-              <span className="q-muted">MSDS{hsQ ? <> · HS <bdi dir="ltr" className="mono">{hsQ}</bdi>{hsGuessed ? ' (guessed from commodity)' : laneProfile?.hs ? ' (lane profile)' : ''}</> : ' · no HS code'}</span>
-              <MsdsSlot hs={hsQ} dg={laneProfile?.dg ? 'yes' : fields.dg} meta={msdsMeta} onChange={setMsds} lang="en" testid="quote-msds-slot" clientId={client?.id ?? null} />
-              {msdsMeta && laneProfile && <span className="q-muted">saved on {client!.name}'s lane profile</span>}
+              <span className="q-muted">MSDS{hsQ ? <> · HS <bdi dir="ltr" className="mono">{hsQ}</bdi>{hsGuessed ? u('hsGuessed') : laneProfile?.hs ? u('hsLane') : ''}</> : u('noHs')}</span>
+              <MsdsSlot hs={hsQ} dg={laneProfile?.dg ? 'yes' : fields.dg} meta={msdsMeta} onChange={setMsds} lang={ui} testid="quote-msds-slot" clientId={client?.id ?? null} />
+              {msdsMeta && laneProfile && <span className="q-muted">{u('savedOn')} {client!.name}</span>}
             </div>
           </div>
         )}
@@ -807,15 +811,15 @@ export function QuoteView({ seed, onOpenClient }: { seed?: { text: string; n: nu
         {text.trim() && issues.length > 0 && (
           <div className="q-panel">
             <div className="q-head">
-              <h2>What to ask the customer</h2>
-              <span className="q-muted">{issues.filter((i) => i.kind === 'missing').length} missing · {issues.filter((i) => i.kind === 'ambiguous' || i.kind === 'confirm').length} to confirm · {issues.filter((i) => i.kind === 'assumed').length} assumed</span>
+              <h2>{u('askH')}</h2>
+              <span className="q-muted">{issues.filter((i) => i.kind === 'missing').length} {u('missing')} · {issues.filter((i) => i.kind === 'ambiguous' || i.kind === 'confirm').length} {u('toConfirm')} · {issues.filter((i) => i.kind === 'assumed').length} {u('assumed')}</span>
             </div>
             <ul className="q-issues">
               {issues.map((i, n) => (
                 <li key={n} className={`q-issue q-${i.kind === 'confirm' ? 'ambiguous' : i.kind}`}>
-                  <span className="q-issue-tag">{i.kind === 'missing' ? 'MISSING' : i.kind === 'assumed' ? 'ASSUMED' : 'TO CONFIRM'}</span>
+                  <span className="q-issue-tag">{i.kind === 'missing' ? u('tagMissing') : i.kind === 'assumed' ? u('tagAssumed') : u('tagConfirm')}</span>
                   <div>
-                    <div className="q-issue-msg">{i.message}</div>
+                    <div className="q-issue-msg">{issueText(ui, i.message)}</div>
                     {i.question && <div className="q-issue-q">“{i.question[tl]}”</div>}
                     {i.options && (
                       <div className="q-options">
@@ -833,7 +837,7 @@ export function QuoteView({ seed, onOpenClient }: { seed?: { text: string; n: nu
             {askText && (
               <div className="q-actions">
                 <button type="button" className="btn sm" onClick={() => void doCopy('questions')}>
-                  {copied === 'questions' ? 'Copied ✓' : 'Copy questions for customer'}
+                  {copied === 'questions' ? u('copied') : u('copyQ')}
                 </button>
               </div>
             )}
@@ -846,74 +850,66 @@ export function QuoteView({ seed, onOpenClient }: { seed?: { text: string; n: nu
           <div>
             {usingSample ? (
               <>
-                <strong>SAMPLE RATES</strong> — illustrative numbers, not market rates. Load your own rate sheet to quote for real.
+                <strong>{u('sampleRates')}</strong> {u('sampleRatesNote')}
               </>
             ) : (
               <>
-                <strong>YOUR RATE SHEET</strong> — {sheet!.name} · {sheet!.rows} rows
+                <strong>{u('yourSheet')}</strong> — {sheet!.name} · {sheet!.rows} {u('rows')}
               </>
             )}
           </div>
           <div className="q-banner-actions">
             <input ref={fileRef} type="file" accept=".csv,text/csv" hidden onChange={onUpload} data-testid="rate-upload" />
             <button type="button" className="btn sm primary" onClick={() => fileRef.current?.click()}>
-              Load rate sheet (CSV)
+              {u('loadSheet')}
             </button>
             <a className="btn sm ghost" href={templateHref} download="forwarddesk-rate-sheet-template.csv">
-              Download rate sheet template
+              {u('dlTemplate')}
             </a>
             {!usingSample && (
               <button type="button" className="btn sm ghost" onClick={resetSample}>
-                Use sample rates
+                {u('useSample')}
               </button>
             )}
             <button type="button" className="btn sm ghost" onClick={() => setShowFormat((s) => !s)}>
-              {showFormat ? 'Hide format' : 'CSV format'}
+              {showFormat ? u('hideFormat') : u('csvFormat')}
             </button>
           </div>
         </div>
         {sheet && sheet.skipped.length > 0 && (
           <div className="q-warn">
-            {sheet.rows === 0 ? 'Could not load this file — ' : `${sheet.skipped.length} row(s) skipped — `}
-            {sheet.skipped.slice(0, 4).map((s) => `line ${s.line}: ${s.reason}`).join(' · ')}
+            {sheet.rows === 0 ? u('couldNotLoad') : `${sheet.skipped.length} ${u('rowsSkipped')}`}
+            {sheet.skipped.slice(0, 4).map((s) => `${u('line')} ${s.line}: ${s.reason}`).join(' · ')}
           </div>
         )}
         {showFormat && (
           <div className="q-panel q-format">
-            <p>
-              One row per charge. Columns (header row required, comma or semicolon separated): <code>{CSV_COLUMNS.join(', ')}</code>
-            </p>
-            <ul>
-              <li><code>mode</code>: fcl · lcl · air · road — <code>side</code>: origin · freight · destination · customs</li>
-              <li><code>basis</code>: per_container · per_kg (air = chargeable kg) · per_wm (LCL) · per_truck · per_shipment</li>
-              <li><code>origin</code>/<code>destination</code>: port or city name; <code>*</code> = any (for local charges). <code>equipment</code>: 20GP, 40GP, 40HC, FTL or <code>*</code></li>
-              <li><code>valid_until</code>: YYYY-MM-DD (or DD/MM/YYYY) — past dates are flagged STALE. Amounts are taken as-is (no FX conversion).</li>
-              <li><code>carrier</code>: each distinct carrier with freight rows on a lane becomes a quote option. Optional per line: <code>routing</code> (Direct, via Port Klang…), <code>free_days</code> (10/14/21), <code>sails</code> (Mon…Sun or daily).</li>
-            </ul>
+            <p>{u('fmtIntro')} <code dir="ltr">{CSV_COLUMNS.join(', ')}</code></p>
+            <ul>{(['fmt1', 'fmt2', 'fmt3', 'fmt4', 'fmt5'] as const).map((k) => <li key={k}>{u(k)}</li>)}</ul>
           </div>
         )}
 
         {!text.trim() && (
           <div className="q-panel q-empty">
             <Art name="truck" className="fd-empty-art" />
-            <strong>Paste a request or pick a sample.</strong>
-            <p>ForwardDesk reads the request, flags what's missing or ambiguous, prices it from the rate sheet, and writes the customer quote.</p>
+            <strong>{u('emptyH')}</strong>
+            <p>{u('emptyP')}</p>
           </div>
         )}
 
         {text.trim() && !quote && (
           <div className="q-panel q-empty">
             <Art name="map" className="fd-empty-art" />
-            <strong>Need a mode, origin and destination to price.</strong>
-            <p>Fix the flagged fields on the left.</p>
+            <strong>{u('needH')}</strong>
+            <p>{u('fixLeft')}</p>
           </div>
         )}
 
         {quote && !quote.hasFreight && (
           <div className="q-panel q-empty">
             <Art name="containers" className="fd-empty-art" />
-            <strong>No {fields.mode ? MODE_LABEL[fields.mode] : ''} freight rate for {fields.origin} → {fields.destination}{fields.mode === 'fcl' ? ` (${Object.keys(fields.equipment).join(', ') || 'no equipment'})` : ''} in this rate sheet.</strong>
-            <p>Add a <code>freight</code> row for this lane to the CSV, or change the lane on the left.</p>
+            <strong>{u('noRateFor')} {fields.origin} → {fields.destination}{fields.mode ? ` · ${modeLabel(ui, fields.mode)}` : ''}{fields.mode === 'fcl' ? ` (${Object.keys(fields.equipment).join(', ') || u('noEquip')})` : ''} {u('inSheet')}</strong>
+            <p>{u('addRow')}</p>
           </div>
         )}
 
@@ -921,78 +917,78 @@ export function QuoteView({ seed, onOpenClient }: { seed?: { text: string; n: nu
           <>
             {quote.staleCount > 0 && (
               <div className="q-warn stale">
-                <strong>RATE TO RE-CHECK</strong> — {quote.lines.filter((l) => l.stale).map((l) => `${l.charge} expired ${fmtDate(l.validUntil, 'en')}`).join('; ')}. Re-check with the carrier before sending.
+                <strong>{u('recheckH')}</strong> — {quote.lines.filter((l) => l.stale).map((l) => `${l.charge} ${u('expired')} ${fmtDate(l.validUntil, ui)}`).join('; ')}. {u('recheckP')}
               </div>
             )}
             <div className="q-panel q-quote-panel" ref={quoteRef}>
               <div className="q-head">
                 <h2>
-                  Quote · {fields.origin} → {fields.destination}
-                  {options.length > 1 && quote.carrier ? ` · ${ol('en', 'showing')} ${quote.carrier}` : ''}
+                  {u('quoteH')} · {fields.origin} → {fields.destination}
+                  {options.length > 1 && quote.carrier ? ` · ${ol(ui, 'showing')} ${quote.carrier}` : ''}
                 </h2>
-                <span className="q-muted">{quote.units}</span>
+                <span className="q-muted">{unitsText(ui, quote.units)}</span>
               </div>
-              <div className="q-scope">{quote.scopeNote}</div>
+              <div className="q-scope">{scopeText(ui, fields.incoterm, quote.scopeNote)}</div>
               {linesNote && <div className="q-scope" data-testid="lines-note">{linesNote}</div>}
               {laneProfile && (
                 <div className="q-scope" data-testid="lane-note">
-                  {client!.name} lane profile: {laneProfile.commodity}{laneProfile.hs ? <> · HS <bdi dir="ltr" className="mono">{laneProfile.hs}</bdi> ({hsCheck(laneProfile.hs, 'en').text})</> : null} · {fmtVolume(laneProfile, 'en')} · {laneProfile.payment} · target <strong><bdi dir="ltr">{fmtTarget(laneProfile, 'en')}</bdi></strong>
-                  {targetDiff(quote) && <> · this option <bdi dir="ltr" className="mono">${money(Math.round(targetDiff(quote)!.perUnit))}</bdi>/{laneProfile.target.per} <TargetDelta diff={targetDiff(quote)!.diff} lang="en" /></>}
+                  {client!.name} · {u('laneProfile')}: {laneProfile.commodity}{laneProfile.hs ? <> · HS <bdi dir="ltr" className="mono">{laneProfile.hs}</bdi> ({hsCheck(laneProfile.hs, ui).text})</> : null} · {fmtVolume(laneProfile, ui)} · {laneProfile.payment} · {u('target')} <strong><bdi dir="ltr">{fmtTarget(laneProfile, ui)}</bdi></strong>
+                  {targetDiff(quote) && <> · {u('thisOption')} <bdi dir="ltr" className="mono">${money(Math.round(targetDiff(quote)!.perUnit))}</bdi>/{laneProfile.target.per} <TargetDelta diff={targetDiff(quote)!.diff} lang={ui} /></>}
                 </div>
               )}
-              {fields.mode === 'fcl' && tb && (
-                <div className="q-trade" data-testid="quote-trade" dir={lang === 'fa' ? 'rtl' : 'ltr'} lang={lang}>
+              {fields.mode === 'fcl' && tbUi && (
+                <div className="q-trade" data-testid="quote-trade" dir={ui === 'fa' ? 'rtl' : 'ltr'} lang={ui}>
                   <div className="q-trade-head">
                     <span className="q-lang" role="group" aria-label="Export / import">
                       {(['export', 'import'] as TradeDir[]).map((d) => (
-                        <button key={d} type="button" className={dir === d ? 'active' : ''} onClick={() => setDirOverride(d === autoD ? null : d)} data-testid={`dir-${d}`}>{d === 'export' ? (lang === 'fa' ? 'صادرات' : lang === 'es' ? 'Exportación' : 'Export') : lang === 'fa' ? 'واردات' : lang === 'es' ? 'Importación' : 'Import'}</button>
+                        <button key={d} type="button" className={dir === d ? 'active' : ''} onClick={() => setDirOverride(d === autoD ? null : d)} data-testid={`dir-${d}`}>{u(d === 'export' ? 'export' : 'import')}</button>
                       ))}
                     </span>
-                    <strong data-testid="trade-title">{tb.title}</strong>
-                    <span className="q-muted">{dirOverride ? 'set by hand' : autoD ? `auto: ${autoD === 'import' ? 'POD' : 'POL'} is ${HOME_PORT} (client home port)` : `no ${HOME_PORT} leg — pick one`} · {dir === 'export' ? tl3(lang, 'lineCompare') : tl3(lang, 'agentCompare')}</span>
+                    <strong data-testid="trade-title">{tbUi.title}</strong>
+                    <span className="q-muted">{dirOverride ? u('setByHand') : autoD ? `${u('auto')} ${autoD === 'import' ? 'POD' : 'POL'} = ${HOME_PORT} (${u('homePort')})` : `${u('noLeg')} ${HOME_PORT} — ${u('pickOne')}`} · {dir === 'export' ? tl3(ui, 'lineCompare') : tl3(ui, 'agentCompare')}</span>
                   </div>
-                  <div className="q-trade-sub q-muted">{tb.localTitle}</div>
+                  <div className="q-trade-sub q-muted">{tbUi.localTitle}</div>
                   <table className="q-trade-table">
                     <tbody>
-                      {tb.lines.map((l) => (
-                        <tr key={l.label}><td>{l.label}</td><td className="mono"><bdi dir="ltr">{l.amount != null ? `${tb.currency} ${money(l.amount)}` : '—'}</bdi></td><td className="q-muted">{l.note}</td><td className={l.included ? 'q-ok' : 'q-muted'}>{l.included ? `✓ ${tl3(lang, 'included')}` : l.amount != null ? tl3(lang, 'local') : ''}</td></tr>
+                      {tbUi.lines.map((l) => (
+                        <tr key={l.label}><td>{l.label}</td><td className="mono"><bdi dir="ltr">{l.amount != null ? `${tbUi.currency} ${money(l.amount)}` : '—'}</bdi></td><td className="q-muted">{l.note}</td><td className={l.included ? 'q-ok' : 'q-muted'}>{l.included ? `✓ ${tl3(ui, 'included')}` : l.amount != null ? tl3(ui, 'local') : ''}</td></tr>
                       ))}
                     </tbody>
                   </table>
-                  <ul className="q-trade-notes">{tb.notes.map((x) => <li key={x}>{x}</li>)}</ul>
+                  <ul className="q-trade-notes">{tbUi.notes.map((x) => <li key={x}>{x}</li>)}</ul>
                   <div className="q-trade-agents" data-testid={dir === 'import' ? 'import-agents' : 'export-agents'}>
-                    <strong>{dir === 'import' ? tl3(lang, 'agentAt') : 'Agent at destination'} · {agentPort}</strong>
+                    <strong>{dir === 'import' ? tl3(ui, 'agentAt') : u('agentDest')} · {agentPort}</strong>
                     {originAgents.length ? (
                       <ul data-testid="quote-agent-list">{originAgents.map((a) => (
                         <li key={a.name} data-testid="quote-agent">
-                          <span className={`q-badge ${a.tag.startsWith('Client preferred') || a.st === 'preferred' ? 'pref' : ''}`}>{a.tag}</span> {a.name}{a.note ? <span className="q-muted"> · {a.note.length > 70 ? `${a.note.slice(0, 68)}…` : a.note}</span> : null}{a.sanc === 'note' ? <span className="q-muted"> · screened, see Agents</span> : null}
-                          {a.id && (rateAsked.includes(a.name) ? <span className="q-ok"> · ✓ rate request logged</span> : <> · <button type="button" className="q-linklike" onClick={() => logRateRequest(a.id!, a.name)} data-testid="quote-agent-ask">log rate request</button></>)}
+                          <span className={`q-badge ${a.tag.startsWith('Client preferred') || a.st === 'preferred' ? 'pref' : ''}`}>{agentTag(ui, a.tag)}</span> {a.name}{a.note ? <span className="q-muted"> · {a.note.length > 70 ? `${a.note.slice(0, 68)}…` : a.note}</span> : null}{a.sanc === 'note' ? <span className="q-muted">{u('screened')}</span> : null}
+                          {a.id && (rateAsked.includes(a.name) ? <span className="q-ok">{u('rateLogged')}</span> : <> · <button type="button" className="q-linklike" onClick={() => logRateRequest(a.id!, a.name)} data-testid="quote-agent-ask">{u('logRate')}</button></>)}
                         </li>
                       ))}</ul>
-                    ) : <span className="q-muted"> — none on file for this port (add in Agents or client setup)</span>}
+                    ) : <span className="q-muted">{u('noneOnFile')}</span>}
                     {otherCrm.length > 0 && (
                       <div className="q-agent-pick">
                         <select className="c-in" value="" onChange={(e) => { const d = otherCrm.find((x) => x.id === e.target.value); if (d) logRateRequest(d.id, d.name); }} data-testid="quote-agent-picker" aria-label="Ask another agent from the Agent CRM">
-                          <option value="">Ask another CRM agent (logs a rate request)…</option>
-                          {otherCrm.map((d) => <option key={d.id} value={d.id}>{ST_LABEL[agentStatus(d)] ?? agentStatus(d)} · {d.name}{d.city && d.city !== '—' ? ` · ${d.city}` : ''}{d.sample ? ' (sample)' : ''}</option>)}
+                          <option value="">{u('askOther')}</option>
+                          {otherCrm.map((d) => <option key={d.id} value={d.id}>{agentStLabel(ui, agentStatus(d))} · {d.name}{d.city && d.city !== '—' ? ` · ${d.city}` : ''}{d.sample ? u('sample') : ''}</option>)}
                         </select>
                         {rateAsked.filter((n) => !originAgents.some((a) => a.name === n)).map((n) => <span key={n} className="q-ok"> ✓ {n}</span>)}
                       </div>
                     )}
-                    <div className="q-muted">Agent buy rates are not in the sample rate sheet: option prices above are line-based; request the agent's rate and add the margin. Blacklisted and archived CRM agents are not offered.</div>
+                    <div className="q-muted">{u('agentNote')}</div>
                   </div>
                 </div>
               )}
               {clientAgent && (
                 <div className="q-scope" data-testid="client-agent">
-                  {client!.name}'s agent at {clientAgent.ports.split(',')[0]}: <strong>{clientAgent.name}</strong> ({clientAgent.rank}){clientAgent.contactName ? ` · ${clientAgent.contactName}` : ''}{clientAgent.whatsapp ? ` · WhatsApp ${clientAgent.whatsapp}` : ''}
+                  {u('agentOf')} {client!.name} {u('at')} {clientAgent.ports.split(',')[0]}: <strong>{clientAgent.name}</strong> ({clientAgent.rank}){clientAgent.contactName ? ` · ${clientAgent.contactName}` : ''}{clientAgent.whatsapp ? ` · WhatsApp ${clientAgent.whatsapp}` : ''}
                 </div>
               )}
               {options.length > 1 && (
-                <div className="q-opts-wrap" dir={lang === 'fa' ? 'rtl' : 'ltr'} lang={lang} data-testid="quote-options">
+                <div className="q-opts-wrap" dir={ui === 'fa' ? 'rtl' : 'ltr'} lang={ui} data-testid="quote-options">
                   <div className="q-opts-head">
-                    <strong>{ol(lang, 'options')} · {options.length}</strong>
-                    <span className="q-muted">{ol(lang, 'optionsSub')}</span>
+                    <strong>{ol(ui, 'options')} · {options.length}</strong>
+                    <span className="q-muted">{ol(ui, 'optionsSub')}</span>
                   </div>
                   <div className="q-opts" style={{ gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` }}>
                     {options.map((o, i) => {
@@ -1001,7 +997,7 @@ export function QuoteView({ seed, onOpenClient }: { seed?: { text: string; n: nu
                       const dT = o.transitDays != null && cheapest.transitDays != null ? o.transitDays - cheapest.transitDays : null;
                       const dF = o.freeDays != null && cheapest.freeDays != null ? o.freeDays - cheapest.freeDays : null;
                       const on = !offCarriers.includes(o.carrier ?? '');
-                      const D = ol(lang, 'd');
+                      const D = ol(ui, 'd');
                       return (
                         <div key={o.carrier ?? i} className={`q-opt ${i === activeIdx ? 'active' : ''} ${on ? 'on' : 'off'}`} onClick={() => setActiveCarrier(o.carrier)} data-testid={`option-${i}`}>
                           <div className="q-opt-top">
@@ -1012,77 +1008,77 @@ export function QuoteView({ seed, onOpenClient }: { seed?: { text: string; n: nu
                                 data-testid={`option-pick-${i}`}
                                 onChange={() => setOffCarriers((off) => (on ? [...off, o.carrier ?? ''] : off.filter((c) => c !== (o.carrier ?? ''))))}
                               />
-                              {ol(lang, 'inQuote')}
+                              {ol(ui, 'inQuote')}
                             </label>
                           </div>
                           <div className="q-opt-badges">
-                            {rankOf(o.carrier) === 'preferred' && <span className="q-badge pref">{lang === 'es' ? 'Preferida del cliente' : lang === 'fa' ? 'ترجیح مشتری' : 'Client preferred'}</span>}
-                            {rankOf(o.carrier) === 'avoid' && <span className="q-badge">{lang === 'es' ? 'El cliente la evita' : lang === 'fa' ? 'مشتری پرهیز می‌کند' : 'Client avoids'}</span>}
+                            {rankOf(o.carrier) === 'preferred' && <span className="q-badge pref">{ui === 'es' ? 'Preferida del cliente' : ui === 'fa' ? 'ترجیح مشتری' : 'Client preferred'}</span>}
+                            {rankOf(o.carrier) === 'avoid' && <span className="q-badge">{ui === 'es' ? 'El cliente la evita' : ui === 'fa' ? 'مشتری پرهیز می‌کند' : 'Client avoids'}</span>}
                             {(badges[i] ?? []).map((b) => (
-                              <span key={b} className={`q-badge ${b}`}>{BADGE_L[lang][b]}</span>
+                              <span key={b} className={`q-badge ${b}`}>{BADGE_L[ui][b]}</span>
                             ))}
                           </div>
                           <div className="q-opt-name">{o.carrier ?? '—'}</div>
                           <div className="q-opt-route">{o.routing ?? '—'}</div>
                           <div className="q-opt-sell">
                             <bdi dir="ltr" className="mono">${money(o.sellTotal)}</bdi>
-                            <span className={`q-delta ${dSell === 0 ? 'best' : ''}`}>{dSell === 0 ? ol(lang, 'cheapest') : <bdi dir="ltr">+${money(dSell)}</bdi>}</span>
+                            <span className={`q-delta ${dSell === 0 ? 'best' : ''}`}>{dSell === 0 ? ol(ui, 'cheapest') : <bdi dir="ltr">+${money(dSell)}</bdi>}</span>
                           </div>
-                          {targetDiff(o) && <div className="q-opt-target" data-testid={`option-target-${i}`}><TargetDelta diff={targetDiff(o)!.diff} lang={lang} /> <span className="q-muted"><bdi dir="ltr">${money(Math.round(targetDiff(o)!.perUnit))}</bdi> / {laneProfile!.target.per} · {ct(lang, 'target').toLowerCase()} <bdi dir="ltr">{laneProfile!.target.amount}</bdi></span></div>}
+                          {targetDiff(o) && <div className="q-opt-target" data-testid={`option-target-${i}`}><TargetDelta diff={targetDiff(o)!.diff} lang={ui} /> <span className="q-muted"><bdi dir="ltr">${money(Math.round(targetDiff(o)!.perUnit))}</bdi> / {laneProfile!.target.per} · {ct(ui, 'target').toLowerCase()} <bdi dir="ltr">{laneProfile!.target.amount}</bdi></span></div>}
                           <div className="q-opt-bm mono">
-                            {ol(lang, 'buy')} <bdi dir="ltr">${money(o.buyTotal)}</bdi> · {ol(lang, 'margin')} <bdi dir="ltr">${money(o.marginUsd)} ({o.marginPct}%)</bdi>
+                            {ol(ui, 'buy')} <bdi dir="ltr">${money(o.buyTotal)}</bdi> · {ol(ui, 'margin')} <bdi dir="ltr">${money(o.marginUsd)} ({o.marginPct}%)</bdi>
                           </div>
                           <dl className="q-opt-facts">
-                            <div><dt>{ol(lang, 'transit')}</dt><dd>{o.transitDays ?? '?'} {D}{dT ? <bdi className={`q-delta ${dT < 0 ? 'best' : ''}`}><bdi dir="ltr">{dT > 0 ? '+' : '−'}{Math.abs(dT)}</bdi> {D}</bdi> : null}</dd></div>
-                            <div><dt>{ol(lang, 'sailing')}</dt><dd className="mono"><bdi dir={lang === 'fa' ? 'rtl' : 'ltr'}>{o.etd ? fmtShort(o.etd, lang) : '—'}{o.eta ? `${lang === 'fa' ? ' ← ' : ' → '}${fmtShort(o.eta, lang)}` : ''}</bdi></dd></div>
-                            <div><dt>{ol(lang, 'freeTime')}</dt><dd>{o.freeDays != null ? `${o.freeDays} ${D}` : ol(lang, 'na')}{client?.freeTimeRequest && o.freeDays != null && o.freeDays < client.freeTimeRequest ? <bdi className="q-delta q-amber" title={`${client.name} asks for ${client.freeTimeRequest} days`}>&lt; {client.freeTimeRequest}</bdi> : null}{dF ? <bdi className={`q-delta ${dF > 0 ? 'best' : ''}`}><bdi dir="ltr">{dF > 0 ? '+' : '−'}{Math.abs(dF)}</bdi> {D}</bdi> : null}</dd></div>
-                            <div><dt>{ol(lang, 'validTo')}</dt><dd className="mono">{o.validUntil ?? '—'}</dd></div>
+                            <div><dt>{ol(ui, 'transit')}</dt><dd>{o.transitDays ?? '?'} {D}{dT ? <bdi className={`q-delta ${dT < 0 ? 'best' : ''}`}><bdi dir="ltr">{dT > 0 ? '+' : '−'}{Math.abs(dT)}</bdi> {D}</bdi> : null}</dd></div>
+                            <div><dt>{ol(ui, 'sailing')}</dt><dd className="mono"><bdi dir={ui === 'fa' ? 'rtl' : 'ltr'}>{o.etd ? fmtShort(o.etd, ui) : '—'}{o.eta ? `${ui === 'fa' ? ' ← ' : ' → '}${fmtShort(o.eta, ui)}` : ''}</bdi></dd></div>
+                            <div><dt>{ol(ui, 'freeTime')}</dt><dd>{o.freeDays != null ? `${o.freeDays} ${D}` : ol(ui, 'na')}{client?.freeTimeRequest && o.freeDays != null && o.freeDays < client.freeTimeRequest ? <bdi className="q-delta q-amber" title={`${client.name} asks for ${client.freeTimeRequest} days`}>&lt; {client.freeTimeRequest}</bdi> : null}{dF ? <bdi className={`q-delta ${dF > 0 ? 'best' : ''}`}><bdi dir="ltr">{dF > 0 ? '+' : '−'}{Math.abs(dF)}</bdi> {D}</bdi> : null}</dd></div>
+                            <div><dt>{ol(ui, 'validTo')}</dt><dd className="mono">{o.validUntil ?? '—'}</dd></div>
                           </dl>
-                          {o.staleCount > 0 && <div className="q-opt-stale">{ol(lang, 'recheck')}: {o.lines.filter((l) => l.stale).map((l) => l.charge).join(', ')}</div>}
+                          {o.staleCount > 0 && <div className="q-opt-stale">{ol(ui, 'recheck')}: {o.lines.filter((l) => l.stale).map((l) => l.charge).join(', ')}</div>}
                           <div className="q-opt-incl">
-                            <span>{ol(lang, 'included')}:</span> {o.lines.filter((l) => l.side === 'freight').map((l) => l.charge).join(', ')} + {o.lines.filter((l) => l.side !== 'freight').length} {ol(lang, 'common')}
+                            <span>{ol(ui, 'included')}:</span> {o.lines.filter((l) => l.side === 'freight').map((l) => l.charge).join(', ')} + {o.lines.filter((l) => l.side !== 'freight').length} {ol(ui, 'common')}
                             {o.excluded.length > 0 && (
                               <>
                                 <br />
-                                <span>{ol(lang, 'excluded')}:</span> {o.excluded.map((l) => l.charge).join(', ')}
+                                <span>{ol(ui, 'excluded')}:</span> {o.excluded.map((l) => l.charge).join(', ')}
                               </>
                             )}
                           </div>
-                          <div className="q-opt-foot">{i === activeIdx ? `▼ ${ol(lang, 'breakdown')}` : ol(lang, 'breakdown')}</div>
+                          <div className="q-opt-foot">{i === activeIdx ? `▼ ${ol(ui, 'breakdown')}` : ol(ui, 'breakdown')}</div>
                         </div>
                       );
                     })}
                   </div>
                   <div className="q-muted q-opts-note">
-                    {custOpts.length ? `${custOpts.length} ${ol(lang, 'nSelected')} · ` : ''}
-                    {custOpts.length === 0 ? <span className="q-amber">{ol(lang, 'pickOne')}</span> : null} {ol(lang, 'recRule')}
+                    {custOpts.length ? `${custOpts.length} ${ol(ui, 'nSelected')} · ` : ''}
+                    {custOpts.length === 0 ? <span className="q-amber">{ol(ui, 'pickOne')}</span> : null} {ol(ui, 'recRule')}
                   </div>
                 </div>
               )}
               <table className="q-table">
                 <thead>
                   <tr>
-                    <th>Charge</th>
-                    <th className="num">Qty</th>
-                    <th className="num">Buy</th>
-                    <th className="num">Sell</th>
-                    <th>Valid until</th>
+                    <th>{u('thCharge')}</th>
+                    <th className="num">{u('thQty')}</th>
+                    <th className="num">{u('thBuy')}</th>
+                    <th className="num">{u('thSell')}</th>
+                    <th>{u('thValid')}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {lineGroups.map((g) => (
-                    <FragmentRows key={g.side} label={SIDE_LABEL[g.side]}>
+                    <FragmentRows key={g.side} label={sideLabel(ui, g.side)}>
                       {g.lines.map((l, i) => (
                         <tr key={i} className={l.stale ? 'stale' : ''}>
                           <td>{l.charge}</td>
                           <td className="num mono">
-                            {money2(l.qty)} {BASIS_LABEL[l.basis]}
+                            {money2(l.qty)} {basisLabel(ui, l.basis)}
                           </td>
                           <td className="num mono">{money(l.buy)}</td>
                           <td className="num mono">{money(l.sell)}</td>
                           <td className="mono">
                             {l.validUntil}
-                            {l.stale && <span className="q-stale-tag">STALE</span>}
+                            {l.stale && <span className="q-stale-tag">{u('stale')}</span>}
                           </td>
                         </tr>
                       ))}
@@ -1091,27 +1087,27 @@ export function QuoteView({ seed, onOpenClient }: { seed?: { text: string; n: nu
                 </tbody>
               </table>
               {quote.excluded.length > 0 && (
-                <div className="q-excluded">Not in scope for {fields.incoterm ?? 'FOB (assumed)'}: {quote.excluded.map((l) => l.charge).join(' · ')}</div>
+                <div className="q-excluded">{u('notInScope')} {fields.incoterm ?? u('fobAssumed')}: {quote.excluded.map((l) => l.charge).join(' · ')}</div>
               )}
               <div className="q-margin">
                 <label htmlFor="q-margin">
-                  Margin target <strong className="mono">{margin}%</strong>
+                  {u('marginTarget')} <strong className="mono">{margin}%</strong>
                 </label>
                 <input id="q-margin" type="range" min={0} max={40} step={1} value={margin} onChange={(e: ChangeEvent<HTMLInputElement>) => setMargin(Number(e.target.value))} />
               </div>
               <div className="q-totals">
-                <div><span>BUY</span><strong className="mono">${money(quote.buyTotal)}</strong></div>
-                <div className="sell"><span>SELL</span><strong className="mono">${money(quote.sellTotal)}</strong></div>
-                <div className="margin"><span>MARGIN</span><strong className="mono">${money(quote.marginUsd)} <small>{quote.marginPct}%</small></strong></div>
-                <div><span>TRANSIT</span><strong className="mono">{quote.transitDays != null ? `${quote.transitDays} d` : '—'}</strong></div>
-                <div title="Earliest rate validity, capped at 14 days"><span>VALID TO</span><strong className="mono">{quote.validUntil ?? '—'}</strong></div>
+                <div><span>{u('tBuy')}</span><strong className="mono">${money(quote.buyTotal)}</strong></div>
+                <div className="sell"><span>{u('sellU')}</span><strong className="mono">${money(quote.sellTotal)}</strong></div>
+                <div className="margin"><span>{u('tMargin')}</span><strong className="mono">${money(quote.marginUsd)} <small>{quote.marginPct}%</small></strong></div>
+                <div><span>{u('tTransit')}</span><strong className="mono">{quote.transitDays != null ? `${quote.transitDays} ${u('d')}` : '—'}</strong></div>
+                <div title={u('validTitle')}><span>{u('tValid')}</span><strong className="mono">{quote.validUntil ?? '—'}</strong></div>
               </div>
-              {quote.currencies.length > 1 && <div className="q-warn">Mixed currencies in rate sheet ({quote.currencies.join(', ')}) — totals are not converted.</div>}
+              {quote.currencies.length > 1 && <div className="q-warn">{u('mixed')} ({quote.currencies.join(', ')}) — {u('notConverted')}</div>}
               {alternatives.length > 0 && (
                 <div className="q-alt">
                   {alternatives.map((a) => (
                     <button key={a.name} type="button" className="btn sm ghost" onClick={() => setField('origin', a.name)}>
-                      Compare ex {a.name}: SELL ${money(a.q!.sellTotal)} · {a.q!.transitDays ?? '?'} d{a.q!.staleCount ? '' : ' · rates current'}
+                      {u('compareEx')} {a.name}: {u('sellU')} ${money(a.q!.sellTotal)} · {a.q!.transitDays ?? '?'} {u('d')}{a.q!.staleCount ? '' : u('ratesCurrent')}
                     </button>
                   ))}
                 </div>
@@ -1120,7 +1116,7 @@ export function QuoteView({ seed, onOpenClient }: { seed?: { text: string; n: nu
 
             <div className="q-panel">
               <div className="q-head">
-                <h2>Customer quote</h2>
+                <h2>{u('custQuote')} <span className="q-muted q-h-hint">· {u('quoteLangHint')}</span></h2>
                 <div className="q-lang" role="group" aria-label="Quote language">
                   <button type="button" className={lang === 'en' ? 'active' : ''} onClick={() => setLang('en')}>EN</button>
                   <button type="button" className={lang === 'es' ? 'active' : ''} onClick={() => setLang('es')}>ES</button>
@@ -1130,25 +1126,25 @@ export function QuoteView({ seed, onOpenClient }: { seed?: { text: string; n: nu
               <pre className="q-text" data-testid="quote-text" dir={lang === 'fa' ? 'rtl' : 'ltr'}>{qText}</pre>
               <div className="q-actions">
                 <button type="button" className="btn primary" onClick={() => void doCopy('quote')}>
-                  {copied === 'quote' ? 'Copied ✓' : 'Copy quote'}
+                  {copied === 'quote' ? u('copied') : u('copyQuote')}
                 </button>
-                <button type="button" className="btn" data-testid="generate-pdf" disabled={pdfState === 'busy' || !custOpts.length} title={lang === 'fa' ? ol('fa', 'pdfFa') + ' / PDF is generated in English when FA is selected.' : undefined} onClick={() => void doPdf()}>
-                  {pdfState === 'busy' ? 'Building PDF…' : pdfState === 'done' ? 'PDF downloaded ✓' : pdfState === 'error' ? 'PDF failed — retry' : `Generate PDF${custOpts.length > 1 ? ` (${custOpts.length} options)` : ''}${lang === 'fa' ? ' · EN' : ''}`}
+                <button type="button" className="btn" data-testid="generate-pdf" disabled={pdfState === 'busy' || !custOpts.length} title={lang === 'fa' ? u('pdfFa') : undefined} onClick={() => void doPdf()}>
+                  {pdfState === 'busy' ? u('pdfBusy') : pdfState === 'done' ? u('pdfDone') : pdfState === 'error' ? u('pdfErr') : `${u('pdfGen')}${custOpts.length > 1 ? ` (${custOpts.length} ${u('options')})` : ''}${lang === 'fa' ? ' · EN' : ''}`}
                 </button>
-                <label className="q-pdf-internal" title="Adds buy and margin columns. Never send this version to the customer.">
-                  <input type="checkbox" data-testid="pdf-internal" checked={pdfInternal} onChange={(e) => setPdfInternal(e.target.checked)} /> Internal (with buy/margin)
+                <label className="q-pdf-internal" title={u('internalTitle')}>
+                  <input type="checkbox" data-testid="pdf-internal" checked={pdfInternal} onChange={(e) => setPdfInternal(e.target.checked)} /> {u('internal')}
                 </label>
                 {laneProfile?.target.amount != null && (
-                  <label className="q-pdf-internal" title="The client's target rate is internal by default. Tick to show it on the customer PDF and copied quote.">
-                    <input type="checkbox" data-testid="show-target" checked={showTarget} onChange={(e) => setShowTarget(e.target.checked)} /> Show target on customer copy
+                  <label className="q-pdf-internal" title={u('targetTitle')}>
+                    <input type="checkbox" data-testid="show-target" checked={showTarget} onChange={(e) => setShowTarget(e.target.checked)} /> {u('showTarget')}
                   </label>
                 )}
               </div>
               <div className="q-muted q-send-note">
-                Human sends it. Nothing is booked or emailed from here.
+                {u('humanSends')}
                 {savedTo && (
                   <span className="q-saved" data-testid="quote-saved">
-                    {' '}· Logged {savedTo === 'unassigned' ? 'without a client (pick one to attribute it)' : <>to {savedTo}'s dashboard{onOpenClient && clientId ? <> — <button type="button" className="q-linklike" onClick={() => onOpenClient(clientId)}>open</button></> : null}</>} · saved in this browser only
+                    {' '}· {u('logged')} {savedTo === 'unassigned' ? u('noClient') : <>{u('toDash')} {savedTo}{onOpenClient && clientId ? <> — <button type="button" className="q-linklike" onClick={() => onOpenClient(clientId)}>{u('open')}</button></> : null}</>} · {u(isLive() ? 'savedLive' : 'savedLocal')}
                   </span>
                 )}
               </div>
