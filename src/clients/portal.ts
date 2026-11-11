@@ -67,6 +67,7 @@ const S = {
   charges: ['Charges to pay', 'Gastos a pagar', 'هزینه‌های قابل پرداخت'],
   noCharges: ['Nothing to pay right now.', 'Nada pendiente de pago.', 'فعلا هزینه‌ای برای پرداخت نیست.'],
   total: ['Total to pay', 'Total a pagar', 'جمع قابل پرداخت'],
+  overdue: ['overdue', 'vencida', 'سررسید گذشته'],
   payNote: ['Pay by bank transfer to your forwarder. Payment is not taken on this site.', 'Pago por transferencia a tu transitario. No se cobra en esta web.', 'پرداخت با حواله بانکی به فورواردر؛ در این سایت پرداختی انجام نمی‌شود.'],
   cheques: ['Guarantee cheques held', 'Cheques de garantía', 'چک‌های تضمین'],
   noCheques: ['No guarantee cheques held.', 'Sin cheques de garantía.', 'چک تضمینی نزد خط نیست.'],

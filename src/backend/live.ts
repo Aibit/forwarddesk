@@ -89,6 +89,7 @@ const portalClient = (id: string, p: DocumentData): Client => ({
 function subscribe(role: 'staff' | 'client', clientId: string | null) {
   const err = (e: unknown) => fail(e);
   const mine = <T,>(col: string) => (role === 'staff' ? c(col) : query(c(col), where('clientId', '==', clientId))) as ReturnType<typeof c> as T;
+  store.hydrate({ costs: {} });
   unsubs.push(onSnapshot(doc(db!, O()), (s) => store.hydrate({ company: { ...EMPTY_COMPANY, ...((s.data()?.company as Partial<Company>) ?? {}) } }), err));
   if (role === 'staff') {
     unsubs.push(onSnapshot(c('clients'), (s) => {
@@ -213,6 +214,11 @@ function writer(user: User, role: 'staff' | 'client', clientId: string | null): 
       b.set(d(`quotes/${rec.id}`), { ...rec });
       if (costs) b.set(d(`quotes/${rec.id}/private/costs`), costs);
       run(b.commit());
+    },
+    async loadQuoteCosts(id: string) {
+      if (role !== 'staff') return null;
+      const v = (await getDoc(d(`quotes/${id}/private/costs`))).data();
+      return (v as QuoteCosts | undefined) ?? null;
     },
     setQuoteStatus(id, status, acceptedOption, via = 'desk') {
       if (role === 'client') {

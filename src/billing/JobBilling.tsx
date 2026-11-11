@@ -7,14 +7,14 @@ import { useUiLang } from '../ui/lang';
 import { bt, day, li, money, type BKey } from './i18n';
 import { billingStore, ledgerFor, useBilling } from './store';
 import {
-  CURRENCIES, invDue, invOpen, invPaid, invState, invTotal, localCharges, nextNo, pnl, releaseGate, round2, uid,
+  CURRENCIES, invDue, invOpen, invPaid, invState, invTotal, nextNo, pnl, releaseGate, round2, uid,
   type Invoice, type Ledger, type Line,
 } from './model';
 import { downloadBlob, invoicePdf } from './pdf';
 
 /** Save a ledger with the House B/L release flag recomputed (Firestore rules read it). */
-export function saveLedgerFor(job: Job, l: Ledger, t: Tariffs) {
-  billingStore.saveLedger({ ...l, releaseOk: releaseGate(job, l, t, Date.now()).ok });
+export function saveLedgerFor(job: Job, l: Ledger, _t?: Tariffs) {
+  billingStore.saveLedger({ ...l, releaseOk: releaseGate(job, l).ok });
 }
 const numOrNull = (v: string) => (v.trim() === '' ? null : Number(v.replace(',', '.')));
 
@@ -80,7 +80,6 @@ export function JobBilling({ job, sample }: { job: Job; sample: boolean }) {
     downloadBlob(r.blob, r.filename);
   };
   const usedCcy = [...new Set([...l.lines.map((x) => x.currency), ...l.invoices.map((i) => i.currency)])].filter((c) => c !== l.base);
-  const locals = localCharges(job, l, tariffs, now);
   const B = (n: number) => money(lang, n, l.base);
 
   const invTable = (kind: 'invoice' | 'bill') => {
@@ -231,24 +230,6 @@ export function JobBilling({ job, sample }: { job: Job; sample: boolean }) {
       </section>
 
       <div className="b-two">
-        <section className="b-sec">
-          <h3>{L('localCharges')}</h3>
-          {locals.length ? (
-            <table className="b-table" data-testid="local-charges">
-              <tbody>
-                {locals.map((c) => (
-                  <tr key={c.key}>
-                    <td>{c.label[li(lang)]}</td>
-                    <td className="num mono">{money(lang, c.amount, tariffs.currency)}</td>
-                    <td className="num">{c.paid ? <span className="b-pill paid">{L('paid')}</span> : (
-                      <button type="button" className="btn ghost sm" onClick={() => save({ ...l, localPaid: { ...l.localPaid, [c.key]: true } })} data-testid={`localpaid-${c.key}`}>{L('markPaid')}</button>
-                    )}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          ) : <p className="b-sub">—</p>}
-        </section>
         <section className="b-sec">
           <h3>{L('cheques')}</h3>
           <p className="b-sub">{L('chequeRule')}</p>

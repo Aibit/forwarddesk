@@ -1,5 +1,6 @@
 import type { Job } from '../jobs/data';
-import { chargeAmount, chequeAmount, clock, nextDeadline } from '../jobs/logic';
+import { chequeAmount, clock, nextDeadline } from '../jobs/logic';
+import { balanceFor, getBilling } from '../billing/store';
 import type { Tariffs } from '../jobs/tariffs';
 import type { Client, QuoteRecord } from './store';
 
@@ -34,14 +35,14 @@ export function clientKpi(c: Client, allJobs: Job[], quotes: QuoteRecord[], now:
         demurrageUsd += k.cost;
       }
     }
-    // demurrage is counted from the clocks above, so skip a demurrage charge line to avoid double counting
-    unpaidUsd += j.charges.filter((ch) => !ch.paid && ch.key !== 'demurrage').reduce((s, ch) => s + chargeAmount(j, ch, t, now), 0);
-    if (j.collect && !j.collect.collected) unpaidUsd += j.collect.amount;
+    // Unpaid = open client invoices on the job's billing ledger (same figure as Jobs, Finance and the portal).
+    unpaidUsd += balanceFor(j, getBilling(), now).open;
     for (const ch of j.cheques) if (ch.status === 'held') { chequesHeld++; chequesUsd += chequeAmount(j, ch, t); }
     const nd = nextDeadline(j, now, t);
     if (nd && (!next || rank(nd) < rank(next))) next = { job: j, level: nd.level, ms: nd.ms, kind: nd.kind };
   }
   const mine = quotes.filter((q) => q.clientId === c.id).sort((a, b) => b.at - a.at);
+  unpaidUsd = Math.round(unpaidUsd * 100) / 100;
   return {
     jobs, inFreeTime, atRiskCntr, demurrageUsd, demurrageCntr, unpaidUsd, chequesHeld, chequesUsd,
     quotes: mine, sent: mine.length, won: mine.filter((q) => q.status === 'won').length, lost: mine.filter((q) => q.status === 'lost').length, next,

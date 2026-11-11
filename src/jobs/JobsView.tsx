@@ -3,11 +3,13 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { JobDocs } from '../billing/JobDocs';
 import { JobBilling } from '../billing/JobBilling';
 import { bt } from '../billing/i18n';
+import { collectState, releaseBlockFor, useBilling } from '../billing/store';
+import type { JobBalance } from '../billing/model';
 import { type Doc, type Job } from './data';
 import { jobsStore, useJobs } from './store';
 import { isLive } from '../backend/bridge';
 import { FA_TERM, GLOSSARY, dur, fmtDay, fmtWhen, num, tr, usd, type Key } from './i18n';
-import { CHARGE_LABEL, DAY, chargeAmount, chequeAmount, clock, cutoff, jobAlerts, nextDeadline, summarize, unpaidBeforeBl } from './logic';
+import { DAY, chequeAmount, clock, cutoff, jobAlerts, nextDeadline, summarize } from './logic';
 import { PHASES, stepDef, stepIndex, stepsFor, type Lang } from './steps';
 import { DEFAULT_TARIFFS, TARIFF_ROWS, loadTariffs, saveTariffs, useTariffs, type TariffKey, type Tariffs } from './tariffs';
 import { agentForPort, clientForJob, useStore } from '../clients/store';
@@ -63,7 +65,9 @@ export function JobsView({ onDraftQuote, onOpenClient, openRequest }: { onDraftQ
     ) : (
       L(k)
     );
-  const sum = useMemo(() => summarize(jobs, now, tariffs), [jobs, now, tariffs]);
+  const bill = useBilling();
+  const blockOf = (j: Job) => releaseBlockFor(j, bill, now);
+  const sum = useMemo(() => summarize(jobs, now, tariffs, (j) => { const b = releaseBlockFor(j, bill, now); return b.blocking ? b.open : 0; }), [jobs, now, tariffs, bill]);
   const shown = jobs.filter((j) => filter === 'all' || j.dir === filter);
   const open = jobs.find((j) => j.id === openId) ?? null;
   const stepName = (code: string) => stepDef(code)[lang];
@@ -93,15 +97,16 @@ export function JobsView({ onDraftQuote, onOpenClient, openRequest }: { onDraftQ
       const stopped = j.containers.map((c) => clock(c, now, tariffs)).filter((k) => k.state === 'stopped' && k.daysOver > 0);
       if (stopped.length) {
         const cost = stopped.reduce((s, k) => s + k.cost, 0);
-        rows.push({ job: j, kind: 'stopped', level: 'red', ms: 0, used: 1, right: usd(lang, cost), text: `${L('demurrage')} · E21 · ${num(lang, stopped.length)} ${L('cntr')}`, sub: `${num(lang, Math.max(...stopped.map((k) => k.daysOver)))} ${lang === 'fa' ? 'روز' : 'd'} ${L('over')} (${L('loaded')}) · ${usd(lang, cost)} ${L('estDemurrage')}` });
+        rows.push({ job: j, kind: 'stopped', level: 'red', ms: 0, used: 1, right: usd(lang, cost), text: `${L('demurrage')} · ${j.dir === 'export' ? 'E21' : 'I15'} · ${num(lang, stopped.length)} ${L('cntr')}`, sub: `${num(lang, Math.max(...stopped.map((k) => k.daysOver)))} ${lang === 'fa' ? 'روز' : 'd'} ${L('over')} (${L(j.dir === 'export' ? 'loaded' : 'returnedEmpty')}) · ${usd(lang, cost)} ${L('estDemurrage')}` });
       }
     }
     const rank = (r: (typeof rows)[number]) => (r.kind === 'over' ? -2e12 + r.ms : r.kind === 'stopped' ? -1e12 : r.ms);
     return rows.sort((a, b) => rank(a) - rank(b));
   }, [jobs, now, tariffs, lang]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const blJobs = jobs.filter((j) => unpaidBeforeBl(j, tariffs, now) > 0 || (j.dir === 'export' && stepIndex(j.step) >= 19 && stepIndex(j.step) <= 22));
+  const blJobs = jobs.filter((j) => blockOf(j).blocking);
   const collectJobs = jobs.filter((j) => j.collect && stepIndex(j.step) >= 10);
+  const collectOf = (j: Job) => collectState(j.id, bill) ?? { amount: j.collect?.amount ?? 0, collected: !!j.collect?.collected };
   const chequeJobs = jobs.filter((j) => j.cheques.length);
 
   return (
@@ -248,24 +253,23 @@ export function JobsView({ onDraftQuote, onOpenClient, openRequest }: { onDraftQ
       <section className="q-panel j-money" aria-label={L('money')} data-testid="money-at-risk">
         <div className="q-head">
           <h2>{L('money')}</h2>
-          <span className="q-muted">E21–E22 · I13 · I14–I16</span>
+          <span className="q-muted">E21–E22 · I11–I13 · I14–I16</span>
         </div>
         <div className="j-money-grid">
           <div>
-            <h3>
-              {L('unpaidBl')} — {T('originalBl')}
-            </h3>
+            <h3 data-testid="release-block-h">{L('unpaidBl')} — {L('releaseDocBl')} / {L('releaseDocDo')}</h3>
+            {blJobs.length === 0 && <p className="j-sub">{L('noOpen')}</p>}
             {blJobs.map((j) => {
-              const unpaid = unpaidBeforeBl(j, tariffs, now);
+              const b = blockOf(j);
               return (
-                <div key={j.id} className="j-money-card">
+                <div key={j.id} className="j-money-card" data-testid={`release-block-${j.id}`}>
                   <div className="j-mc-head">
                     <button type="button" className="j-link mono" onClick={() => setOpenId(j.id)}>{j.id}</button>
                     <span>{j.customer}</span>
                   </div>
-                  <ChargeTable job={j} lang={lang} tariffs={tariffs} now={now} />
-                  <div className={`j-mc-foot ${unpaid ? 'amber' : 'ok'}`}>
-                    {unpaid ? `${usd(lang, unpaid)} ${L('unpaid')} — ${L('blocksBl')}` : `${L('paid')} ✓`}
+                  <BalanceTable b={b.balance} lang={lang} />
+                  <div className="j-mc-foot amber">
+                    {usd(lang, b.open)} {L('unpaid')} — {L(b.kind === 'hbl' ? 'blocksBl' : 'blocksDo')}
                   </div>
                 </div>
               );
@@ -281,8 +285,8 @@ export function JobsView({ onDraftQuote, onOpenClient, openRequest }: { onDraftQ
                 </div>
                 <div className="j-kv">
                   <span>{L('collectFreight')}</span>
-                  <strong className={j.collect!.collected ? 'ok' : 'amber'}>
-                    {usd(lang, j.collect!.amount)} · {j.collect!.collected ? L('collected') : L('notCollected')}
+                  <strong className={collectOf(j).collected ? 'ok' : 'amber'}>
+                    {usd(lang, collectOf(j).amount)} · {collectOf(j).collected ? L('collected') : L('notCollected')}
                   </strong>
                 </div>
                 <div className="j-kv">
@@ -409,21 +413,21 @@ function Tile({ label, value, tone, sub, subTone }: { label: ReactNode; value: s
   );
 }
 
-function ChargeTable({ job, lang, tariffs, now }: { job: Job; lang: Lang; tariffs: Tariffs; now: number }) {
-  const i = LIDX[lang];
+/** Open client invoices on a job — read from the billing ledger, the same figure Finance, Clients and the portal show. */
+function BalanceTable({ b, lang }: { b: JobBalance; lang: Lang }) {
+  const miss = Object.entries(b.missing);
+  if (!b.invoices.length) return <p className="j-sub" data-testid="job-balance-none">{tr(lang, 'noOpen')}</p>;
   return (
-    <table className="j-charges">
+    <table className="j-charges" data-testid="job-balance">
       <tbody>
-        {job.charges.map((c) => {
-          const amt = chargeAmount(job, c, tariffs, now);
-          return (
-            <tr key={c.key} className={c.paid ? 'paid' : 'unpaid'}>
-              <td>{CHARGE_LABEL[c.key][i]}</td>
-              <td className="mono num">{usd(lang, amt)}</td>
-              <td className={`st ${c.paid ? 'ok' : c.key === 'demurrage' && amt > 0 ? 'red' : 'amber'}`}>{tr(lang, c.paid ? 'paid' : 'unpaid')}</td>
-            </tr>
-          );
-        })}
+        {b.invoices.map((x) => (
+          <tr key={x.no}>
+            <td><bdi className="mono">{x.no}</bdi></td>
+            <td className="mono num"><bdi>{x.currency} {x.open.toLocaleString(lang === 'fa' ? 'fa-IR' : lang === 'es' ? 'es-ES' : 'en-US', { maximumFractionDigits: 2 })}</bdi></td>
+            <td className={`st ${x.overdue ? 'red' : 'amber'}`}>{tr(lang, 'unpaid')}</td>
+          </tr>
+        ))}
+        <tr className="tot"><td>{tr(lang, 'total')}</td><td className="mono num" data-testid="job-balance-total"><bdi>{usd(lang, b.open)}</bdi></td><td className="st">{miss.length ? `+ ${miss.map(([c, v]) => `${c} ${v}`).join(', ')} (${tr(lang, 'noRate')})` : ''}</td></tr>
       </tbody>
     </table>
   );
@@ -443,7 +447,8 @@ function JobDrawerBody({ job, lang, now, tariffs, T, onClose, onDraftQuote, onOp
   const L = (k: Key) => tr(lang, k);
   const steps = stepsFor(job.dir);
   const cur = stepIndex(job.step);
-  const alerts = jobAlerts(job, now, tariffs, lang);
+  const blk = releaseBlockFor(job, useBilling(), now);
+  const alerts = jobAlerts(job, now, tariffs, lang, blk.blocking ? { amount: blk.open, kind: blk.kind } : null);
   const canQuote = job.quoteText && ((job.dir === 'export' && cur >= 2 && cur <= 4) || (job.dir === 'import' && cur === 2));
   const co = cutoff(job);
   return (
@@ -616,13 +621,8 @@ function JobDrawerBody({ job, lang, now, tariffs, T, onClose, onDraftQuote, onOp
           </section>
           <section className="j-d-sec">
             <h3>{L('charges')}</h3>
-            {job.charges.length ? <ChargeTable job={job} lang={lang} tariffs={tariffs} now={now} /> : <p className="j-sub">—</p>}
-            {job.collect && (
-              <div className="j-kv">
-                <span>{T('collectFreight')}</span>
-                <strong className={job.collect.collected ? 'ok' : 'amber'}>{usd(lang, job.collect.amount)} · {job.collect.collected ? L('collected') : L('notCollected')}</strong>
-              </div>
-            )}
+            <BalanceTable b={blk.balance} lang={lang} />
+            <p className="j-sub">{L('seeBilling')}</p>
             {job.cheques.length > 0 && (
               <>
                 <h3 className="j-h3-gap">{T('cheque')}</h3>

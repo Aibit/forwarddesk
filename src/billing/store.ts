@@ -1,7 +1,9 @@
 // Billing + documents store. Demo: SAMPLE ledgers + localStorage. Live: Firestore via `billingBackend`.
 import { useSyncExternalStore } from 'react';
-import { DAY, DEFAULT_CATALOG, emptyLedger, type ChargeCode, type JobDoc, type Ledger } from './model';
+import { DAY, DEFAULT_CATALOG, balanceOf, releaseGate, releaseKind, releaseStep, invOpen, emptyLedger, migrateLegacy, zeroBalance, type ChargeCode, type JobBalance, type JobDoc, type Ledger } from './model';
 import type { Job } from '../jobs/data';
+import type { Tariffs } from '../jobs/tariffs';
+import { stepIndex } from '../jobs/steps';
 
 export interface BillingBackend {
   saveLedger(l: Ledger): void;
@@ -36,7 +38,7 @@ const write = (k: string, v: unknown) => {
 /** SAMPLE ledgers for the sample jobs — illustrative numbers only, clearly labelled in the UI. */
 function sampleLedgers(now = Date.now()): Record<string, Ledger> {
   const t = (d: number) => now + d * DAY;
-  const L = (jobId: string, customer: string, x: Partial<Ledger>): Ledger => ({ ...emptyLedger({ id: jobId, customer }), sample: true, ...x });
+  const L = (jobId: string, customer: string, x: Partial<Ledger>): Ledger => ({ ...emptyLedger({ id: jobId, customer }), localMigrated: false, sample: true, ...x });
   const y = new Date(now).getFullYear();
   return {
     'FD-E-1042': L('FD-E-1042', 'Customer A', {
@@ -89,30 +91,57 @@ function sampleLedgers(now = Date.now()): Record<string, Ledger> {
 let ledgers: Record<string, Ledger> = {};
 let docs: Record<string, JobDoc> = {};
 let catalog: ChargeCode[] = DEFAULT_CATALOG;
+/** Client-readable balances (live mode, client role): written by staff next to each ledger. */
+let balances: Record<string, JobBalance> = {};
 let live = false;
 const subs = new Set<() => void>();
-let snap = { ledgers, docs, catalog };
+let snap = { ledgers, docs, catalog, balances };
 const emit = () => {
-  snap = { ledgers, docs, catalog };
+  snap = { ledgers, docs, catalog, balances };
   subs.forEach((f) => f());
 };
 function loadDemo() {
   ledgers = { ...sampleLedgers(), ...read<Record<string, Ledger>>(KL, {}) };
   docs = read<Record<string, JobDoc>>(KD, {});
   catalog = read<ChargeCode[] | null>(KC, null) ?? DEFAULT_CATALOG;
+  balances = {};
   live = false;
-  snap = { ledgers, docs, catalog };
+  snap = { ledgers, docs, catalog, balances };
 }
 if (typeof localStorage !== 'undefined') loadDemo();
 
 export const useBilling = () => useSyncExternalStore((f) => (subs.add(f), () => subs.delete(f)), () => snap);
 export const getBilling = () => snap;
+/** The one unpaid figure per job (open client invoices). Staff/demo: from the ledger; client portal (live): from jobBalances. */
+export function balanceFor(job: Pick<Job, 'id' | 'clientId' | 'customer'>, s = snap, now = Date.now()): JobBalance {
+  const l = s.ledgers[job.id];
+  if (l) return balanceOf(l, now);
+  return s.balances[job.id] ?? zeroBalance(job);
+}
+export interface ReleaseBlock { kind: 'hbl' | 'do'; open: number; missing: Record<string, number>; released: boolean; blocking: boolean; balance: JobBalance }
+/** Export: open client invoices hold the original B/L (until E22). Import: they hold the delivery order (until I11). */
+export function releaseBlockFor(job: Pick<Job, 'id' | 'clientId' | 'customer' | 'dir' | 'step'>, s = snap, now = Date.now()): ReleaseBlock {
+  const balance = balanceFor(job, s, now);
+  const kind = releaseKind(job);
+  const released = s.docs[`${job.id}-${kind}`]?.status === 'released';
+  const due = balance.open > 0.005 || Object.keys(balance.missing).length > 0;
+  return { kind, open: balance.open, missing: balance.missing, released, blocking: due && !released && stepIndex(job.step) <= releaseStep(job), balance };
+}
+/** Collect freight (I13) status, read from its invoice line on the ledger. */
+export function collectState(jobId: string, s = snap): { amount: number; collected: boolean } | null {
+  const l = s.ledgers[jobId];
+  const line = l?.lines.find((x) => x.id === 'loc-collect' || (x.terms === 'collect' && x.code === 'OFR' && x.invoiceId));
+  if (!l || !line) return null;
+  const inv = l.invoices.find((i) => i.id === line.invoiceId);
+  return { amount: (line.sell ?? 0) * line.qty, collected: !!inv && inv.status === 'issued' && invOpen(l, inv) <= 0.005 };
+}
 export const ledgerFor = (job: Pick<Job, 'id' | 'clientId' | 'customer'>): Ledger => ledgers[job.id] ?? emptyLedger(job);
 
 export const billingStore = {
   isLive: () => live,
-  hydrate(p: { ledgers?: Ledger[]; docs?: JobDoc[]; catalog?: ChargeCode[] | null }) {
+  hydrate(p: { ledgers?: Ledger[]; docs?: JobDoc[]; catalog?: ChargeCode[] | null; balances?: JobBalance[] }) {
     live = true;
+    if (p.balances) balances = Object.fromEntries(p.balances.map((b) => [b.jobId, b]));
     if (p.ledgers) ledgers = Object.fromEntries(p.ledgers.map((l) => [l.jobId, l]));
     if (p.docs) docs = Object.fromEntries(p.docs.map((d) => [d.id, d]));
     if (p.catalog !== undefined) catalog = p.catalog?.length ? p.catalog : DEFAULT_CATALOG;
@@ -121,6 +150,24 @@ export const billingStore = {
   reload() {
     loadDemo();
     emit();
+  },
+  /**
+   * Move legacy job charges / collect freight onto invoice lines (once per job). Demo: in memory only, so the
+   * SAMPLE dates stay relative to today; live (staff): saved to Firestore together with the client balance.
+   */
+  syncLegacy(jobs: Job[], t: Tariffs, now = Date.now()) {
+    let changed = false;
+    const nos = () => Object.values(ledgers).flatMap((l) => l.invoices.map((i) => i.no));
+    for (const job of jobs) {
+      const next = migrateLegacy(job, ledgers[job.id], t, now, nos());
+      if (!next) continue;
+      if (!ledgers[job.id] && !next.lines.length) continue;
+      changed = true;
+      next.releaseOk = releaseGate(job, next).ok;
+      if (live && billingBackend.b) this.saveLedger(next);
+      else ledgers = { ...ledgers, [job.id]: next };
+    }
+    if (changed) emit();
   },
   saveLedger(l: Ledger) {
     const next = { ...l, updatedAt: Date.now() };

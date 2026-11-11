@@ -4,7 +4,9 @@ import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { type Job } from '../jobs/data';
 import { useJobs } from '../jobs/store';
 import { dur, fmtDay, fmtWhen, num, usd } from '../jobs/i18n';
-import { CHARGE_LABEL, chargeAmount, chequeAmount, clock } from '../jobs/logic';
+import { chequeAmount, clock } from '../jobs/logic';
+import { balanceFor, useBilling } from '../billing/store';
+import { sumBalances } from '../billing/model';
 import { stepIndex } from '../jobs/steps';
 import { useTariffs } from '../jobs/tariffs';
 import { AgentsEditor } from './Agents';
@@ -22,7 +24,6 @@ import './clients.css';
 
 const SESSION = 'fd.portal.session';
 const APPROVALS = 'fd.portal.approvals.v1';
-const LIDX: Record<CLang, 0 | 1 | 2> = { en: 0, es: 1, fa: 2 };
 
 function loadApprovals(): Record<string, number> {
   try {
@@ -159,10 +160,10 @@ function Portal({ c, lang, setLang, onLogout, quotes, company, live = false }: {
   };
   const D = L('days');
 
-  const toPay = jobs.flatMap((j) => [
-    ...j.charges.filter((ch) => !ch.paid).map((ch) => ({ job: j, label: CHARGE_LABEL[ch.key][LIDX[lang]], amount: chargeAmount(j, ch, tariffs, now), est: ch.key === 'demurrage' })),
-    ...(j.collect && !j.collect.collected ? [{ job: j, label: lang === 'fa' ? 'کرایه کالکت' : lang === 'es' ? 'Flete collect' : 'Collect freight', amount: j.collect.amount, est: false }] : []),
-  ]).filter((x) => x.amount > 0);
+  // Same figure as Jobs / Clients / Finance: open client invoices on each job (staff publish it in live mode).
+  const bill = useBilling();
+  const toPay = jobs.flatMap((j) => balanceFor(j, bill, now).invoices.map((x) => ({ job: j, x })));
+  const toPayTotal = sumBalances(jobs.map((j) => balanceFor(j, bill, now)));
   const cheques = jobs.flatMap((j) => j.cheques.filter((ch) => ch.status === 'held').map((ch) => ({ job: j, ch, amount: chequeAmount(j, ch, tariffs) })));
 
   return (
@@ -303,13 +304,13 @@ function Portal({ c, lang, setLang, onLogout, quotes, company, live = false }: {
               <>
                 <table className="p-table">
                   <tbody>
-                    {toPay.map((x, i) => (
-                      <tr key={i}><td><bdi className="mono c-muted">{x.job.id}</bdi></td><td>{x.label}{x.est ? ' *' : ''}</td><td className="num"><bdi className="mono">{usd(lang, x.amount)}</bdi></td></tr>
+                    {toPay.map(({ job, x }) => (
+                      <tr key={job.id + x.no}><td><bdi className="mono c-muted">{job.id}</bdi></td><td><bdi className="mono">{x.no}</bdi>{x.overdue ? <span className="c-amber"> · {L('overdue')}</span> : null}</td><td className="num"><bdi className="mono">{x.currency} {num(lang, x.open)}</bdi></td></tr>
                     ))}
-                    <tr className="tot"><td /><td>{L('total')}</td><td className="num"><bdi className="mono">{usd(lang, toPay.reduce((s, x) => s + x.amount, 0))}</bdi></td></tr>
+                    <tr className="tot"><td /><td>{L('total')}</td><td className="num"><bdi className="mono" data-testid="portal-unpaid-total">{usd(lang, toPayTotal.open)}</bdi>{Object.keys(toPayTotal.missing).length ? <> + {Object.entries(toPayTotal.missing).map(([c, v]) => `${c} ${num(lang, v)}`).join(', ')}</> : null}</td></tr>
                   </tbody>
                 </table>
-                <p className="c-muted c-small">{toPay.some((x) => x.est) ? '* estimate (sample tariff), the line calculates the final amount. ' : ''}{L('payNote')}</p>
+                <p className="c-muted c-small">{L('payNote')}</p>
               </>
             )}
           </section>

@@ -80,7 +80,7 @@ export interface QuoteRecord {
   sample?: boolean;
 }
 
-const K = { clients: 'fd.clients.v1', company: 'fd.company.v1', quotes: 'fd.quotes.v1' };
+const K = { clients: 'fd.clients.v1', company: 'fd.company.v1', quotes: 'fd.quotes.v1', costs: 'fd.quoteCosts.v1' };
 const DAY = 86400000;
 
 const P = (name: string, phone: string): Person => ({ name, phone });
@@ -148,11 +148,13 @@ function save(key: string, v: unknown) {
   }
 }
 
-interface State { clients: Client[]; company: Company; quotes: QuoteRecord[] }
+/** costs: buy side per quote id (staff only — demo: this browser; live: read on demand from quotes/{id}/private/costs). */
+interface State { clients: Client[]; company: Company; quotes: QuoteRecord[]; costs: Record<string, QuoteCosts | null> }
 let state: State = {
   clients: migrate(load(K.clients, sampleClients)),
   company: { ...EMPTY_COMPANY, ...load<Partial<Company>>(K.company, () => ({})) },
   quotes: load(K.quotes, () => sampleQuotes()),
+  costs: load<Record<string, QuoteCosts | null>>(K.costs, () => ({})),
 };
 const subs = new Set<() => void>();
 function set(next: Partial<State>) {
@@ -161,6 +163,7 @@ function set(next: Partial<State>) {
   if (next.clients) save(K.clients, state.clients);
   if (next.company) save(K.company, state.company);
   if (next.quotes) save(K.quotes, state.quotes);
+  if (next.costs) save(K.costs, state.costs);
   subs.forEach((f) => f());
 }
 const subscribe = (f: () => void) => {
@@ -183,6 +186,7 @@ export const store = {
       clients: migrate(load(K.clients, sampleClients)),
       company: { ...EMPTY_COMPANY, ...load<Partial<Company>>(K.company, () => ({})) },
       quotes: load(K.quotes, () => sampleQuotes()),
+      costs: load<Record<string, QuoteCosts | null>>(K.costs, () => ({})),
     };
     subs.forEach((f) => f());
   },
@@ -211,7 +215,16 @@ export const store = {
     const prev = state.quotes.find((x) => x.id === q.id);
     const rec: QuoteRecord = { ...q, status: prev?.status ?? 'sent', via: [...new Set([...(prev?.via ?? []), q.via])] };
     bridge.w?.recordQuote(rec, costs);
-    set({ quotes: prev ? state.quotes.map((x) => (x.id === q.id ? rec : x)) : [rec, ...state.quotes] });
+    set({ quotes: prev ? state.quotes.map((x) => (x.id === q.id ? rec : x)) : [rec, ...state.quotes], ...(costs ? { costs: { ...state.costs, [q.id]: costs } } : {}) });
+  },
+  /** Staff: make sure the buy side of these quotes is loaded (live mode reads the staff-only sub-document once). */
+  async loadCosts(ids: string[]) {
+    const w = bridge.w;
+    if (!w || w.role !== 'staff' || !w.loadQuoteCosts) return;
+    const missing = ids.filter((id) => !(id in state.costs));
+    if (!missing.length) return;
+    const got = await Promise.all(missing.map((id) => w.loadQuoteCosts!(id).catch(() => null)));
+    set({ costs: { ...state.costs, ...Object.fromEntries(missing.map((id, i) => [id, got[i]])) } });
   },
   setQuoteStatus(id: string, status: QuoteStatus, acceptedOption?: string, acceptedVia: 'portal' | 'desk' = 'desk') {
     bridge.w?.setQuoteStatus(id, status, acceptedOption, acceptedVia);

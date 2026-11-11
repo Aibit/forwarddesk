@@ -3,7 +3,7 @@ import { Art, Icon, type ArtName, type NavIcon } from './Art';
 import { useUiLang, type UiLang } from './lang';
 import { useTheme } from './theme';
 
-export type ViewKey = 'jobs' | 'finance' | 'clients' | 'agents' | 'portal' | 'quote' | 'desk' | 'pitch' | 'account';
+export type ViewKey = 'jobs' | 'finance' | 'clients' | 'agents' | 'portal' | 'quote' | 'pipeline' | 'account';
 
 const NAV: Record<ViewKey, { label: [string, string, string]; sub: [string, string, string]; art: ArtName; icon: NavIcon }> = {
   jobs: {
@@ -36,20 +36,15 @@ const NAV: Record<ViewKey, { label: [string, string, string]; sub: [string, stri
     sub: ['Paste a request, compare line options and send the customer quote.', 'Pega una solicitud, compara opciones de naviera y envía la cotización.', 'درخواست را بچسبانید، گزینه‌های خط را مقایسه کنید و قیمت را بفرستید.'],
     art: 'truck', icon: 'quote',
   },
-  desk: {
-    label: ['Desk', 'Mesa', 'میز کار'],
-    sub: ['Customer RFQs, buy-side capacity and quote building.', 'RFQ de clientes, capacidad de compra y armado de cotizaciones.', 'درخواست‌های مشتری، ظرفیت خرید و ساخت قیمت.'],
-    art: 'containers', icon: 'desk',
+  pipeline: {
+    label: ['Sales pipeline', 'Embudo de ventas', 'قیف فروش'],
+    sub: ['Every inquiry, quote and booking by stage — with value and margin from your quotes and jobs.', 'Cada consulta, cotización y reserva por etapa, con valor y margen de tus cotizaciones y expedientes.', 'هر استعلام، پیشنهاد قیمت و رزرو به تفکیک مرحله — با ارزش و حاشیه سود از قیمت‌ها و پرونده‌ها.'],
+    art: 'map', icon: 'pipeline',
   },
   account: {
     label: ['Account', 'Cuenta', 'حساب'],
     sub: ['Your company profile, your team and invite links.', 'El perfil de tu empresa, tu equipo y los enlaces de invitación.', 'مشخصات شرکت، تیم و لینک‌های دعوت.'],
     art: 'containers', icon: 'account',
-  },
-  pitch: {
-    label: ['Pitch', 'Pitch', 'ارائه'],
-    sub: ['Route, distance and transit time for the sales conversation.', 'Ruta, distancia y tránsito para la conversación de venta.', 'مسیر، مسافت و زمان ترانزیت برای گفتگوی فروش.'],
-    art: 'map', icon: 'pitch',
   },
 };
 const LI: Record<UiLang, 0 | 1 | 2> = { en: 0, es: 1, fa: 2 };
@@ -67,7 +62,7 @@ export const ui = (k: keyof typeof UI, l: UiLang) => UI[k][LI[l]];
 
 const GROUPS: { key: 'workspace' | 'sales'; items: ViewKey[] }[] = [
   { key: 'workspace', items: ['jobs', 'finance', 'clients', 'agents', 'portal'] },
-  { key: 'sales', items: ['quote', 'desk', 'pitch'] },
+  { key: 'sales', items: ['quote', 'pipeline'] },
 ];
 
 export function Sidebar({ view, onPick, open, onClose, clientOnly, account = false }: { view: ViewKey; onPick: (v: ViewKey) => void; open: boolean; onClose: () => void; clientOnly: boolean; account?: boolean }) {
@@ -84,7 +79,7 @@ export function Sidebar({ view, onPick, open, onClose, clientOnly, account = fal
           </div>
           <button type="button" className="nd-iconbtn nd-close" onClick={onClose} aria-label={ui('close', lang)}><Icon name="close" /></button>
         </div>
-        <nav className="nd-nav" role="group" aria-label="Jobs, Clients, Quote, Desk or Pitch view">
+        <nav className="nd-nav" role="group" aria-label="ForwardDesk pages">
           {GROUPS.map((g) => {
             const items = clientOnly ? g.items.filter((k) => k === 'portal') : account && g.key === 'workspace' ? [...g.items, 'account' as ViewKey] : g.items;
             if (!items.length) return null;

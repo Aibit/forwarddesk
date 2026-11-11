@@ -18,7 +18,7 @@ export function JobDocs({ job, sample }: { job: Job; sample: boolean }) {
   const { docs, ledgers } = useBilling();
   const tariffs = useTariffs();
   const ledger = ledgers[job.id] ?? ledgerFor(job);
-  const gate = releaseGate(job, ledger, tariffs, Date.now());
+  const gate = releaseGate(job, ledger);
   const [editing, setEditing] = useState<DocKind | null>(null);
   const [form, setForm] = useState<BlFields | null>(null);
   const [msg, setMsg] = useState<string | null>(null);

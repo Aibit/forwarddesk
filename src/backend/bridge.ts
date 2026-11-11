@@ -25,6 +25,8 @@ export interface Writer {
   setLanes(clientId: string, lanes: LaneProfile[], prev: LaneProfile[]): void;
   setCompany(c: Company): void;
   recordQuote(rec: QuoteRecord, costs?: QuoteCosts): void;
+  /** Staff only: buy side of one quote (quotes/{id}/private/costs). */
+  loadQuoteCosts?(id: string): Promise<QuoteCosts | null>;
   setQuoteStatus(id: string, status: QuoteStatus, acceptedOption?: string, via?: 'portal' | 'desk'): void;
   agentUpsert(a: DbAgent): void;
   agentRemove(id: string): void;

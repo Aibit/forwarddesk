@@ -112,13 +112,24 @@ await t('D cannot read C MSDS', assertFails(getDoc(doc(d, `${O}/msds/m1`))));
 
 console.log('Documents + billing');
 const ledger = (jobId, releaseOk, extra = {}) => ({ jobId, clientId: 'C', customer: 'Customer C', base: 'USD', fx: {}, lines: [{ id: 'l1', sell: 100, buy: 80 }],
-  invoices: [], payments: [], files: [], localPaid: {}, releaseOk, clientOpen: 0, updatedAt: 1, ...extra });
+  invoices: [], payments: [], files: [], localMigrated: true, releaseOk, clientOpen: 0, updatedAt: 1, ...extra });
 const jdoc = (id, jobId, kind, status, extra = {}) => ({ id, jobId, clientId: 'C', kind, no: 'HBL-2026-0001', status, fields: { shipper: 'x' }, issuedAt: 1, releasedAt: null, updatedAt: 1, ...extra });
 await t('staff writes ledger', assertSucceeds(setDoc(doc(staff, `${O}/ledgers/J1`), ledger('J1', false))));
 await t('staff ledger with unknown field denied', assertFails(setDoc(doc(staff, `${O}/ledgers/J1`), ledger('J1', false, { hack: 1 }))));
 await t('staff ledger with wrong jobId denied', assertFails(setDoc(doc(staff, `${O}/ledgers/J1`), ledger('J2', false))));
 await t('C cannot read own job ledger (buy rates)', assertFails(getDoc(doc(c, `${O}/ledgers/J1`))));
 await t('C cannot write ledger', assertFails(setDoc(doc(c, `${O}/ledgers/J1`), ledger('J1', true))));
+await t('legacy localPaid field no longer accepted (charges live on invoices)', assertFails(setDoc(doc(staff, `${O}/ledgers/J1`), ledger('J1', false, { localPaid: {} }))));
+const bal = (jobId, clientId, extra = {}) => ({ jobId, clientId, customer: 'Customer C', currency: 'USD', open: 320, missing: {}, invoices: [{ no: 'INV-2026-0001', currency: 'USD', total: 320, open: 320, due: 1, overdue: false }], releaseOk: false, updatedAt: 1, ...extra });
+await t('staff publishes job balance', assertSucceeds(setDoc(doc(staff, `${O}/jobBalances/J1`), bal('J1', 'C'))));
+await t('balance with buy-side field denied', assertFails(setDoc(doc(staff, `${O}/jobBalances/J1`), bal('J1', 'C', { lines: [] }))));
+await t('balance with negative open denied', assertFails(setDoc(doc(staff, `${O}/jobBalances/J1`), bal('J1', 'C', { open: -5 }))));
+await t('balance with wrong jobId denied', assertFails(setDoc(doc(staff, `${O}/jobBalances/J1`), bal('J9', 'C'))));
+await t('C reads own job balance', assertSucceeds(getDoc(doc(c, `${O}/jobBalances/J1`))));
+await t('C lists own balances (query)', assertSucceeds(getDocs(query(collection(c, `${O}/jobBalances`), where('clientId', '==', 'C')))));
+await t('C cannot list all balances', assertFails(getDocs(collection(c, `${O}/jobBalances`))));
+await t('D cannot read C balance', assertFails(getDoc(doc(d, `${O}/jobBalances/J1`))));
+await t('C cannot zero own balance', assertFails(setDoc(doc(c, `${O}/jobBalances/J1`), bal('J1', 'C', { open: 0 }))));
 await t('staff creates draft House B/L', assertSucceeds(setDoc(doc(staff, `${O}/jobDocs/J1-hbl`), jdoc('J1-hbl', 'J1', 'hbl', 'draft'))));
 await t('staff issues House B/L', assertSucceeds(updateDoc(doc(staff, `${O}/jobDocs/J1-hbl`), { status: 'issued' })));
 await t('release blocked while charges unpaid', assertFails(updateDoc(doc(staff, `${O}/jobDocs/J1-hbl`), { status: 'released', releasedAt: 2 })));

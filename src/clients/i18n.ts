@@ -16,7 +16,7 @@ const S = {
   nextDeadline: ['Next deadline', 'Próximo plazo', 'مهلت بعدی'],
   inFreeTime: ['Containers in free time', 'Contenedores en free time', 'کانتینر در فری‌تایم'],
   demurrage: ['Demurrage at risk', 'Demora en riesgo', 'حق توقف در خطر'],
-  unpaid: ['Unpaid local charges', 'Cargos locales impagados', 'هزینه‌های محلی پرداخت‌نشده'],
+  unpaid: ['Unpaid (open invoices)', 'Impagado (facturas abiertas)', 'پرداخت‌نشده (فاکتورهای باز)'],
   cheques: ['Guarantee cheques held', 'Cheques de garantía', 'چک‌های تضمین نزد خط'],
   quotes: ['Quotes', 'Ofertas', 'پیشنهادهای قیمت'],
   sentWon: ['sent · won', 'enviadas · ganadas', 'ارسال · قبول'],

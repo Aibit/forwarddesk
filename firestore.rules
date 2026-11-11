@@ -22,6 +22,7 @@ rules_version = '2';
 //   orgs/{orgId}/quotes/{qid}/private/costs   buy rates + margins — STAFF ONLY
 //   orgs/{orgId}/msds/{msdsId}           { clientId, name, type, size, dataB64 (< 900 KB), uid }
 //   orgs/{orgId}/ledgers/{jobId}         job charges (buy/sell), invoices, vendor bills, payments, FX, file list — STAFF ONLY
+//   orgs/{orgId}/jobBalances/{jobId}     { clientId, open, invoices[{no, open, due}] } -> the unpaid figure the portal shows (staff write)
 //   orgs/{orgId}/jobDocs/{docId}         House B/L, arrival notice, DO, booking confirmation { jobId, clientId, kind, status }
 //                                        House B/L / DO can only be 'released' when ledgers/{jobId}.releaseOk == true
 //   orgs/{orgId}/jobFiles/{fileId}       file attached to a job { jobId, clientId, name, type, size, dataB64 (< 900 KB) }
@@ -159,11 +160,19 @@ service cloud.firestore {
 
     function validLedger(d, jobId) {
       return d.keys().hasOnly(['jobId', 'clientId', 'customer', 'base', 'fx', 'lines', 'invoices', 'payments', 'files',
-                               'localPaid', 'releaseOk', 'clientOpen', 'updatedAt', 'sample'])
-        && d.jobId == jobId && str(d.base, 8) && d.fx is map && d.localPaid is map
+                               'localMigrated', 'releaseOk', 'clientOpen', 'updatedAt', 'sample'])
+        && d.jobId == jobId && str(d.base, 8) && d.fx is map
+        && (!('localMigrated' in d) || d.localMigrated is bool)
         && d.lines is list && d.lines.size() <= 300 && d.invoices is list && d.invoices.size() <= 200
         && d.payments is list && d.payments.size() <= 500 && d.files is list && d.files.size() <= 100
         && d.releaseOk is bool;
+    }
+    // Client-facing balance per job: open client invoices only (no lines, no buy side, no margin).
+    function validBalance(d, jobId) {
+      return d.keys().hasOnly(['jobId', 'clientId', 'customer', 'currency', 'open', 'missing', 'invoices', 'releaseOk', 'updatedAt'])
+        && d.jobId == jobId && (d.clientId == null || str(d.clientId, 64)) && str(d.customer, 200) && str(d.currency, 8)
+        && d.open is number && d.open >= 0 && d.missing is map && d.invoices is list && d.invoices.size() <= 200
+        && d.releaseOk is bool && d.updatedAt is number;
     }
     function ledgerPath(orgId, jobId) { return /databases/$(database)/documents/orgs/$(orgId)/ledgers/$(jobId); }
     function paidUp(orgId, jobId) { return exists(ledgerPath(orgId, jobId)) && get(ledgerPath(orgId, jobId)).data.releaseOk == true; }
@@ -173,7 +182,7 @@ service cloud.firestore {
         && str(d.no, 40) && d.fields is map && (d.clientId == null || str(d.clientId, 64))
         && (d.status != 'released' || d.kind in ['hbl', 'do']);
     }
-    // Bandar Abbas rule: the House B/L (export) or DO (import) is released only once every charge is paid.
+    // Release rule: the House B/L (export) or DO (import) is released only once every client invoice is paid.
     function releaseOk(orgId, d) { return d.status != 'released' || paidUp(orgId, d.jobId); }
     function validJobFile(d) {
       return d.keys().hasOnly(['jobId', 'clientId', 'name', 'type', 'size', 'dataB64', 'uid', 'at'])
@@ -343,6 +352,13 @@ service cloud.firestore {
       match /ledgers/{jobId} {
         allow read, delete: if isStaff(orgId);
         allow create, update: if isStaff(orgId) && validLedger(request.resource.data, jobId);
+      }
+
+      // Published by staff with every ledger save; the client portal reads its own jobs' balances only.
+      match /jobBalances/{jobId} {
+        allow read: if isStaff(orgId) || (resource.data.clientId != null && isClientOf(orgId, resource.data.clientId));
+        allow create, update: if isStaff(orgId) && validBalance(request.resource.data, jobId);
+        allow delete: if isStaff(orgId);
       }
 
       match /jobDocs/{docId} {

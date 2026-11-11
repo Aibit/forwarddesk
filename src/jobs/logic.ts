@@ -75,11 +75,6 @@ export function cutoff(job: Job): number | null {
   return job.vessel.eta - 48 * HOUR;
 }
 
-export function unpaidBeforeBl(job: Job, t: Tariffs, now: number): number {
-  if (job.dir !== 'export' || stepIndex(job.step) < 19 || stepIndex(job.step) > 22) return 0;
-  return job.charges.filter((c) => !c.paid).reduce((s, c) => s + chargeAmount(job, c, t, now), 0);
-}
-
 export interface Alert {
   level: 'red' | 'amber' | 'info';
   text: string;
@@ -87,7 +82,8 @@ export interface Alert {
   sortKey: number;
 }
 
-export function jobAlerts(job: Job, now: number, t: Tariffs, lang: Lang): Alert[] {
+/** `block`: open client invoices that hold the release document (from the billing ledger — the only unpaid figure). */
+export function jobAlerts(job: Job, now: number, t: Tariffs, lang: Lang, block?: { amount: number; kind: 'hbl' | 'do' } | null): Alert[] {
   const out: Alert[] = [];
   const L = (k: Key) => tr(lang, k);
   const cks = job.containers.map((c) => ({ c, k: clock(c, now, t) }));
@@ -111,11 +107,7 @@ export function jobAlerts(job: Job, now: number, t: Tariffs, lang: Lang): Alert[
   if (co != null && co - now < 72 * HOUR) {
     out.push({ level: co < now ? 'red' : 'amber', sortKey: co - now, text: `${L('docCutoff')} (E18): ${dur(lang, co - now)} — ${L('shippingOrder')} ${L('waiting')}` });
   }
-  const unpaid = unpaidBeforeBl(job, t, now);
-  if (unpaid > 0) out.push({ level: 'amber', sortKey: 5 * DAY, text: `${usd(lang, unpaid)} ${L('unpaid')} — ${L('blocksBl')}` });
-  if (job.collect && !job.collect.collected && stepIndex(job.step) >= 10) {
-    out.push({ level: 'amber', sortKey: 6 * DAY, text: `${L('collectFreight')} (I13) ${usd(lang, job.collect.amount)} ${L('notCollected')}` });
-  }
+  if (block && block.amount > 0) out.push({ level: 'amber', sortKey: 5 * DAY, text: `${usd(lang, block.amount)} ${L('unpaid')} — ${L(block.kind === 'hbl' ? 'blocksBl' : 'blocksDo')}` });
   if (job.docDelay) out.push({ level: 'amber', sortKey: 7 * DAY, text: L('docDelay') });
   const dr = job.docs.find((d) => d.key === 'draftBl' && d.status === 'waiting');
   if (dr) out.push({ level: 'info', sortKey: 8 * DAY, text: `${L('draftBl')}: ${num(lang, dr.rounds ?? 1)} ${L('rounds')} — ${L('waiting')}` });
@@ -133,7 +125,8 @@ export interface Summary {
   chequesValue: number;
 }
 
-export function summarize(jobs: Job[], now: number, t: Tariffs): Summary {
+/** `blocked(job)`: open client invoices holding that job's B/L / DO (billing ledger). */
+export function summarize(jobs: Job[], now: number, t: Tariffs, blocked: (j: Job) => number = () => 0): Summary {
   let inFreeTime = 0, atRisk = 0, inDemurrage = 0, cutoffs72 = 0, unpaidBl = 0, chequesHeld = 0, chequesValue = 0;
   for (const j of jobs) {
     for (const c of j.containers) {
@@ -144,7 +137,7 @@ export function summarize(jobs: Job[], now: number, t: Tariffs): Summary {
     }
     const co = cutoff(j);
     if (co != null && co - now < 72 * HOUR) cutoffs72++;
-    unpaidBl += unpaidBeforeBl(j, t, now);
+    unpaidBl += blocked(j);
     for (const ch of j.cheques) if (ch.status === 'held') { chequesHeld++; chequesValue += chequeAmount(j, ch, t); }
   }
   return { jobsLive: jobs.length, inFreeTime, atRisk, inDemurrage, cutoffs72, unpaidBl, chequesHeld, chequesValue };

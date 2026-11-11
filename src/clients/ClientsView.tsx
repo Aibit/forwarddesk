@@ -7,6 +7,7 @@ import { type Job } from '../jobs/data';
 import { useJobs } from '../jobs/store';
 import { dur, fmtDay, num, usd } from '../jobs/i18n';
 import { DAY } from '../jobs/logic';
+import { useBilling } from '../billing/store';
 import { loadTariffs, useTariffs } from '../jobs/tariffs';
 import { stepDef } from '../jobs/steps';
 import { ct, type CKey } from './i18n';
@@ -46,7 +47,8 @@ export function ClientsView({ openRequest, onOpenJob, onNewQuote }: Props) {
   }, []);
 
   const L = (k: CKey) => ct(lang, k);
-  const kpis = useMemo(() => new Map(clients.map((c) => [c.id, clientKpi(c, jobs, quotes, now, tariffs)])), [clients, jobs, quotes, now, tariffs]);
+  const bill = useBilling();
+  const kpis = useMemo(() => new Map(clients.map((c) => [c.id, clientKpi(c, jobs, quotes, now, tariffs)])), [clients, jobs, quotes, now, tariffs, bill]); // eslint-disable-line react-hooks/exhaustive-deps
   const open = clients.find((c) => c.id === openId) ?? null;
   const D = lang === 'fa' ? 'روز' : 'd';
 
@@ -126,7 +128,7 @@ export function ClientsView({ openRequest, onOpenJob, onNewQuote }: Props) {
                   <span>{deadline(k)}</span>
                   <bdi className="mono c-num">{num(lang, k.inFreeTime)}{k.atRiskCntr ? <span className="c-amber-sub"> · {num(lang, k.atRiskCntr)} &lt;3{D}</span> : null}</bdi>
                   <bdi className={`mono c-num ${k.demurrageUsd ? 'c-red' : ''}`}>{k.demurrageUsd ? `${usd(lang, k.demurrageUsd)} · ${num(lang, k.demurrageCntr)} ${L('cntr')}` : '—'}</bdi>
-                  <bdi className={`mono c-num ${k.unpaidUsd ? 'c-amber' : ''}`}>{k.unpaidUsd ? usd(lang, k.unpaidUsd) : '—'}</bdi>
+                  <bdi className={`mono c-num ${k.unpaidUsd ? 'c-amber' : ''}`} data-testid={`client-unpaid-${c.name}`}>{k.unpaidUsd ? usd(lang, k.unpaidUsd) : '—'}</bdi>
                   <bdi className="mono c-num">{k.chequesHeld ? `${num(lang, k.chequesHeld)} · ${usd(lang, k.chequesUsd)}` : '—'}</bdi>
                   <bdi className="mono c-num">{num(lang, k.sent)} · {num(lang, k.won)}</bdi>
                 </button>

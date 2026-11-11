@@ -65,8 +65,8 @@ export interface Ledger {
   invoices: Invoice[];
   payments: Payment[];
   files: FileMeta[];
-  /** Local port/line charges from the job (B/L fee, THC, seal…) marked paid from the billing tab. */
-  localPaid: Record<string, boolean>;
+  /** True once the job's legacy local charges / collect freight were moved onto invoice lines (single source of truth). */
+  localMigrated?: boolean;
   /** Computed on save; Firestore rules read it to allow releasing the House B/L. */
   releaseOk?: boolean;
   clientOpen?: number;
@@ -121,7 +121,7 @@ export const DEFAULT_CATALOG: ChargeCode[] = [
 ];
 
 export const emptyLedger = (job: Pick<Job, 'id' | 'clientId' | 'customer' | 'sample'>): Ledger => ({
-  jobId: job.id, clientId: job.clientId ?? null, customer: job.customer, base: 'USD', fx: {}, lines: [], invoices: [], payments: [], files: [], localPaid: {},
+  jobId: job.id, clientId: job.clientId ?? null, customer: job.customer, base: 'USD', fx: {}, lines: [], invoices: [], payments: [], files: [], localMigrated: true,
 });
 
 export const uid = (p: string) => `${p}-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
@@ -150,10 +150,95 @@ export function invState(l: Ledger, inv: Invoice, now: number): 'draft' | 'void'
   return invPaid(l, inv) > 0 ? 'partial' : 'open';
 }
 
-export interface LocalCharge { key: string; label: [string, string, string]; amount: number; paid: boolean }
-export function localCharges(job: Job, l: Ledger, t: Tariffs, now: number): LocalCharge[] {
-  return job.charges.map((c) => ({ key: c.key, label: CHARGE_LABEL[c.key], amount: chargeAmount(job, c, t, now), paid: c.paid || !!l.localPaid[c.key] }));
+/** Charge code used when a legacy job charge becomes an invoice line. */
+const LEGACY_CODE: Record<Job['charges'][number]['key'], (job: Job) => string> = {
+  bl: () => 'BL', thc: (j) => (j.dir === 'export' ? 'THC-O' : 'THC-D'), seal: () => 'SEAL', extras: () => 'HAND', demurrage: () => 'DEM', do: () => 'DO',
+};
+
+/**
+ * One-time move of a job's legacy local charges (B/L fee, THC, seal, DO fee, demurrage…) and collect freight
+ * onto ledger lines + client invoices, so the ledger is the only place an unpaid amount lives.
+ * Paid charges land on a paid invoice, unpaid ones on an open invoice due now (they block the B/L / DO).
+ */
+export function migrateLegacy(job: Job, base: Ledger | undefined, t: Tariffs, now: number, takenNos: string[]): Ledger | null {
+  const l0 = base ?? emptyLedger(job);
+  if (base?.localMigrated) return null;
+  const legacyPaid = (base as (Ledger & { localPaid?: Record<string, boolean> }) | undefined)?.localPaid ?? {};
+  const rows = job.charges
+    .map((c) => ({ c, amount: chargeAmount(job, c, t, now), paid: c.paid || !!legacyPaid[c.key] }))
+    .filter((x) => x.amount > 0);
+  const lines: Line[] = rows.map(({ c, amount }) => ({
+    id: `loc-${c.key}`, code: LEGACY_CODE[c.key](job), desc: CHARGE_LABEL[c.key][0] + (c.key === 'demurrage' ? ' — tariff estimate, line confirms' : ''),
+    qty: 1, currency: 'USD', sell: amount, buy: amount, payer: job.customer, vendor: job.line, terms: 'prepaid' as Terms,
+  }));
+  const paidIds = rows.filter((x) => x.paid).map((x) => `loc-${x.c.key}`);
+  const openIds = rows.filter((x) => !x.paid).map((x) => `loc-${x.c.key}`);
+  if (job.collect) {
+    lines.push({ id: 'loc-collect', code: 'OFR', desc: 'Ocean freight, collect (I13)', qty: 1, currency: 'USD', sell: job.collect.amount, buy: job.collect.amount, payer: job.customer, vendor: job.line, terms: 'collect' });
+    (job.collect.collected ? paidIds : openIds).push('loc-collect');
+  }
+  if (!lines.length) return { ...l0, localMigrated: true };
+  const nos = [...takenNos];
+  const invoices: Invoice[] = [];
+  const payments: Payment[] = [];
+  const mk = (ids: string[], paid: boolean) => {
+    if (!ids.length) return;
+    const no = nextNo('INV', nos);
+    nos.push(no);
+    const id = `inv-loc-${paid ? 'p' : 'o'}`;
+    const inv: Invoice = { id, no, kind: 'invoice', party: job.customer, currency: 'USD', lineIds: ids, issuedAt: now, dueDays: 0, status: 'issued' };
+    invoices.push(inv);
+    for (const x of lines) if (ids.includes(x.id)) x.invoiceId = id;
+    if (paid) payments.push({ id: `pay-loc`, invoiceId: id, amount: round2(lines.filter((x) => ids.includes(x.id)).reduce((s, x) => s + lineSell(x), 0)), at: now, method: 'Recorded before invoicing', ref: '' });
+  };
+  mk(paidIds, true);
+  mk(openIds, false);
+  return { ...l0, lines: [...l0.lines, ...lines], invoices: [...l0.invoices, ...invoices], payments: [...l0.payments, ...payments], localMigrated: true };
 }
+
+/** What a client owes on one job: issued client invoices with an open balance. The ONLY unpaid figure in the app. */
+export interface JobBalance {
+  jobId: string;
+  clientId: string | null;
+  customer: string;
+  currency: string;
+  /** Open amount in `currency` (base); amounts with no FX rate are in `missing`, never guessed. */
+  open: number;
+  missing: Record<string, number>;
+  invoices: { no: string; currency: string; total: number; open: number; due: number; overdue: boolean }[];
+  releaseOk?: boolean;
+  updatedAt?: number;
+}
+export function balanceOf(l: Ledger, now: number): JobBalance {
+  const missing: Record<string, number> = {};
+  let open = 0;
+  const invoices: JobBalance['invoices'] = [];
+  for (const inv of l.invoices) {
+    if (inv.kind !== 'invoice' || inv.status !== 'issued') continue;
+    const o = invOpen(l, inv);
+    if (o <= 0.005) continue;
+    invoices.push({ no: inv.no, currency: inv.currency, total: invTotal(l, inv), open: o, due: invDue(inv), overdue: now > invDue(inv) });
+    const v = toBase(l, o, inv.currency);
+    if (v == null) missing[inv.currency] = round2((missing[inv.currency] ?? 0) + o);
+    else open += v;
+  }
+  return { jobId: l.jobId, clientId: l.clientId, customer: l.customer, currency: l.base, open: round2(open), missing, invoices };
+}
+export const zeroBalance = (job: Pick<Job, 'id' | 'clientId' | 'customer'>): JobBalance => ({ jobId: job.id, clientId: job.clientId ?? null, customer: job.customer, currency: 'USD', open: 0, missing: {}, invoices: [] });
+export function sumBalances(bs: JobBalance[]): { open: number; missing: Record<string, number> } {
+  const missing: Record<string, number> = {};
+  let open = 0;
+  for (const b of bs) {
+    open += b.open;
+    for (const [c, v] of Object.entries(b.missing)) missing[c] = round2((missing[c] ?? 0) + v);
+  }
+  return { open: round2(open), missing };
+}
+
+/** Release document per direction: export → House B/L, import → delivery order (DO). */
+export const releaseKind = (job: Pick<Job, 'dir'>): 'hbl' | 'do' => (job.dir === 'export' ? 'hbl' : 'do');
+/** Step at which the release document is handed over: E22 Original B/L (export), I11 Pay, get DO (import). */
+export const releaseStep = (job: Pick<Job, 'dir'>) => (job.dir === 'export' ? 22 : 11);
 
 export interface Pnl {
   revenue: number;
@@ -188,15 +273,14 @@ export function pnl(l: Ledger): Pnl {
   return { revenue: round2(revenue), cost: round2(cost), profit: round2(revenue - cost), marginPct: revenue > 0 ? round2(((revenue - cost) / revenue) * 100) : null, missingFx: [...missing], uninvoiced, receivable: round2(receivable), payable: round2(payable) };
 }
 
-export interface Gate { ok: boolean; reasons: ('uninvoiced' | 'unpaidInvoice' | 'unpaidLocal' | 'draftInvoice')[] }
-/** House B/L release: every sell line invoiced, every client invoice paid, every local charge paid. */
-export function releaseGate(job: Job, l: Ledger, t: Tariffs, now: number): Gate {
+export interface Gate { ok: boolean; reasons: ('uninvoiced' | 'unpaidInvoice' | 'draftInvoice')[] }
+/** House B/L (export) / DO (import) release: every sell line invoiced and every client invoice paid. */
+export function releaseGate(_job: Job, l: Ledger): Gate {
   const reasons: Gate['reasons'] = [];
   if (l.lines.some((x) => (x.sell ?? 0) > 0 && !x.invoiceId)) reasons.push('uninvoiced');
   const invs = l.invoices.filter((i) => i.kind === 'invoice' && i.status !== 'void');
   if (invs.some((i) => i.status === 'draft')) reasons.push('draftInvoice');
   if (invs.some((i) => i.status === 'issued' && invOpen(l, i) > 0.005)) reasons.push('unpaidInvoice');
-  if (localCharges(job, l, t, now).some((c) => !c.paid && c.amount > 0)) reasons.push('unpaidLocal');
   return { ok: reasons.length === 0, reasons };
 }
 

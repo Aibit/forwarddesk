@@ -5,7 +5,7 @@ import { useUiLang } from '../ui/lang';
 import { Art } from '../ui/Art';
 import { bt, day, li, money, type BKey } from './i18n';
 import { billingStore, useBilling } from './store';
-import { BUCKETS, bucketOf, invDue, invOpen, invState, invTotal, pnl, toBase, type Bucket, type ChargeCode, type Invoice, type Ledger } from './model';
+import { BUCKETS, balanceOf, bucketOf, invDue, invOpen, invState, invTotal, pnl, toBase, type Bucket, type ChargeCode, type Invoice, type Ledger } from './model';
 import { downloadBlob, invoicePdf } from './pdf';
 
 type F = 'all' | 'unpaid' | 'overdue' | 'bills';
@@ -21,12 +21,13 @@ export function FinanceView({ onOpenJob }: { onOpenJob: (id: string) => void }) 
   const [nc, setNc] = useState({ code: '', name: '' });
   const base = 'USD';
   const all: { l: Ledger; inv: Invoice }[] = Object.values(ledgers).flatMap((l) => l.invoices.filter((i) => i.status !== 'void').map((inv) => ({ l, inv })));
-  const clients = [...new Set(all.filter((x) => x.inv.kind === 'invoice').map((x) => x.inv.party))].sort();
+  // Clients = the job's customer (same grouping as the Clients page), whoever the invoice is addressed to.
+  const clients = [...new Set(all.filter((x) => x.inv.kind === 'invoice').map((x) => x.l.customer))].sort();
   const rows = all
     .filter(({ l, inv }) => {
       if (f === 'bills') return inv.kind === 'bill';
       if (inv.kind !== 'invoice') return false;
-      if (client && inv.party !== client) return false;
+      if (client && l.customer !== client) return false;
       const st = invState(l, inv, now);
       if (f === 'unpaid') return st === 'open' || st === 'partial' || st === 'overdue' || st === 'draft';
       if (f === 'overdue') return st === 'overdue';
@@ -50,7 +51,7 @@ export function FinanceView({ onOpenJob }: { onOpenJob: (id: string) => void }) 
   const aging: Record<Bucket, number> = { current: 0, d30: 0, d60: 0, d90: 0, d90p: 0 };
   for (const x of all.filter(issuedInv)) aging[bucketOf(x.inv, now)] += toBase(x.l, invOpen(x.l, x.inv), x.inv.currency) ?? 0;
   const byClient = new Map<string, number>();
-  for (const x of all.filter(issuedInv)) byClient.set(x.inv.party, (byClient.get(x.inv.party) ?? 0) + (toBase(x.l, invOpen(x.l, x.inv), x.inv.currency) ?? 0));
+  for (const l of Object.values(ledgers)) byClient.set(l.customer, Math.round(((byClient.get(l.customer) ?? 0) + balanceOf(l, now).open) * 100) / 100);
   const B = (n: number) => money(lang, Math.round(n * 100) / 100, base);
   const anySample = Object.values(ledgers).some((l) => l.sample);
   const pdf = async (l: Ledger, inv: Invoice) => {
@@ -140,7 +141,7 @@ export function FinanceView({ onOpenJob }: { onOpenJob: (id: string) => void }) 
           <table className="b-table" data-testid="by-client">
             <tbody>
               {[...byClient].filter(([, v]) => v > 0.005).sort((a, b) => b[1] - a[1]).map(([c, v]) => (
-                <tr key={c}><td>{c}</td><td className="num mono">{B(v)}</td></tr>
+                <tr key={c}><td>{c}</td><td className="num mono" data-testid={`fin-client-bal-${c}`}>{B(v)}</td></tr>
               ))}
             </tbody>
           </table>
