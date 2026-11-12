@@ -2,9 +2,9 @@
   "name": "forwarddesk-wa-server",
   "version": "0.1.0",
   "private": true,
-  "description": "ForwardDesk WhatsApp inbox service: WhatsApp Cloud API (Meta) or 360dialog webhooks, sending, conversations. SQLite storage.",
+  "description": "ForwardDesk service: WhatsApp inbox (Cloud API / 360dialog) and the accounts API (sign-up, sessions, company workspaces, invites, workspace data, waitlist). SQLite storage.",
   "type": "module",
-  "engines": { "node": ">=22.13" },
+  "engines": { "node": ">=24.7" },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "start": "node dist/src/index.js",

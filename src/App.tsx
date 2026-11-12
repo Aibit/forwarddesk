@@ -6,7 +6,7 @@ import { PortalView } from './clients/PortalView';
 import { AgentsDbView } from './agents/AgentsDbView';
 import { PipelineView } from './sales/PipelineView';
 import { AuthBar } from './backend/AuthBar';
-import { AccountDialog, AccountView, GettingStarted, JOIN_KEY, OnboardingWizard, StartScreen, VerifyScreen } from './backend/Accounts';
+import { AccountDialog, AccountView, GettingStarted, JOIN_KEY, OnboardingWizard, ResetScreen, StartScreen, VerifyScreen } from './backend/Accounts';
 import { useSession } from './backend/session';
 import { clientForJob, getStore } from './clients/store';
 import './App.css';
@@ -36,14 +36,24 @@ function App() {
   const clientOnly = sess.mode === 'live' && sess.role === 'client';
   // Two-mode entry: start screen until the visitor picks "Try the demo" (remembered) or signs in. ?demo skips it.
   const [entry, setEntry] = useState<string | null>(() => localStorage.getItem('fd.entry') ?? (new URLSearchParams(location.search).has('demo') ? 'demo' : null));
-  const [resuming] = useState(() => localStorage.getItem('fd.live') === '1');
+  // True only while a remembered session is being resumed on page load (not for later sign-in attempts).
+  const [resuming, setResuming] = useState(() => localStorage.getItem('fd.live') === '1');
+  useEffect(() => { if (resuming && sess.mode !== 'connecting') setResuming(false); }, [resuming, sess.mode]);
   const [acctDlg, setAcctDlg] = useState<null | 'create' | 'signin'>(null);
+  // Password-reset link from the self-hosted server's email: …#reset=<token>
+  const [resetTok, setResetTok] = useState<string | null>(() => location.hash.match(/^#reset=([A-Za-z0-9_-]{20,200})$/)?.[1] ?? null);
   const jobs = useJobs();
   const tariffs = useTariffs();
   const inboxNav = useInbox().nav;
   // Inbox data source follows the session: sample conversations in the demo, the WhatsApp service when connected.
   useEffect(() => { if (sess.mode === 'demo' || sess.mode === 'live') refreshBackend(); }, [sess.mode]);
   useEffect(() => { if (inboxNav) { setViewMode('inbox'); setNavOpen(false); } }, [inboxNav]);
+  useEffect(() => { if (resetTok) history.replaceState(null, '', location.pathname + location.search); }, [resetTok]);
+  useEffect(() => {
+    const on = () => { const m = location.hash.match(/^#reset=([A-Za-z0-9_-]{20,200})$/); if (m) setResetTok(m[1]); };
+    window.addEventListener('hashchange', on);
+    return () => window.removeEventListener('hashchange', on);
+  }, []);
   useEffect(() => {
     const m = location.hash.match(/^#join=(.+)$/);
     if (!m) return;
@@ -77,6 +87,7 @@ function App() {
   };
   const shownView: ViewKey = clientOnly ? 'portal' : viewMode;
 
+  if (resetTok) return <ResetScreen token={resetTok} onDone={() => setResetTok(null)} />;
   if (sess.mode === 'verify') return <VerifyScreen />;
   if (sess.mode === 'onboard') return <OnboardingWizard />;
   if (!entry && (sess.mode === 'demo' || (sess.mode === 'connecting' && !resuming))) {

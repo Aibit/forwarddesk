@@ -53,7 +53,7 @@ export const LIVE_MSDS_MAX = 640 * 1024;
 
 // ── Accounts adapter (backend-agnostic) ──
 // UI components (start screen, sign-up, onboarding, team) only talk to this interface via session.ts.
-// Today it is implemented by ./live.ts (Firebase); a self-hosted backend (PocketBase / Postgres API) can implement the same.
+// Implemented by ./live.ts (Firebase) and ./serverLive.ts (the self-hosted Node + SQLite API in server/).
 export interface AccountProfile { name: string; country: string; baseCurrency: string; ports: string[]; lang: 'en' | 'es' | 'fa' | 'ar' }
 export interface Member { uid: string; role: 'owner' | 'staff' | 'client'; email: string; name?: string; clientId?: string }
 export interface Invite { code: string; email: string; role: 'staff' | 'client'; clientId?: string; expiresAt: number; usedBy: string | null; join: string }
@@ -77,4 +77,12 @@ export interface AccountsAdapter {
   updateAccount(p: AccountProfile): Promise<void>;
   resume(): Promise<void>;
   signOut(): Promise<void>;
+  /** Self-hosted server only: finish a password reset from the emailed link (#reset=…). */
+  confirmReset?(token: string, password: string): Promise<void>;
+  /** Self-hosted server only, ADMIN_EMAILS: landing-page waitlist sign-ups. */
+  listWaitlist?(): Promise<WaitlistEntry[]>;
+  setWaitlistStatus?(id: number, status: WaitlistStatus): Promise<void>;
+  waitlistCsv?(): Promise<Blob>;
 }
+export type WaitlistStatus = 'new' | 'contacted' | 'invited' | 'archived';
+export interface WaitlistEntry { id: number; email: string; company: string; role: string; country: string; shipments: string; note: string; source: string; lang: string; status: WaitlistStatus; createdAt: number; updatedAt: number; submissions: number }

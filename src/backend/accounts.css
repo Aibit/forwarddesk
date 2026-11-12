@@ -52,7 +52,8 @@
 .fd-gs-txt { flex: 1; display: flex; flex-direction: column; font-size: 0.85rem; }
 .fd-gs-txt small { color: var(--muted); font-size: 0.72rem; }
 /* account settings */
-.fd-acct { display: grid; gap: 18px; max-width: 980px; }
+.fd-acct { display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; max-width: 980px; }
+.fd-acct > * { min-width: 0; }
 .fd-card { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 18px 22px; }
 .fd-card h3 { margin: 0 0 8px; font-size: 1rem; color: var(--ink); }
 .fd-card h4 { margin: 16px 0 6px; font-size: 0.85rem; color: var(--muted); }
@@ -71,3 +72,25 @@
 .fd-empty-btns { display: flex; gap: 10px; justify-content: center; margin-top: 12px; }
 
 .fd-entry[lang='ar'], .fd-entry[lang='ar'] [dir='rtl'] { font-family: var(--font-ar); }
+
+/* Reset password page + waitlist admin (self-hosted server) */
+.fd-narrow { max-width: 520px; margin: 24px auto 0; padding: 26px 28px; }
+.fd-narrow h2 { margin: 0 0 8px; font-size: 1.5rem; letter-spacing: -0.01em; }
+.fd-narrow .fd-field input { font-size: 1.05rem; }
+.fd-wl-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.fd-wl-wrap { overflow-x: auto; margin-top: 10px; }
+.fd-wl { width: 100%; border-collapse: collapse; font-size: 0.98rem; }
+.fd-wl th { text-align: start; font-weight: 600; color: var(--muted); font-size: 0.85rem; padding: 8px 10px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+.fd-wl td { padding: 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+.fd-wl-note { max-width: 280px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.fd-wl-st { font: inherit; padding: 4px 8px; border-radius: 8px; border: 1px solid var(--border); background: var(--panel); }
+.fd-wl-st.new { background: #fbf3db; border-color: #ecd9a0; }
+.fd-wl-st.contacted { background: #e7f0fb; border-color: #bcd3ee; }
+.fd-wl-st.invited { background: #e6f4ea; border-color: #b7dcc2; }
+@media (max-width: 640px) {
+  .fd-wl thead { display: none; }
+  .fd-wl, .fd-wl tbody, .fd-wl tr, .fd-wl td { display: block; width: 100%; }
+  .fd-wl tr { border-bottom: 1px solid var(--border); padding: 8px 0; }
+  .fd-wl td { border: 0; padding: 3px 0; }
+  .fd-wl-note { max-width: none; }
+}

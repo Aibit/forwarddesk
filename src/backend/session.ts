@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react';
-import { backendAvailable } from './config';
+import { backendAvailable, BACKEND } from './config';
 import type { AccountsAdapter } from './bridge';
 
 export type Mode = 'demo' | 'connecting' | 'live' | 'verify' | 'onboard';
@@ -15,8 +15,10 @@ export interface Session {
   orgName: string | null;
   /** Last error (amber notice), e.g. a write the security rules refused. */
   error: string | null;
+  /** Self-hosted server: this email is in ADMIN_EMAILS (may see the waitlist). */
+  admin?: boolean;
 }
-const DEMO: Session = { mode: 'demo', uid: null, email: null, role: null, clientId: null, orgId: null, owner: false, orgName: null, error: null };
+const DEMO: Session = { mode: 'demo', uid: null, email: null, role: null, clientId: null, orgId: null, owner: false, orgName: null, error: null, admin: false };
 let s: Session = DEMO;
 const subs = new Set<() => void>();
 export function setSession(p: Partial<Session>) {
@@ -28,9 +30,10 @@ export const useSession = () => useSyncExternalStore((f) => (subs.add(f), () => 
 export const getSession = () => s;
 
 const LIVE_FLAG = 'fd.live';
-type LiveMod = typeof import('./live');
+interface LiveMod { signIn(email: string, password: string): Promise<void>; resume(): Promise<void>; signOut(): Promise<void>; adapter: AccountsAdapter }
 let mod: Promise<LiveMod> | null = null;
-const live = () => (mod ??= import('./live'));
+/** Self-hosted API when VITE_API_URL is set, otherwise Firebase. Each is a separate lazy chunk. */
+const live = () => (mod ??= BACKEND === 'server' ? import('./serverLive') : import('./live'));
 
 /** Sign in with a real Firebase account (staff or client). Loads the Firebase SDK on demand. */
 export async function signIn(email: string, password: string): Promise<void> {
@@ -76,7 +79,12 @@ export function boot() {
 }
 export function friendly(e: unknown): string {
   const code = (e as { code?: string })?.code ?? String((e as Error)?.message ?? e);
-  if (/invalid-credential|wrong-password|user-not-found|invalid-email/.test(code)) return 'bad-login';
+  if (/invalid-credential|wrong-password|user-not-found/.test(code)) return 'bad-login';
+  if (/invalid-email/.test(code)) return 'invalid-email';
+  if (/rate-limited|too-many-requests/.test(code)) return 'rate-limited';
+  if (/expired-code/.test(code)) return 'expired-code';
+  if (/already-member/.test(code)) return 'already-member';
+  if (/session-ended|unauthenticated/.test(code)) return 'session-ended';
   if (/permission-denied/.test(code)) return 'denied';
   if (/no-org/.test(code)) return 'no-org';
   if (/email-already-in-use/.test(code)) return 'email-used';

@@ -21,7 +21,13 @@ export const USE_EMULATOR = import.meta.env.VITE_FB_EMULATOR === '1';
 export const FIREBASE_CONFIG: FirebaseOptions | null = USE_EMULATOR
   ? { apiKey: 'demo-key', projectId: 'demo-forwarddesk', authDomain: 'demo-forwarddesk.firebaseapp.com', appId: 'demo-app' }
   : fromEnv() ?? BUILT_IN;
-export const backendAvailable = FIREBASE_CONFIG != null;
+/**
+ * Self-hosted ForwardDesk API (server/, Node + SQLite), e.g. VITE_API_URL=https://api.example.com at build time.
+ * When set it replaces Firebase for accounts and data. Unset (the public GitHub Pages build) = demo only.
+ */
+export const API_URL: string | null = ((import.meta.env.VITE_API_URL as string | undefined) ?? '').trim().replace(/\/+$/, '') || null;
+export const BACKEND: 'server' | 'firebase' | null = API_URL ? 'server' : FIREBASE_CONFIG ? 'firebase' : null;
+export const backendAvailable = BACKEND != null;
 /** Optional Google sign-in button (off by default; email + password is the main path). */
-export const GOOGLE_SIGNIN = import.meta.env.VITE_GOOGLE_SIGNIN === '1';
+export const GOOGLE_SIGNIN = BACKEND === 'firebase' && import.meta.env.VITE_GOOGLE_SIGNIN === '1';
 export const ORG_ID = 'demo';

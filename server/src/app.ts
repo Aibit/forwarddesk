@@ -9,6 +9,8 @@ import { configProblems, type Config } from './config.js';
 import { verifySignature } from './signature.js';
 import { Inbox, HttpError } from './service.js';
 import { WA_TEMPLATES } from './templates.js';
+import type { Accounts } from './accounts/service.js';
+import { handleAccounts } from './accounts/routes.js';
 
 const UPLOAD_TYPES = new Set([
   'application/pdf', 'text/plain', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
@@ -31,7 +33,7 @@ const send = (res: ServerResponse, status: number, body: unknown, headers: Recor
   res.end(s);
 };
 
-export function createApp(cfg: Config, inbox: Inbox): Server {
+export function createApp(cfg: Config, inbox: Inbox, accounts: Accounts | null = null): Server {
   const keyOk = (req: IncomingMessage) => {
     if (!cfg.apiKey) return false;
     const h = String(req.headers.authorization ?? '').replace(/^Bearer\s+/i, '');
@@ -64,7 +66,10 @@ export function createApp(cfg: Config, inbox: Inbox): Server {
     const p = url.pathname.replace(/\/+$/, '') || '/';
     const m = req.method ?? 'GET';
 
-    if (p === '/healthz') return send(res, 200, { ok: true });
+    if (p === '/healthz') return send(res, 200, { ok: true, accounts: !!accounts });
+
+    // ── Accounts, workspaces, workspace data, waitlist ──
+    if (accounts && await handleAccounts(accounts, { corsOrigins: cfg.corsOrigins, waitlistOrigins: cfg.waitlistOrigins, trustProxy: cfg.trustProxy }, req, res, url)) return;
 
     // ── Webhook ──
     if (p === '/webhooks/whatsapp') {

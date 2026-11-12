@@ -1,5 +1,7 @@
-# Example for one EU server (e.g. Hetzner): the service behind Caddy, which gets a free HTTPS certificate
-# automatically. Replace wa.example.com with your own (sub)domain pointing at the server.
+# One small Linux server anywhere (an EU VPS, a UAE/Dubai host, …): Docker + this file is all it needs.
+# The ForwardDesk service (WhatsApp inbox + accounts API + waitlist) runs behind Caddy, which gets a free
+# HTTPS certificate automatically. Replace api.example.com with your own (sub)domain pointing at the server.
+# Data (two SQLite files + media) lives in the wa-data volume: back up that volume.
 services:
   wa:
     build: .
@@ -10,7 +12,7 @@ services:
   caddy:
     image: caddy:2-alpine
     ports: ["80:80", "443:443"]
-    command: caddy reverse-proxy --from wa.example.com --to wa:8080
+    command: caddy reverse-proxy --from api.example.com --to wa:8080
     volumes:
       - caddy-data:/data
     restart: unless-stopped

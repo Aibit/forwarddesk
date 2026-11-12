@@ -25,6 +25,20 @@ export interface Config {
   /** Optional shared header token for 360dialog webhooks when no platform secret is available. */
   webhookHeaderToken: string;
   maxMediaBytes: number;
+  // ── Accounts API (sign-up, sessions, workspaces, waitlist) ──
+  /** Turn the accounts API on (ACCOUNTS=on). Off by default so a WhatsApp-only install is unchanged. */
+  accounts: boolean;
+  /** SQLite file for accounts + workspace data (separate from the WhatsApp store). */
+  fdDbPath: string;
+  /** Public URL of the ForwardDesk app; password-reset and invite links point here. */
+  appUrl: string;
+  sessionDays: number;
+  adminEmails: string[];
+  mailAdapter: string;
+  /** Extra origins allowed to POST /api/waitlist (the landing page). */
+  waitlistOrigins: string[];
+  /** Behind Caddy / a load balancer: take the client IP from X-Forwarded-For (for rate limits). */
+  trustProxy: boolean;
 }
 
 const str = (env: NodeJS.ProcessEnv, k: string, d = '') => (env[k] ?? d).trim();
@@ -50,6 +64,14 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     jobRefRegex: new RegExp(str(env, 'WA_JOB_REF_REGEX', '\\b[A-Z]{2,4}-[EI]-\\d{3,6}\\b'), 'i'),
     webhookHeaderToken: str(env, 'WA_WEBHOOK_HEADER_TOKEN'),
     maxMediaBytes: Number(str(env, 'WA_MAX_MEDIA_MB', '100')) * 1024 * 1024,
+    accounts: /^(1|on|true|yes)$/i.test(str(env, 'ACCOUNTS', 'off')),
+    fdDbPath: str(env, 'FD_DB_PATH', './data/fd.sqlite'),
+    appUrl: str(env, 'APP_URL', 'https://aibit.github.io/forwarddesk/'),
+    sessionDays: Math.min(90, Math.max(1, Number(str(env, 'SESSION_DAYS', '30')) || 30)),
+    adminEmails: str(env, 'ADMIN_EMAILS').split(',').map((s) => s.trim().toLowerCase()).filter(Boolean),
+    mailAdapter: str(env, 'MAIL_ADAPTER', 'console'),
+    waitlistOrigins: str(env, 'WAITLIST_ORIGINS', 'https://aibit.github.io').split(',').map((s) => s.trim()).filter(Boolean),
+    trustProxy: /^(1|on|true|yes)$/i.test(str(env, 'TRUST_PROXY', 'off')),
   };
   return c;
 }

@@ -3,13 +3,13 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { useUiLang, setUiLang, type UiLang } from '../ui/lang';
 import { Art } from '../ui/Art';
-import { backendAvailable, GOOGLE_SIGNIN } from './config';
+import { BACKEND, backendAvailable, GOOGLE_SIGNIN } from './config';
 import { accounts, act, getSession, signIn, signOut, useSession } from './session';
 import { ComplianceNote, errText } from './AuthBar';
 import { useAgentsDb } from '../agents/db';
 import { useStore } from '../clients/store';
 import { useJobs } from '../jobs/store';
-import type { AccountProfile, TeamState } from './bridge';
+import type { AccountProfile, TeamState, WaitlistEntry, WaitlistStatus } from './bridge';
 import './accounts.css';
 import { LogoLockup, LogoMark } from '../ui/Brand';
 
@@ -100,6 +100,27 @@ const T = {
   used: ['used', 'usada', 'استفاده شد', 'مستخدمة'],
   staffOnlyTeam: ['Ask the account owner to invite staff. You can invite client logins.', 'Pide al propietario que invite al personal. Tú puedes invitar accesos de cliente.', 'برای دعوت کارمند از مالک بخواهید. شما می‌توانید مشتری دعوت کنید.', 'اطلب من مالك الحساب دعوة الموظفين. يمكنك دعوة حسابات دخول العملاء.'],
   tryDemo: ['Try the demo', 'Probar la demo', 'نسخه نمایشی', 'جرّب النسخة التجريبية'],
+  newPwT: ['Choose a new password', 'Elige una contraseña nueva', 'رمز عبور تازه انتخاب کنید', 'اختر كلمة مرور جديدة'],
+  newPwD: ['The link works once, for one hour. You will be signed out on your other devices.', 'El enlace sirve una vez, durante una hora. Se cerrará tu sesión en los demás dispositivos.', 'این لینک یک بار و تا یک ساعت کار می‌کند. از دستگاه‌های دیگر خارج می‌شوید.', 'يعمل الرابط مرة واحدة ولمدة ساعة. سيتم تسجيل خروجك من أجهزتك الأخرى.'],
+  newPw: ['New password (8+ characters)', 'Contraseña nueva (8+ caracteres)', 'رمز تازه (۸+ نویسه)', 'كلمة المرور الجديدة (٨ أحرف أو أكثر)'],
+  newPw2: ['Repeat the new password', 'Repite la contraseña nueva', 'تکرار رمز تازه', 'أعد كتابة كلمة المرور الجديدة'],
+  pwMismatch: ['The two passwords are different.', 'Las dos contraseñas no coinciden.', 'دو رمز یکسان نیستند.', 'كلمتا المرور مختلفتان.'],
+  setPw: ['Save new password', 'Guardar contraseña', 'ذخیره رمز تازه', 'حفظ كلمة المرور'],
+  inviteEmailOpt: ['Email (optional — leave empty for a link anyone can use once)', 'Correo (opcional; vacío = enlace de un solo uso para cualquiera)', 'ایمیل (اختیاری — خالی بگذارید تا هر کسی یک بار با لینک وارد شود)', 'البريد (اختياري — اتركه فارغًا لرابط يستخدمه أي شخص مرة واحدة)'],
+  anyone: ['Anyone with the link', 'Cualquiera con el enlace', 'هر کس لینک را داشته باشد', 'أي شخص لديه الرابط'],
+  wlT: ['Waitlist sign-ups', 'Inscripciones en la lista de espera', 'ثبت‌نام‌های فهرست انتظار', 'المسجّلون في قائمة الانتظار'],
+  wlD: ['From the landing-page form. Only admins (ADMIN_EMAILS on the server) see this.', 'Del formulario de la web. Solo lo ven los administradores (ADMIN_EMAILS en el servidor).', 'از فرم صفحه معرفی. فقط مدیران (ADMIN_EMAILS در سرور) این را می‌بینند.', 'من نموذج الصفحة التعريفية. يراه المسؤولون فقط (ADMIN_EMAILS على الخادم).'],
+  wlCsv: ['Download CSV', 'Descargar CSV', 'دانلود CSV', 'تنزيل CSV'],
+  wlNone: ['No sign-ups yet.', 'Aún no hay inscripciones.', 'هنوز ثبت‌نامی نیست.', 'لا توجد تسجيلات بعد.'],
+  wlCompany: ['Company', 'Empresa', 'شرکت', 'الشركة'],
+  wlShip: ['Shipments / month', 'Envíos / mes', 'محموله / ماه', 'الشحنات / شهر'],
+  wlNote: ['Note', 'Nota', 'یادداشت', 'ملاحظة'],
+  wlDate: ['Signed up', 'Fecha', 'تاریخ', 'التاريخ'],
+  wlStatus: ['Status', 'Estado', 'وضعیت', 'الحالة'],
+  wl_new: ['New', 'Nuevo', 'جدید', 'جديد'],
+  wl_contacted: ['Contacted', 'Contactado', 'تماس گرفته شد', 'تم التواصل'],
+  wl_invited: ['Invited', 'Invitado', 'دعوت شد', 'تمت الدعوة'],
+  wl_archived: ['Archived', 'Archivado', 'بایگانی', 'مؤرشف'],
 } as const;
 type K = keyof typeof T;
 const LI: Record<UiLang, 0 | 1 | 2 | 3> = { en: 0, es: 1, fa: 2, ar: 3 };
@@ -115,6 +136,11 @@ const ERR: Record<string, [string, string, string, string]> = {
   'bad-code': ['That invite link or code was not found.', 'No se encontró ese enlace o código.', 'این لینک یا کد دعوت پیدا نشد.', 'لم يُعثر على رابط الدعوة أو الرمز.'],
   'used-code': ['That invite was already used.', 'Esa invitación ya se usó.', 'این دعوت قبلاً استفاده شده است.', 'تم استخدام هذه الدعوة بالفعل.'],
   'wrong-email': ['That invite is for a different email address.', 'Esa invitación es para otro correo.', 'این دعوت برای ایمیل دیگری است.', 'هذه الدعوة لعنوان بريد مختلف.'],
+  'expired-code': ['That link has expired. Ask for a new one.', 'Ese enlace ha caducado. Pide uno nuevo.', 'این لینک منقضی شده است. لینک تازه بخواهید.', 'انتهت صلاحية هذا الرابط. اطلب رابطًا جديدًا.'],
+  'invalid-email': ['Check the email address.', 'Revisa el correo.', 'ایمیل را بررسی کنید.', 'تحقّق من عنوان البريد.'],
+  'rate-limited': ['Too many attempts. Wait a few minutes and try again.', 'Demasiados intentos. Espera unos minutos y vuelve a probar.', 'تلاش‌ها زیاد بود. چند دقیقه صبر کنید و دوباره امتحان کنید.', 'محاولات كثيرة. انتظر بضع دقائق ثم أعد المحاولة.'],
+  'already-member': ['This login already belongs to a company account.', 'Este acceso ya pertenece a una cuenta de empresa.', 'این حساب کاربری قبلاً عضو یک حساب شرکت است.', 'تسجيل الدخول هذا ينتمي بالفعل إلى حساب شركة.'],
+  'session-ended': ['You were signed out. Sign in again to continue.', 'Se cerró tu sesión. Vuelve a entrar para continuar.', 'از حساب خارج شدید. برای ادامه دوباره وارد شوید.', 'تم تسجيل خروجك. سجّل الدخول مجددًا للمتابعة.'],
 };
 const errMsg = (lang: UiLang, e: string | null) => (!e ? '' : ERR[e] ? ERR[e][LI[lang]] : errText(lang, e));
 
@@ -474,7 +500,7 @@ export function AccountView() {
           e.preventDefault();
           void safe(async () => { const m = await accounts(); await m.createInvite(email, role, role === 'client' ? cid : null); setEmail(''); });
         }}>
-          <label className="fd-field"><span>{t('email')}</span><input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} dir="ltr" data-testid="invite-email" /></label>
+          <label className="fd-field"><span>{BACKEND === 'server' ? t('inviteEmailOpt') : t('email')}</span><input type="email" required={BACKEND !== 'server'} value={email} onChange={(e) => setEmail(e.target.value)} dir="ltr" data-testid="invite-email" /></label>
           <label className="fd-field"><span>{t('role')}</span>
             <select value={role} onChange={(e) => setRole(e.target.value as 'staff' | 'client')} data-testid="invite-role">
               {s.owner && <option value="staff">{t('staff')}</option>}
@@ -489,7 +515,7 @@ export function AccountView() {
               </select>
             </label>
           )}
-          <button type="submit" className="btn primary sm" disabled={!email.trim() || (role === 'client' && !cid)} data-testid="invite-send">{t('createInv')}</button>
+          <button type="submit" className="btn primary sm" disabled={(BACKEND !== 'server' && !email.trim()) || (role === 'client' && !cid)} data-testid="invite-send">{t('createInv')}</button>
         </form>
         <h4>{t('pending')}</h4>
         {pend.length === 0 ? <p className="fd-muted" data-testid="invites-none">{t('none')}</p> : (
@@ -497,8 +523,8 @@ export function AccountView() {
             {pend.map((i) => {
               const url = joinUrl(i.join.split('.')[0], i.code);
               return (
-                <li key={i.code} data-testid={`invite-${i.email}`}>
-                  <div><bdi dir="ltr">{i.email}</bdi> · {lbl(i.role)} <span className="fd-muted fd-small">· {t('expires')} {new Date(i.expiresAt).toLocaleDateString(lang === 'fa' ? 'fa-IR-u-ca-gregory' : lang === 'ar' ? 'ar-EG' : lang)}</span></div>
+                <li key={i.code} data-testid={`invite-${i.email || 'open'}`}>
+                  <div>{i.email ? <bdi dir="ltr">{i.email}</bdi> : t('anyone')} · {lbl(i.role)} <span className="fd-muted fd-small">· {t('expires')} {new Date(i.expiresAt).toLocaleDateString(lang === 'fa' ? 'fa-IR-u-ca-gregory' : lang === 'ar' ? 'ar-EG' : lang)}</span></div>
                   <code dir="ltr" data-testid="invite-link">{url}</code>
                   <div className="fd-entry-btns">
                     <button type="button" className="btn sm" onClick={() => copy(url, i.code)} data-testid="invite-copy">{copied === i.code ? t('copied') : t('copy')}</button>
@@ -510,8 +536,104 @@ export function AccountView() {
           </ul>
         )}
       </section>
+      {s.admin && <WaitlistAdmin />}
       <section className="fd-card"><ComplianceNote lang={lang} /></section>
     </div>
+  );
+}
+
+// ───────── Waitlist (self-hosted server, admins only) ─────────
+const fmtDate = (ms: number, lang: UiLang) => new Date(ms).toLocaleDateString(lang === 'fa' ? 'fa-IR-u-ca-gregory' : lang === 'ar' ? 'ar-EG-u-ca-gregory' : lang === 'es' ? 'es-ES' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+function WaitlistAdmin() {
+  const { lang, t } = useT();
+  const [rows, setRows] = useState<WaitlistEntry[] | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+  const load = () => void accounts().then((m) => m.listWaitlist?.()).then((r) => setRows(r ?? [])).catch((e) => setErr(errMsg(lang, (e as { code?: string }).code ?? 'denied')));
+  useEffect(load, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const csv = async () => {
+    const m = await accounts();
+    const b = await m.waitlistCsv?.();
+    if (!b) return;
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(b);
+    a.download = `forwarddesk-waitlist-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+  };
+  const setStatus = (id: number, st: WaitlistStatus) => void accounts().then((m) => m.setWaitlistStatus?.(id, st)).then(load).catch((e) => setErr(errMsg(lang, (e as { code?: string }).code ?? 'denied')));
+  const ST: WaitlistStatus[] = ['new', 'contacted', 'invited', 'archived'];
+  return (
+    <section className="fd-card" data-testid="waitlist-admin">
+      <div className="fd-wl-head">
+        <h3>{t('wlT')} {rows ? <span className="fd-muted">· {rows.length}</span> : null}</h3>
+        <button type="button" className="btn sm" onClick={() => void csv()} disabled={!rows?.length} data-testid="waitlist-csv">{t('wlCsv')}</button>
+      </div>
+      <p className="fd-muted">{t('wlD')}</p>
+      {err && <p className="fd-amber">{err}</p>}
+      {rows && rows.length === 0 && <p className="fd-muted" data-testid="waitlist-none">{t('wlNone')}</p>}
+      {rows && rows.length > 0 && (
+        <div className="fd-wl-wrap">
+          <table className="fd-team fd-wl" data-testid="waitlist-table">
+            <thead><tr><th>{t('email')}</th><th>{t('wlCompany')}</th><th>{t('country')}</th><th>{t('wlShip')}</th><th>{t('wlNote')}</th><th>{t('wlDate')}</th><th>{t('wlStatus')}</th></tr></thead>
+            <tbody>
+              {rows.map((r) => (
+                <tr key={r.id} data-testid={`wl-${r.email}`}>
+                  <td><bdi dir="ltr">{r.email}</bdi>{r.role ? <div className="fd-muted fd-small">{r.role}</div> : null}</td>
+                  <td>{r.company}</td>
+                  <td>{r.country}</td>
+                  <td dir="ltr">{r.shipments}</td>
+                  <td className="fd-wl-note">{r.note}</td>
+                  <td>{fmtDate(r.createdAt, lang)}{r.submissions > 1 ? <div className="fd-muted fd-small">×{r.submissions}</div> : null}</td>
+                  <td>
+                    <select value={r.status} onChange={(e) => setStatus(r.id, e.target.value as WaitlistStatus)} className={`fd-wl-st ${r.status}`} data-testid="wl-status">
+                      {ST.map((x) => <option key={x} value={x}>{t(`wl_${x}` as K)}</option>)}
+                    </select>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
+  );
+}
+
+// ───────── Reset password (link from the self-hosted server's email) ─────────
+export function ResetScreen({ token, onDone }: { token: string; onDone: () => void }) {
+  const { t, lang } = useT();
+  const [pw, setPw] = useState('');
+  const [pw2, setPw2] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const submit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (pw.length < 8) return setErr(errMsg(lang, 'weak-password'));
+    if (pw !== pw2) return setErr(t('pwMismatch'));
+    setBusy(true); setErr(null);
+    try {
+      await act((m) => { if (!m.confirmReset) throw Object.assign(new Error('backend-off'), { code: 'backend-off' }); return m.confirmReset(token, pw); });
+      onDone();
+    } catch (x) { setErr(errMsg(lang, getSession().error ?? (x as { code?: string }).code ?? 'bad-code')); } finally { setBusy(false); }
+  };
+  return (
+    <Page testid="reset-screen">
+      <form className="fd-card fd-narrow" onSubmit={(e) => void submit(e)}>
+        <h2>{t('newPwT')}</h2>
+        <p className="fd-muted">{t('newPwD')}</p>
+        {!backendAvailable ? <p className="fd-amber">{errText(lang, 'backend-off')}</p> : (
+          <>
+            <label className="fd-field"><span>{t('newPw')}</span><input type="password" autoComplete="new-password" value={pw} onChange={(e) => setPw(e.target.value)} dir="ltr" required minLength={8} data-testid="reset-pw" /></label>
+            <label className="fd-field"><span>{t('newPw2')}</span><input type="password" autoComplete="new-password" value={pw2} onChange={(e) => setPw2(e.target.value)} dir="ltr" required data-testid="reset-pw2" /></label>
+            {err && <p className="fd-amber" data-testid="reset-error">{err}</p>}
+            <div className="fd-entry-btns">
+              <button type="button" className="btn ghost" onClick={onDone}>{t('cancel')}</button>
+              <button type="submit" className="btn primary" disabled={busy} data-testid="reset-submit">{busy ? t('working') : t('setPw')}</button>
+            </div>
+          </>
+        )}
+      </form>
+    </Page>
   );
 }
 

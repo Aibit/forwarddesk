@@ -1,9 +1,11 @@
-// Firestore wiring for documents + billing (live mode). Called from backend/live.ts.
-import { collection, deleteDoc, doc, getDoc, onSnapshot, query, serverTimestamp, setDoc, where, type Firestore, type Unsubscribe } from 'firebase/firestore';
+// Live-mode wiring for documents + billing. Called from backend/liveData.ts with either backend's document API.
+import type { FsApi } from '../backend/liveData';
 import { billingBackend, billingStore } from './store';
 import { balanceOf, pnl, type ChargeCode, type JobBalance, type JobDoc, type Ledger } from './model';
 
-export function startBilling(db: Firestore, orgPath: string, role: 'staff' | 'client', clientId: string | null, uid: string, onErr: (e: unknown) => void): Unsubscribe[] {
+type Unsubscribe = () => void;
+export function startBilling(api: FsApi, db: unknown, orgPath: string, role: 'staff' | 'client', clientId: string | null, uid: string, onErr: (e: unknown) => void): Unsubscribe[] {
+  const { collection, deleteDoc, doc, getDoc, onSnapshot, query, serverTimestamp, setDoc, where } = api;
   const d = (p: string) => doc(db, `${orgPath}/${p}`);
   const c = (p: string) => collection(db, `${orgPath}/${p}`);
   const run = (p: Promise<unknown>) => void p.catch(onErr);

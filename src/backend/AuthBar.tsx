@@ -36,12 +36,14 @@ const T = {
   dismiss: ['Dismiss', 'Cerrar', 'بستن', 'تجاهل'],
   create: ['Create account', 'Crear cuenta', 'ساخت حساب', 'إنشاء حساب'],
   owner: ['owner', 'propietario', 'مالک', 'المالك'],
+  ended: ['You were signed out. Sign in again to continue.', 'Se cerró tu sesión. Vuelve a entrar para continuar.', 'از حساب خارج شدید. برای ادامه دوباره وارد شوید.', 'تم تسجيل خروجك. سجّل الدخول مجددًا للمتابعة.'],
+  limited: ['Too many attempts. Wait a few minutes and try again.', 'Demasiados intentos. Espera unos minutos y vuelve a probar.', 'تلاش‌ها زیاد بود. چند دقیقه صبر کنید و دوباره امتحان کنید.', 'محاولات كثيرة. انتظر بضع دقائق ثم أعد المحاولة.'],
 } as const;
 type K = keyof typeof T;
 const I: Record<L3, 0 | 1 | 2 | 3> = { en: 0, es: 1, fa: 2, ar: 3 };
 export const at = (lang: L3, k: K) => T[k][I[lang]];
 export const errText = (lang: L3, e: string | null) =>
-  !e ? '' : e === 'bad-login' ? at(lang, 'badLogin') : e === 'no-org' ? at(lang, 'noOrg') : e === 'denied' ? at(lang, 'denied') : e === 'offline' ? at(lang, 'offline') : e === 'backend-off' ? at(lang, 'off') : e;
+  !e ? '' : e === 'bad-login' ? at(lang, 'badLogin') : e === 'no-org' ? at(lang, 'noOrg') : e === 'denied' ? at(lang, 'denied') : e === 'offline' ? at(lang, 'offline') : e === 'backend-off' ? at(lang, 'off') : e === 'session-ended' ? at(lang, 'ended') : e === 'rate-limited' ? at(lang, 'limited') : e;
 
 export function ComplianceNote({ lang = 'en' }: { lang?: L3 }) {
   return <p className="fd-compliance" data-testid="compliance-note" dir={(lang === 'fa' || lang === 'ar') ? 'rtl' : 'ltr'}>{at(lang, 'compliance')}</p>;
