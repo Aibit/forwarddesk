@@ -116,9 +116,9 @@ const S = {
   agent: ['Client\'s agent', 'Agente del cliente', 'نماینده مشتری', 'وكيل العميل'],
   tariffs: ['Tariffs', 'Tarifas', 'تعرفه‌ها', 'التعرفات'],
   tariffsNote: [
-    'SAMPLE · set yearly by the Shipping Association and the Ports Organization. Edit here; every clock and total updates. Saved in this browser only.',
-    'EJEMPLO · fijadas cada año por la asociación de navieras y la autoridad portuaria. Edítalas aquí; todo se recalcula. Solo se guardan en este navegador.',
-    'نمونه · هر سال توسط انجمن کشتیرانی و سازمان بنادر تعیین می‌شود. اینجا ویرایش کنید؛ همه محاسبات به‌روز می‌شود. فقط در همین مرورگر ذخیره می‌شود.', 'عيّنة · تُحدَّد سنويًا من جمعية الملاحة وهيئة الموانئ. عدّل هنا؛ يتحدّث كل عدّاد وإجمالي. محفوظة في هذا المتصفح فقط.',
+    'SAMPLE · set yearly by the shipping lines / agents and the port. Edit here; every clock and total updates. Saved in this browser only.',
+    'EJEMPLO · fijadas cada año por las navieras / agentes y el puerto. Edítalas aquí; todo se recalcula. Solo se guardan en este navegador.',
+    'نمونه · هر سال توسط خطوط کشتیرانی / نمایندگان و بندر تعیین می‌شود. اینجا ویرایش کنید؛ همه محاسبات به‌روز می‌شود. فقط در همین مرورگر ذخیره می‌شود.', 'عيّنة · تُحدَّد سنويًا من الخطوط الملاحية / الوكلاء والميناء. عدّل هنا؛ تتحدّث كل المؤقتات والإجماليات. تُحفظ في هذا المتصفح فقط.',
   ],
   reset: ['Reset to sample', 'Restablecer', 'بازگشت به نمونه', 'إعادة إلى بيانات العيّنة'],
   glossary: ['Glossary', 'Glosario', 'واژه‌نامه', 'مسرد المصطلحات'],
@@ -128,15 +128,14 @@ const S = {
   waiting: ['waiting', 'esperando', 'در انتظار', 'بانتظار'],
   pending: ['not yet', 'pendiente', 'هنوز نه', 'ليس بعد'],
   blocked: ['blocked', 'bloqueado', 'متوقف', 'محجوب'],
-  setBySa: ['Shipping Association', 'Shipping Association', 'انجمن کشتیرانی', 'جمعية الملاحة'],
-  setByPo: ['Ports Organization', 'Ports Organization', 'سازمان بنادر', 'منظمة الموانئ'],
+  setBySa: ['Lines / agents', 'Navieras / agentes', 'خطوط / نمایندگان', 'الخطوط / الوكلاء'],
+  setByPo: ['Port tariff', 'Tarifa portuaria', 'تعرفه بندر', 'تعرفة الميناء'],
   setByLine: ['Shipping line', 'Naviera', 'خط کشتیرانی', 'خط ملاحي'],
   notBooked: ['not booked yet', 'sin reservar', 'هنوز بوک نشده', 'لم يُحجز بعد'],
   nothingUrgent: ['Nothing due', 'Nada urgente', 'مورد فوری نیست', 'لا شيء مستحق'],
   total: ['Total', 'Total', 'جمع', 'الإجمالي'],
   cntr: ['cntr', 'cont.', 'کانتینر', 'حاوية'],
   open: ['Open', 'Abrir', 'باز کردن', 'فتح'],
-  buildOrder: ['Her build order: 1 Dashboard · 2 Deadline tracker · 3 Documents & billing agents · 4 Booking & rates', 'Orden de construcción: 1 Dashboard · 2 Plazos · 3 Agentes de documentos y facturación · 4 Reservas y tarifas', 'ترتیب ساخت: ۱ داشبورد · ۲ پیگیری مهلت‌ها · ۳ عامل اسناد و صورتحساب · ۴ بوکینگ و نرخ', 'ترتيب بنائها: ١ لوحة المعلومات · ٢ متتبّع المواعيد · ٣ المستندات وفوترة الوكلاء · ٤ الحجز والأسعار'],
 } as const;
 
 export type Key = keyof typeof S;
@@ -171,8 +170,7 @@ export const GLOSSARY: [string, string, string][] = [
   ['کات‌آف', 'Cut-off', 'الموعد النهائي (Cut-off)'],
   ['ریلیز', 'Container release, on import', 'الإفراج عن الحاوية، عند الاستيراد'],
   ['نماینده', 'Agent', 'وكيل'],
-  ['انجمن کشتیرانی', 'Shipping Association', 'جمعية الشحن'],
-  ['سازمان بنادر', 'Ports Organization', 'هيئة الموانئ'],
+  ['تعرفه بندر', 'Port tariff', 'تعرفة الميناء'],
 ];
 
 const nf = (lang: Lang, opts?: Intl.NumberFormatOptions) => new Intl.NumberFormat(lang === 'fa' ? 'fa-IR-u-ca-gregory' : lang === 'ar' ? 'ar-EG' : 'en-US', opts);

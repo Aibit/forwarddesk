@@ -165,9 +165,7 @@ with sync_playwright() as p:
 
     allt = pg.inner_text('body') + p2.inner_text('body')
     hit = FORBIDDEN.search(allt)
-    # Built-in step names still mention a port (e.g. "Loading at Bandar Abbas"); that wording is part of the
-    # pending region-neutral cleanup, so it is reported here, not failed.
-    print(('NOTE ' + allt[max(0, hit.start()-30):hit.end()+10].replace('\n', ' / ')) if hit else 'PASS no Iran/Bandar/Tehran/+98 on these screens')
+    check('no Iran/Bandar/Tehran/+98 on these screens' + (f" ({allt[max(0, hit.start()-30):hit.end()+10]!r})" if hit else ''), not hit)
     check(f'no page errors ({errs[:2]})', not errs)
     b.close()
 

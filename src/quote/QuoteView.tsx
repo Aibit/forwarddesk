@@ -41,7 +41,7 @@ type Lang = 'en' | 'es';
 type FieldKey = keyof QuoteFields;
 
 const MODE_LABEL: Record<QMode, string> = { fcl: 'Ocean FCL', lcl: 'Ocean LCL', air: 'Air', road: 'Road' };
-const SIDE_ORDER: Side[] = ['origin', 'freight', 'destination', 'customs'];
+const SIDE_ORDER: Side[] = ['origin', 'freight', 'destination', 'customs', 'services'];
 const PENDING: Partial<Record<string, { en: string; es: string }>> = {
   mode: { en: 'transport mode', es: 'modo de transporte' },
   origin: { en: 'origin port / pickup address', es: 'puerto de origen / dirección de recogida' },
@@ -53,6 +53,7 @@ const PENDING: Partial<Record<string, { en: string; es: string }>> = {
   readyDate: { en: 'cargo ready date', es: 'fecha de mercancía lista' },
   cargo: { en: 'commodity', es: 'tipo de mercancía' },
   dg: { en: 'DG status', es: 'si es mercancía peligrosa' },
+  cargoValue: { en: 'cargo value (for the insurance)', es: 'valor de la mercancía (para el seguro)' },
 };
 
 const money = (n: number) => n.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
@@ -410,8 +411,10 @@ export function QuoteView({ seed, onOpenClient }: { seed?: { text: string; n: nu
     return 'ok';
   };
 
+  const usingSample = !sheet || sheet.rows === 0;
   const rawQuote = useMemo(() => (text.trim() ? buildQuote(fields, rates, margin) : null), [text, JSON.stringify(fields), rates, margin]); // eslint-disable-line react-hooks/exhaustive-deps
-  const allOptions = useMemo(() => (text.trim() ? buildOptions(fields, rates, margin) : []), [text, JSON.stringify(fields), rates, margin]); // eslint-disable-line react-hooks/exhaustive-deps
+  // sample sheet: gaps are filled with clearly labelled SAMPLE estimates, so a demo quote is never empty for a reasonable lane
+  const allOptions = useMemo(() => (text.trim() ? buildOptions(fields, rates, margin, undefined, { estimates: usingSample }) : []), [text, JSON.stringify(fields), rates, margin, usingSample]); // eslint-disable-line react-hooks/exhaustive-deps
   const [showAvoid, setShowAvoid] = useState(false);
   const rankOf = (carrier: string | null) => lineRank(client, carrier);
   const avoided = allOptions.filter((o) => rankOf(o.carrier) === 'avoid');
@@ -455,6 +458,9 @@ export function QuoteView({ seed, onOpenClient }: { seed?: { text: string; n: nu
     if (client && laneProfile) store.setLanes(client.id, client.lanes.map((l) => (l.id === laneProfile.id ? { ...l, msds: m } : l)));
     else setQuoteMsds(m);
   };
+  const gpKeys = allOptions[0]?.gpFallback.join(', ') ?? '';
+  const estFreight = allOptions.some((o) => o.freightEstimate);
+  const estServices = allOptions.some((o) => o.lines.some((l) => l.requested && l.estimate));
   const issues: Issue[] = useMemo(() => {
     if (!text.trim()) return baseIssues;
     let out = baseIssues;
@@ -471,10 +477,19 @@ export function QuoteView({ seed, onOpenClient }: { seed?: { text: string; n: nu
     } else if (msdsMeta) {
       out = out.map((i) => (i.field === 'dg' && i.question && /MSDS/.test(i.question.en) ? { ...i, message: `${i.message} MSDS received (${msdsMeta.name}).`, question: { en: 'MSDS received, thank you. Please confirm the UN number and IMO class.', es: 'MSDS recibida, gracias. Por favor confirmad número UN y clase IMO.' } } : i));
     }
+    // HC priced with the GP rate: said once, as "to confirm" (replaces the parser's "type not stated" note for the same reason)
+    if (gpKeys) {
+      out = out.filter((i) => !(i.field === 'equipment' && /standard GP rates/.test(i.message)));
+      out = [...out, { field: 'equipment', kind: 'confirm', message: `${gpKeys}: priced using standard GP rates; confirm with the line.`, question: { en: `We have priced ${gpKeys} with the standard (GP) container rate for now; we will confirm the high-cube rate with the line. Is GP acceptable if HC is not available?`, es: `De momento hemos cotizado ${gpKeys} con la tarifa de contenedor estándar (GP); confirmaremos la tarifa high cube con la naviera. ¿Os vale GP si no hay HC?` } } as Issue];
+    }
+    if (estFreight) out = [...out, { field: 'route', kind: 'assumed', message: 'No rate on file for this lane — main freight is a SAMPLE estimate; get line rates before sending.' } as Issue];
+    if (estServices) out = [...out, { field: 'route', kind: 'assumed', message: 'Requested services are priced as SAMPLE estimates — confirm with the insurer / customs broker / trucker before sending.' } as Issue];
+    if (fields.services?.some((x) => x.kind === 'insurance') && !(fields.cargoValue && fields.cargoValue > 0))
+      out = [...out, { field: 'cargoValue', kind: 'confirm', message: 'Cargo value not given — insurance shows the SAMPLE minimum.', question: { en: 'What is the commercial invoice value of the cargo (for the insurance)?', es: '¿Cuál es el valor de la factura comercial de la mercancía (para el seguro)?' } } as Issue];
     const rank = { missing: 0, ambiguous: 1, confirm: 1, assumed: 2 };
     return [...out].sort((a, b) => rank[a.kind] - rank[b.kind]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [baseIssues, msdsInfo.need, msdsInfo.rule?.prefix, msdsMeta?.id, hsQ, fields.dg, laneProfile?.dg, msdsRules]);
+  }, [baseIssues, msdsInfo.need, msdsInfo.rule?.prefix, msdsMeta?.id, hsQ, fields.dg, laneProfile?.dg, msdsRules, gpKeys, estFreight, estServices, JSON.stringify(fields.services), fields.cargoValue]);
   const targetDiff = (q: Quote | null): { perUnit: number; diff: number } | null => {
     if (!q || !laneProfile || laneProfile.target.amount == null || laneProfile.target.currency !== 'USD' || !q.currencies.every((c) => c === 'USD')) return null;
     const u = targetUnits(laneProfile.target.per, fields);
@@ -542,7 +557,9 @@ export function QuoteView({ seed, onOpenClient }: { seed?: { text: string; n: nu
 
   const autoD = autoDir(fields);
   const dir: TradeDir = dirOverride ?? autoD ?? 'export';
-  const tradeFor = (l: QLang) => (custOpts.length && fields.mode === 'fcl' ? tradeBlock(dir, fields, custOpts[0], tariffs, l, laneProfile?.payment ?? client?.paymentTerms ?? null) : null);
+  // home-port local charges only when the home port really is the POL (export) or POD (import)
+  const cross = autoD == null || dir !== autoD;
+  const tradeFor = (l: QLang) => (custOpts.length && fields.mode === 'fcl' ? tradeBlock(dir, fields, custOpts[0], tariffs, l, laneProfile?.payment ?? client?.paymentTerms ?? null, cross) : null);
   const tb = tradeFor(lang);
   const tbUi = ui === lang ? tb : tradeFor(ui);
   // Agent picker: import → agents at the POL, export → agents at the POD. Client's own list first, then the Agent CRM
@@ -573,7 +590,6 @@ export function QuoteView({ seed, onOpenClient }: { seed?: { text: string; n: nu
   const qText = custOpts.length ? quoteText(fields, custOpts, custBadges, issues, lang, quoteFor(false), [company.contactName, company.name, [company.email, company.phone].filter(Boolean).join(' · ')].filter(Boolean), tb) : '';
   const askText = questionsText(issues, tl);
   const elapsed = startedAt == null ? null : (doneMs ?? now - startedAt);
-  const usingSample = !sheet || sheet.rows === 0;
 
   async function doPdf() {
     if (!custOpts.length) return;
@@ -967,16 +983,16 @@ export function QuoteView({ seed, onOpenClient }: { seed?: { text: string; n: nu
                       ))}
                     </span>
                     <strong data-testid="trade-title">{tbUi.title}</strong>
-                    <span className="q-muted">{dirOverride ? u('setByHand') : autoD ? `${u('auto')} ${autoD === 'import' ? 'POD' : 'POL'} = ${HOME_PORT} (${u('homePort')})` : `${u('noLeg')} ${HOME_PORT} — ${u('pickOne')}`} · {dir === 'export' ? tl3(ui, 'lineCompare') : tl3(ui, 'agentCompare')}</span>
+                    <span className="q-muted">{autoD ? `${dirOverride ? u('setByHand') : u('auto')} ${autoD === 'import' ? 'POD' : 'POL'} = ${HOME_PORT} (${u('homePort')})` : `${u('noLeg')} ${HOME_PORT} (${u('crossTrade')})`} · {dir === 'export' ? tl3(ui, 'lineCompare') : tl3(ui, 'agentCompare')}</span>
                   </div>
-                  <div className="q-trade-sub q-muted">{tbUi.localTitle}</div>
-                  <table className="q-trade-table">
+                  <div className="q-trade-sub q-muted" data-testid="trade-local-title">{tbUi.localTitle}</div>
+                  {tbUi.lines.length > 0 && <table className="q-trade-table" data-testid="trade-local-lines">
                     <tbody>
                       {tbUi.lines.map((l) => (
                         <tr key={l.label}><td>{l.label}</td><td className="mono"><bdi dir="ltr">{l.amount != null ? `${tbUi.currency} ${money(l.amount)}` : '—'}</bdi></td><td className="q-muted">{l.note}</td><td className={l.included ? 'q-ok' : 'q-muted'}>{l.included ? `✓ ${tl3(ui, 'included')}` : l.amount != null ? tl3(ui, 'local') : ''}</td></tr>
                       ))}
                     </tbody>
-                  </table>
+                  </table>}
                   <ul className="q-trade-notes">{tbUi.notes.map((x) => <li key={x}>{x}</li>)}</ul>
                   <div className="q-trade-agents" data-testid={dir === 'import' ? 'import-agents' : 'export-agents'}>
                     <strong>{dir === 'import' ? tl3(ui, 'agentAt') : u('agentDest')} · {agentPort}</strong>
@@ -1026,8 +1042,8 @@ export function QuoteView({ seed, onOpenClient }: { seed?: { text: string; n: nu
                   {lineGroups.map((g) => (
                     <FragmentRows key={g.side} label={sideLabel(ui, g.side)}>
                       {g.lines.map((l, i) => (
-                        <tr key={i} className={l.stale ? 'stale' : ''}>
-                          <td title={l.charge}>{chargeLabel(ui, l.charge)}</td>
+                        <tr key={i} className={`${l.stale ? 'stale' : ''} ${l.estimate ? 'q-est' : ''}`} data-testid={l.requested ? 'quote-line-requested' : l.estimate ? 'quote-line-estimate' : undefined}>
+                          <td title={l.charge}>{l.labels ? l.labels[({ en: 0, es: 1, fa: 2, ar: 3 } as Record<string, number>)[ui] ?? 0] : chargeLabel(ui, l.charge.replace(/ \(SAMPLE estimate\)$/, ''))}{l.requested && <span className="q-req-tag">{u('requested')}</span>}{l.estimate && <span className="q-est-tag" data-testid="sample-estimate-tag">{u('sampleEst')}</span>}</td>
                           <td className="num mono">
                             {money2(l.qty)} {basisLabel(ui, l.basis)}
                           </td>
@@ -1043,6 +1059,9 @@ export function QuoteView({ seed, onOpenClient }: { seed?: { text: string; n: nu
                   ))}
                 </tbody>
               </table>
+              {quote.lines.some((l) => l.estimate) && (
+                <div className="q-est-note" data-testid="sample-estimate-note">{u('sampleEstNote')}</div>
+              )}
               {quote.excluded.length > 0 && (
                 <div className="q-excluded">{u('notInScope')} {fields.incoterm ?? u('fobAssumed')}: {quote.excluded.map((l) => l.charge).join(' · ')}</div>
               )}

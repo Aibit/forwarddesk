@@ -72,7 +72,7 @@ const orgRef = doc(db, O);
 const org = await getDoc(orgRef).catch(() => null);
 if (!org?.exists()) {
   await setDoc(orgRef, { name: 'ForwardDesk demo (SAMPLE)', ownerUid: staff.uid, demo: true, createdAt: Date.now(),
-    company: { name: 'ForwardDesk demo forwarder (sample)', contactName: 'Sample desk', email: 'desk@example.com', phone: '+00 000 000 0000', address: 'Bandar Abbas (sample)', logo: null } });
+    company: { name: 'Sample Forwarding Co. (sample)', contactName: 'Sample desk', email: 'desk@example.com', phone: '+971 4 000 0000', address: 'Dubai (sample)', logo: null } });
   await setDoc(doc(db, `${O}/members/${staff.uid}`), { role: 'staff', email: STAFF.email, createdAt: Date.now() });
   await setDoc(doc(db, `userOrgs/${staff.uid}`), { orgId: ORG });
   console.log('org created');
@@ -106,7 +106,7 @@ for (const q of sampleQuotes(now)) {
 }
 // Agent CRM: SAMPLE agents (with sample CRM data) + researched public list (no CRM data invented).
 // Directory doc (members can read) and CRM doc (staff only) — same split as the app (splitAgent).
-const agents = seedFrom(readFileSync('src/agents/seed/agents.csv', 'utf8')).map((a, i) => (a.sample ? a : { ...a, id: `db-p${String(i).padStart(2, '0')}` }));
+const agents = seedFrom(existsSync('src/agents/seed/agents.csv') ? readFileSync('src/agents/seed/agents.csv', 'utf8') : null).map((a, i) => (a.sample ? a : { ...a, id: `db-p${String(i).padStart(2, '0')}` }));
 for (const a of agents) {
   const { pub, crm } = splitAgent({ ...a, createdAt: now, updatedAt: now });
   ops.push([`${O}/agents/${a.id}`, pub]);

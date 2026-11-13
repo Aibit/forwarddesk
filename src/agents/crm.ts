@@ -24,10 +24,10 @@ const KEY = 'fd.agentact.v1';
 export function sampleActivities(now = Date.now()): AgentActivity[] {
   const A = (id: string, agentId: string, kind: ActKind, daysAgo: number, text: string): AgentActivity => ({ id, agentId, kind, at: now - daysAgo * DAY, text, by: 'demo', sample: true });
   return [
-    A('act-s1', 'db-s4', 'rate_request', 9, 'SAMPLE: asked for 2×40HC Shanghai → Bandar Abbas, ready end of month.'),
+    A('act-s1', 'db-s4', 'rate_request', 9, 'SAMPLE: asked for 2×40HC Shanghai → Jebel Ali, ready end of month.'),
     A('act-s2', 'db-s4', 'rate_reply', 8.5, 'SAMPLE: rate received, valid 14 days.'),
     A('act-s3', 'db-s4', 'call', 3, 'SAMPLE: weekly call — space tight on next two sailings.'),
-    A('act-s4', 'db-s3', 'rate_request', 6, 'SAMPLE: LCL rate request Nhava Sheva → Bandar Abbas.'),
+    A('act-s4', 'db-s3', 'rate_request', 6, 'SAMPLE: LCL rate request Nhava Sheva → Jebel Ali.'),
     A('act-s5', 'db-s3', 'rate_reply', 4, 'SAMPLE: rate received.'),
     A('act-s6', 'db-s3', 'email', 2, 'SAMPLE: sent updated agency agreement draft.'),
     A('act-s7', 'db-s0', 'meeting', 12, 'SAMPLE: annual rate review with line sales.'),

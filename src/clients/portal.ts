@@ -9,7 +9,7 @@ export const MILESTONES: Record<'export' | 'import', M[]> = {
   export: [
     { from: 1, to: 7, en: 'Quote & booking', es: 'Oferta y reserva', fa: 'قیمت و بوکینگ', ar: 'عرض السعر والحجز' },
     { from: 8, to: 12, en: 'Container release & seals', es: 'Contenedor y precintos', fa: 'حواله کانتینر و پلمپ', ar: 'الإفراج عن الحاوية والأختام' },
-    { from: 13, to: 17, en: 'Loading at Bandar Abbas', es: 'Carga en Bandar Abbas', fa: 'بارگیری در بندرعباس', ar: 'التحميل في بندر عباس' },
+    { from: 13, to: 17, en: 'Loading at the port', es: 'Carga en el puerto', fa: 'بارگیری در بندر', ar: 'التحميل في الميناء' },
     { from: 18, to: 20, en: 'Bill of lading', es: 'Conocimiento de embarque', fa: 'بارنامه', ar: 'بوليصة الشحن' },
     { from: 21, to: 22, en: 'Payment & original B/L', es: 'Pago y B/L original', fa: 'پرداخت و اصل بارنامه', ar: 'الدفع وبوليصة الشحن الأصلية' },
     { from: 23, to: 23, en: 'Completed', es: 'Completado', fa: 'تکمیل شد', ar: 'مكتملة' },

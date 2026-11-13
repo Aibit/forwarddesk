@@ -211,3 +211,15 @@
 @media (min-width: 1001px) {
   .quote-view.has-wide .q-right, .app.nd .quote-view.has-wide .q-right { position: static; max-height: none; overflow: visible; }
 }
+
+/* SAMPLE estimates and requested services in the quote lines: amber "to confirm", never error red */
+.q-est-tag, .q-req-tag {
+  display: inline-block; margin-inline-start: 0.45rem; padding: 0.05rem 0.4rem; border-radius: 999px;
+  font-size: 0.7rem; font-weight: 600; letter-spacing: 0.02em; vertical-align: 0.05em; white-space: nowrap;
+}
+.q-est-tag { background: var(--amber-dim); color: var(--amber-ink); border: 1px solid var(--amber); }
+.q-req-tag { background: var(--bg-soft, rgba(55, 53, 47, 0.06)); color: var(--muted, #6b6b6b); border: 1px solid var(--line, rgba(55, 53, 47, 0.16)); }
+.q-est-note {
+  margin: 0.5rem 0 0; padding: 0.55rem 0.75rem; border-radius: var(--radius);
+  border: 1px solid var(--amber); background: var(--amber-dim); color: var(--amber-ink); font-size: 0.86rem;
+}

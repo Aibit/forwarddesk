@@ -8,7 +8,7 @@ import type { DirEntry, InboxBackend } from './backend';
 export function directory(): { entries: DirEntry[]; jobs: string[] } {
   const entries: DirEntry[] = [];
   for (const c of getStore().clients) {
-    const phones = [c.phone, c.whatsapp, c.clearanceAgent?.phone, c.clearanceAgent?.whatsapp, c.bandarAbbas?.phone, c.bandarAbbas?.whatsapp].filter((x): x is string => !!x && !!x.trim());
+    const phones = [c.phone, c.whatsapp, c.clearanceAgent?.phone, c.clearanceAgent?.whatsapp, c.portOffice?.phone, c.portOffice?.whatsapp].filter((x): x is string => !!x && !!x.trim());
     if (phones.length) entries.push({ kind: 'client', id: c.id, name: c.name, contact: c.contactName || undefined, phones });
   }
   for (const a of agentsDb.get().list) {

@@ -19,7 +19,7 @@ export const BADGE_L: Record<QLang, Record<Badge, string>> = {
 
 const O = {
   options: ['Options', 'Opciones', 'گزینه‌ها', 'الخيارات'],
-  optionsSub: ['one per line on this lane (E3: ask several lines, take the best)', 'una por naviera en esta ruta (E3: pedir a varias navieras)', 'یک گزینه برای هر خط (E3: استعلام از چند خط)', 'واحد لكل خط في هذا المسار (E3: اسأل عدة خطوط وخذ الأفضل)'],
+  optionsSub: ['one per line on this lane', 'una por naviera en esta ruta', 'یک گزینه برای هر خط در این مسیر', 'خيار لكل خط على هذا المسار'],
   option: ['Option', 'Opción', 'گزینه', 'الخيار'],
   inQuote: ['In customer quote', 'En la oferta', 'در پیشنهاد مشتری', 'في عرض العميل'],
   sell: ['Sell', 'Venta', 'فروش', 'بيع'],

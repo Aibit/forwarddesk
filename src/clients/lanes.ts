@@ -36,13 +36,13 @@ const P = (pol: string, pod: string, commodity: string, hs: string, amount: numb
 });
 export function sampleLanes(clientId: string): LaneProfile[] {
   switch (clientId) {
-    case 'c-a': return [P('Bandar Abbas', 'Jebel Ali', 'Bitumen 60/70 in drums', '2713.20', 8, '20GP', 'month', 'Prepaid', 600, '20GP', 'Heavy 20ft'), P('Bandar Abbas', 'Nhava Sheva', 'Bitumen 60/70 in drums', '2713.20', 4, '20GP', 'month', 'Prepaid', 1000, '20GP')];
-    case 'c-b': return [P('Bandar Abbas', 'Shanghai (Yangshan)', 'Stone blocks (rough-cut)', '2516.11', 12, '20GP', 'month', 'Prepaid', 1500, '20GP', 'Heavy; 21 days free time')];
-    case 'c-c': return [P('Bandar Abbas', 'Nhava Sheva', 'Bitumen in drums', '2713.20', 2, '20GP', 'shipment', 'Credit 30 days', 1100, '20GP', 'Several lines every time')];
-    case 'c-d': return [P('Nhava Sheva', 'Bandar Abbas', 'Basmati rice, bagged', '1006.30', 10, '20GP', 'month', 'Collect', 900, '20GP')];
-    case 'c-e': return [P('Shanghai (Yangshan)', 'Bandar Abbas', 'Machinery spare parts', '8431.49', 2, '40HC', 'month', 'Prepaid', 1800, '40HC')];
-    case 'c-f': return [P('Hamburg', 'Bandar Abbas', 'Industrial spare parts', '8483.40', 1, '40GP', 'shipment', 'LC at sight', 2400, '40GP'), P('Shanghai (Yangshan)', 'Barcelona', 'Metal furniture', '9403.20', 2, '40HC', 'shipment', 'Credit 60 days', 3000, '40HC', 'Spanish-speaking buyer side')];
-    case 'c-g': return [P('Shanghai (Yangshan)', 'Bandar Abbas', 'Ceramic tiles', '6907.21', 4, '20GP', 'month', 'CAD (cash against documents)', 1100, '20GP')];
+    case 'c-a': return [P('Jebel Ali', 'Dammam', 'Bitumen 60/70 in drums', '2713.20', 8, '20GP', 'month', 'Prepaid', 600, '20GP', 'Heavy 20ft'), P('Jebel Ali', 'Nhava Sheva', 'Bitumen 60/70 in drums', '2713.20', 4, '20GP', 'month', 'Prepaid', 1000, '20GP')];
+    case 'c-b': return [P('Jebel Ali', 'Shanghai (Yangshan)', 'Stone blocks (rough-cut)', '2516.11', 12, '20GP', 'month', 'Prepaid', 1500, '20GP', 'Heavy; 21 days free time')];
+    case 'c-c': return [P('Jebel Ali', 'Nhava Sheva', 'Bitumen in drums', '2713.20', 2, '20GP', 'shipment', 'Credit 30 days', 1100, '20GP', 'Several lines every time')];
+    case 'c-d': return [P('Nhava Sheva', 'Jebel Ali', 'Basmati rice, bagged', '1006.30', 10, '20GP', 'month', 'Collect', 900, '20GP')];
+    case 'c-e': return [P('Shanghai (Yangshan)', 'Jebel Ali', 'Machinery spare parts', '8431.49', 2, '40HC', 'month', 'Prepaid', 1800, '40HC')];
+    case 'c-f': return [P('Hamburg', 'Jebel Ali', 'Industrial spare parts', '8483.40', 1, '40GP', 'shipment', 'LC at sight', 2400, '40GP'), P('Shanghai (Yangshan)', 'Barcelona', 'Metal furniture', '9403.20', 2, '40HC', 'shipment', 'Credit 60 days', 3000, '40HC', 'Spanish-speaking buyer side')];
+    case 'c-g': return [P('Shanghai (Yangshan)', 'Jebel Ali', 'Ceramic tiles', '6907.21', 4, '20GP', 'month', 'CAD (cash against documents)', 1100, '20GP')];
     default: return [];
   }
 }

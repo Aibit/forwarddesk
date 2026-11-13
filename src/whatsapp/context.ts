@@ -30,7 +30,7 @@ export function clientRecipients(c: Client | null): WaRecipient[] {
   };
   add(`c-${c.id}-contact`, 'rContact', c.contactName ? `${c.contactName} · ${c.name}` : c.name, waNumberOf(c));
   add(`c-${c.id}-broker`, 'rBroker', c.clearanceAgent?.name ?? '', waNumberOf(c.clearanceAgent ?? { phone: '' }));
-  add(`c-${c.id}-office`, 'rOffice', c.bandarAbbas?.name ?? '', waNumberOf(c.bandarAbbas ?? { phone: '' }));
+  add(`c-${c.id}-office`, 'rOffice', c.portOffice?.name ?? '', waNumberOf(c.portOffice ?? { phone: '' }));
   return out;
 }
 

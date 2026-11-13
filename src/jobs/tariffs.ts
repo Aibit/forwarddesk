@@ -1,8 +1,8 @@
 import { useSyncExternalStore } from 'react';
 import { bridge } from '../backend/bridge';
 /**
- * SAMPLE tariffs. Per the brief, the Shipping Association (انجمن کشتیرانی) sets demurrage, B/L fee, DO fee and
- * guarantee-cheque amounts each year, and the Ports Organization (سازمان بنادر) sets THC. Kept as editable data,
+ * SAMPLE tariffs. The lines / their agents set demurrage, B/L fee, DO fee and guarantee-cheque amounts each year,
+ * and the port sets THC. Kept as editable data,
  * never hard-coded in the logic. Numbers are illustrative only.
  */
 export interface Tariffs {

@@ -78,9 +78,11 @@ with sync_playwright() as p:
 
     # ── Agent CRM ──
     tid('tab-agents').click(); pg.wait_for_timeout(300)
-    check('agents seeded (13 SAMPLE + 57 public = 70)', tid('agents-count').inner_text().startswith('70 / 70'))
+    # Demo ships SAMPLE agents only (the researched public list lives in docs/research/, not in the demo).
+    N0 = int(tid('agents-count').inner_text().split('/')[0].strip())
+    check(f'agents seeded: {N0} SAMPLE agents only', N0 >= 10 and pg.locator('.crm-mini.sample').count() == N0)
     check('SAMPLE label on sample agents', tid('agents-sample').is_visible() and pg.locator('.crm-mini.sample').count() >= 10)
-    check('sanctions-listed badges (9)', pg.locator('[data-testid=sanctions-listed]').count() == 9)
+    check('no sanctions-listed agents in the sample list', pg.locator('[data-testid=sanctions-listed]').count() == 0)
     check('CRM summary tiles (5)', tid('crm-tiles').locator('.crm-tile').count() == 5)
     tw = pg.evaluate("(()=>{const t=document.querySelector('[data-testid=agents-table]');return [t.scrollWidth,t.parentElement.clientWidth]})()")
     check('agents table fits at 1440 (no horizontal scroll)', tw[0] <= tw[1])
@@ -92,8 +94,8 @@ with sync_playwright() as p:
     rows = tid('agents-table').locator('tbody tr')
     check('filter status = preferred', rows.count() >= 1 and rows.locator('.crm-status.st-preferred').count() == rows.count())
     tid('agents-f-status').select_option('')
-    tid('agents-f-lane').select_option('Shanghai → Bandar Abbas'); pg.wait_for_timeout(150)
-    check('filter lane Shanghai → Bandar Abbas', rows.count() == 1 and 'Sample Agent Shanghai' in rows.first.inner_text())
+    tid('agents-f-lane').select_option('Shanghai → Jebel Ali'); pg.wait_for_timeout(150)
+    check('filter lane Shanghai → Jebel Ali', rows.count() == 1 and 'Sample Agent Shanghai' in rows.first.inner_text())
     tid('agents-f-lane').select_option('')
     tid('agents-f-type').select_option('line'); pg.wait_for_timeout(150)
     check('filter type = shipping line', rows.count() >= 3 and all('Shipping line' in rows.nth(i).inner_text() for i in range(rows.count())))
@@ -120,7 +122,7 @@ with sync_playwright() as p:
     tid('af-contact-add').click(); tid('af-c-name-0').fill('Ops Desk'); tid('af-c-email-0').fill('ops@example.com')
     tid('af-save').click(); pg.wait_for_timeout(300)
     check('new agent saved + detail opens', tid('agent-drawer').is_visible() and 'Smoke Test Logistics' in tid('agent-name').inner_text())
-    check('count is now 71', tid('agents-count').inner_text().startswith('71 / 71'))
+    check(f'count is now {N0 + 1}', tid('agents-count').inner_text().startswith(f'{N0 + 1} / {N0 + 1}'))
     ov = tid('pane-overview').inner_text()
     check('detail shows lane, credit, network', 'Port One → Port Two' in ov and '12,000' in ov and 'WCA' in ov)
     # edit
@@ -175,7 +177,7 @@ with sync_playwright() as p:
     f = os.path.join(tempfile.gettempdir(), 'crm-import.csv')
     open(f, 'w').write('name,type,status,country,lane_pairs,service_flags,contacts,tags\n"Smoke Test Logistics (SAMPLE)",trucker,preferred,Testland,Port One > Port Three,road,,imported\nSample Import Agent,customs broker,prospect,Nowhere,A > B,customs,"Jane Doe | Ops | jane@example.com | +00 1 |",\n')
     tid('agents-import-input').set_input_files(f); pg.wait_for_timeout(400)
-    check('CSV import merges (1 added, 1 updated)', '1 added' in tid('agents-msg').inner_text() and '1 updated' in tid('agents-msg').inner_text() and tid('agents-count').inner_text().startswith('72 / 72'))
+    check('CSV import merges (1 added, 1 updated)', '1 added' in tid('agents-msg').inner_text() and '1 updated' in tid('agents-msg').inner_text() and tid('agents-count').inner_text().startswith(f'{N0 + 2} / {N0 + 2}'))
     # archive
     tid('agents-search').fill('Smoke Test'); pg.wait_for_timeout(150)
     rows.first.click(); pg.wait_for_timeout(150)
@@ -753,7 +755,7 @@ with sync_playwright() as p:
     page_txt = ntid('whatsnew').inner_text()
     check("What's new: dates in day-month-year (Madrid)", '11 November 2026' in page_txt and '25 September 2026' in page_txt)
     check("What's new: titles + bullets", n.locator('.wn-rel h2').count() == len(vers) and n.locator('.wn-rel li').count() >= 2 * len(vers))
-    check("What's new: latest release covers WhatsApp", 'WhatsApp' in rels.first.inner_text())
+    check("What's new: latest release covers the demo fixes (SAMPLE estimates, Jebel Ali)", 'SAMPLE estimate' in rels.first.inner_text() and 'Jebel Ali' in rels.first.inner_text())
     check("What's new: only the latest marked New on first visit", n.locator('[data-testid=wn-new]').count() == 1)
     check("What's new: page header + crumb", "What’s new" in ntid('page-header').inner_text() and "What’s new" in n.locator('.nd-crumb-page').inner_text())
     check("What's new: no error-red on the page", n.locator('.wn-list .red, .wn-list .veto').count() == 0)

@@ -53,7 +53,7 @@ export function chargeAmount(job: Job, ch: Charge, t: Tariffs, now: number): num
 
 export const CHARGE_LABEL: Record<Charge['key'], [string, string, string, string]> = {
   bl: ['B/L fee', 'Tasa B/L', 'هزینه بارنامه', 'رسوم بوليصة الشحن'],
-  thc: ['THC (Ports Organization)', 'THC (Ports Organization)', 'THC (سازمان بنادر)', 'THC (منظمة الموانئ)'],
+  thc: ['THC (port tariff)', 'THC (tarifa portuaria)', 'THC (تعرفه بندر)', 'THC (تعرفة الميناء)'],
   seal: ['Seal fee', 'Precintos', 'هزینه پلمپ', 'رسوم الختم'],
   extras: ['Small extras', 'Extras', 'هزینه‌های جزئی', 'إضافات صغيرة'],
   demurrage: ['Demurrage (line calculates)', 'Demora (la calcula la naviera)', 'حق توقف (محاسبه خط)', 'غرامة التأخير (يحسبها الخط)'],

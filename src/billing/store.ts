@@ -43,7 +43,7 @@ function sampleLedgers(now = Date.now()): Record<string, Ledger> {
   return {
     'FD-E-1042': L('FD-E-1042', 'Customer A', {
       lines: [
-        { id: 's1', code: 'OFR', desc: 'Ocean freight Bandar Abbas → Jebel Ali, 20′', qty: 2, currency: 'USD', sell: 650, buy: 520, payer: 'Customer A', vendor: 'Line A (sample)', terms: 'prepaid', invoiceId: 'si1', billId: 'sb1' },
+        { id: 's1', code: 'OFR', desc: 'Ocean freight Jebel Ali → Dammam, 20′', qty: 2, currency: 'USD', sell: 650, buy: 520, payer: 'Customer A', vendor: 'Line A (sample)', terms: 'prepaid', invoiceId: 'si1', billId: 'sb1' },
         { id: 's2', code: 'HAND', desc: 'Handling and documentation', qty: 1, currency: 'USD', sell: 120, buy: null, payer: 'Customer A', vendor: '', terms: 'prepaid', invoiceId: 'si1' },
         { id: 's3', code: 'THC-D', desc: 'Destination THC (collect at destination)', qty: 2, currency: 'AED', sell: 600, buy: 600, payer: 'Consignee', vendor: 'Destination agent (sample)', terms: 'collect' },
       ],
@@ -54,7 +54,7 @@ function sampleLedgers(now = Date.now()): Record<string, Ledger> {
     }),
     'FD-E-1038': L('FD-E-1038', 'Customer B', {
       lines: [
-        { id: 's1', code: 'OFR', desc: 'Ocean freight Bandar Abbas → Shanghai, 20′', qty: 4, currency: 'USD', sell: 980, buy: 840, payer: 'Customer B', vendor: 'Line B (sample)', terms: 'prepaid', invoiceId: 'si1', billId: 'sb1' },
+        { id: 's1', code: 'OFR', desc: 'Ocean freight Jebel Ali → Shanghai, 20′', qty: 4, currency: 'USD', sell: 980, buy: 840, payer: 'Customer B', vendor: 'Line B (sample)', terms: 'prepaid', invoiceId: 'si1', billId: 'sb1' },
         { id: 's2', code: 'HAND', desc: 'Handling and documentation', qty: 1, currency: 'USD', sell: 150, buy: null, payer: 'Customer B', vendor: '', terms: 'prepaid', invoiceId: 'si1' },
         { id: 's3', code: 'AGT', desc: 'Agent fee at Shanghai', qty: 1, currency: 'USD', sell: null, buy: 75, payer: '', vendor: 'Shanghai agent (sample)', terms: 'prepaid' },
       ],
@@ -69,7 +69,7 @@ function sampleLedgers(now = Date.now()): Record<string, Ledger> {
     }),
     'FD-I-0877': L('FD-I-0877', 'Customer D', {
       lines: [
-        { id: 's1', code: 'CUS', desc: 'Customs clearance Bandar Abbas', qty: 1, currency: 'USD', sell: 380, buy: 300, payer: 'Customer D', vendor: 'Clearance agent (sample)', terms: 'prepaid', invoiceId: 'si1', billId: 'sb1' },
+        { id: 's1', code: 'CUS', desc: 'Customs clearance Jebel Ali', qty: 1, currency: 'USD', sell: 380, buy: 300, payer: 'Customer D', vendor: 'Clearance agent (sample)', terms: 'prepaid', invoiceId: 'si1', billId: 'sb1' },
         { id: 's2', code: 'HAUL', desc: 'Trucking to warehouse', qty: 3, currency: 'USD', sell: 260, buy: 210, payer: 'Customer D', vendor: 'Haulier (sample)', terms: 'prepaid', invoiceId: 'si1' },
       ],
       invoices: [
@@ -81,7 +81,7 @@ function sampleLedgers(now = Date.now()): Record<string, Ledger> {
     'FD-I-0921': L('FD-I-0921', 'Customer F', {
       lines: [
         { id: 's1', code: 'AGT', desc: 'Origin agent handling, Hamburg', qty: 1, currency: 'EUR', sell: null, buy: 180, payer: '', vendor: 'Hamburg agent (sample)', terms: 'collect', billId: 'sb1' },
-        { id: 's2', code: 'CUS', desc: 'Customs clearance Bandar Abbas', qty: 1, currency: 'USD', sell: 420, buy: 330, payer: 'Customer F', vendor: 'Clearance agent (sample)', terms: 'prepaid' },
+        { id: 's2', code: 'CUS', desc: 'Customs clearance Jebel Ali', qty: 1, currency: 'USD', sell: 420, buy: 330, payer: 'Customer F', vendor: 'Clearance agent (sample)', terms: 'prepaid' },
       ],
       invoices: [{ id: 'sb1', no: `BILL-${y}-0051`, kind: 'bill', party: 'Hamburg agent (sample)', currency: 'EUR', lineIds: ['s1'], issuedAt: t(-3), dueDays: 30, status: 'issued', ref: 'HH-SAMPLE-22' }],
     }),

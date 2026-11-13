@@ -187,8 +187,8 @@ with sync_playwright() as p:
             tops = [t['n']['t'] for t in boxes]
             if len(set(round(x) for x in tops)) != len(tops): bad.append('two tariffs share a row')
             check(f'{L.upper()} {w}px: {len(boxes)} tariffs, one per row, label on its own line, no overlap/clipping {bad[:3]}', len(boxes) == 14 and not bad)
-            src_ok = ('Shipping Association' in ph.locator('[data-testid=tariffs]').inner_text()) if L == 'en' else ('انجمن کشتیرانی' in ph.locator('[data-testid=tariffs]').inner_text() and 'سازمان بنادر' in ph.locator('[data-testid=tariffs]').inner_text())
-            check(f'{L.upper()} {w}px: source labels kept (Shipping Association / Ports Organization)', src_ok)
+            src_ok = ('Lines / agents' in ph.locator('[data-testid=tariffs]').inner_text() and 'Port tariff' in ph.locator('[data-testid=tariffs]').inner_text()) if L == 'en' else ('خطوط / نمایندگان' in ph.locator('[data-testid=tariffs]').inner_text() and 'تعرفه بندر' in ph.locator('[data-testid=tariffs]').inner_text())
+            check(f'{L.upper()} {w}px: source labels kept (Lines / agents · Port tariff)', src_ok)
             if w == 390:
                 sec = ph.locator('[data-testid=tariffs]'); sec.scroll_into_view_if_needed()
                 bb = sec.bounding_box(); sy = ph.evaluate('scrollY')

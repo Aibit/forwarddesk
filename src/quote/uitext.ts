@@ -97,6 +97,10 @@ const T = {
   homePort: ['client home port', 'puerto base del cliente', 'بندر اصلی مشتری', 'ميناء العميل الرئيسي'],
   noLeg: ['no leg at', 'sin tramo en', 'بدون مسیر در', 'بلا مسار في'],
   pickOne: ['pick one', 'elige uno', 'یکی را انتخاب کنید', 'اختر واحدًا'],
+  crossTrade: ['cross-trade', 'cross-trade', 'حمل بین دو بندر خارجی', 'شحن بين ميناءين آخرين'],
+  requested: ['requested', 'solicitado', 'درخواستی', 'مطلوب'],
+  sampleEst: ['SAMPLE estimate', 'Estimación de EJEMPLO', 'برآورد نمونه', 'تقدير عيّنة'],
+  sampleEstNote: ['Lines marked SAMPLE estimate are illustrative figures made by the demo, not real prices. Confirm with the line, insurer, customs broker or trucker before sending.', 'Las líneas marcadas como Estimación de EJEMPLO son cifras ilustrativas de la demo, no precios reales. Confírmalas con la naviera, la aseguradora, el agente de aduanas o el transportista antes de enviar.', 'ردیف‌های «برآورد نمونه» ارقام نمایشی دمو هستند، نه قیمت واقعی. پیش از ارسال با خط کشتیرانی، بیمه‌گر، ترخیص‌کار یا شرکت حمل تأیید کنید.', 'البنود المعلَّمة «تقدير عيّنة» أرقام توضيحية من العرض التجريبي وليست أسعارًا حقيقية. أكّدها مع الخط أو شركة التأمين أو المخلّص الجمركي أو الناقل قبل الإرسال.'],
   agentDest: ['Agent at destination', 'Agente en destino', 'نماینده در مقصد', 'الوكيل في الوجهة'],
   screened: [' · screened, see Agents', ' · revisado, ver Agentes', ' · غربال‌شده، به نمایندگان مراجعه کنید', ' · تم الفحص، انظر الوكلاء'],
   rateLogged: [' · ✓ rate request logged', ' · ✓ solicitud de tarifa registrada', ' · ✓ درخواست نرخ ثبت شد', ' · ✓ تم تسجيل طلب السعر'],
@@ -159,6 +163,7 @@ const T = {
   sideFreight: ['Main freight', 'Flete principal', 'کرایه اصلی', 'أجرة الشحن الرئيسية'],
   sideDest: ['Destination', 'Destino', 'مقصد', 'الوجهة'],
   sideCustoms: ['Customs', 'Aduanas', 'گمرک', 'الجمارك'],
+  sideServices: ['Requested services', 'Servicios solicitados', 'خدمات درخواستی', 'الخدمات المطلوبة'],
   bCntr: ['cntr', 'cntr', 'کانتینر', 'حاوية'],
   bKg: ['kg', 'kg', 'کیلو', 'كجم'],
   bWm: ['W/M', 'W/M', 'W/M', 'W/M'],
@@ -171,7 +176,7 @@ const IX: Record<UiLang, 0 | 1 | 2 | 3> = { en: 0, es: 1, fa: 2, ar: 3 };
 export const qu = (lang: UiLang, k: UKey): string => T[k][IX[lang] ?? 0];
 
 export const modeLabel = (lang: UiLang, m: string) => qu(lang, ({ fcl: 'modeFcl', lcl: 'modeLcl', air: 'modeAir', road: 'modeRoad' } as Record<string, UKey>)[m] ?? 'modeFcl');
-export const sideLabel = (lang: UiLang, s: string) => qu(lang, ({ origin: 'sideOrigin', freight: 'sideFreight', destination: 'sideDest', customs: 'sideCustoms' } as Record<string, UKey>)[s] ?? 'sideOrigin');
+export const sideLabel = (lang: UiLang, s: string) => qu(lang, ({ origin: 'sideOrigin', freight: 'sideFreight', destination: 'sideDest', customs: 'sideCustoms', services: 'sideServices' } as Record<string, UKey>)[s] ?? 'sideOrigin');
 export const basisLabel = (lang: UiLang, b: string) => {
   const k = ({ per_container: 'bCntr', per_kg: 'bKg', per_wm: 'bWm', per_truck: 'bTruck', per_shipment: 'bShpt' } as Record<string, UKey>)[b];
   return k ? qu(lang, k) : b;
@@ -187,7 +192,7 @@ const FIXED: Record<string, [string, string, string]> = {
   'Origin not found.': ['Origen no encontrado.', 'مبدأ پیدا نشد.', 'لم يُعثر على المنشأ.'],
   'Destination not found.': ['Destino no encontrado.', 'مقصد پیدا نشد.', 'لم يُعثر على الوجهة.'],
   'Container count / type missing.': ['Falta número / tipo de contenedor.', 'تعداد / نوع کانتینر مشخص نیست.', 'عدد / نوع الحاويات ناقص.'],
-  'Gross weight per container not given — priced anyway; needed for VGM / overweight check.': ['Sin peso bruto por contenedor — cotizado igualmente; hace falta para el VGM / control de sobrepeso.', 'وزن ناخالص هر کانتینر داده نشده — قیمت داده شد؛ برای VGM / کنترل اضافه‌وزن لازم است.', 'لم يُذكر الوزن الإجمالي لكل حاوية — تم التسعير على أي حال؛ مطلوب لـ VGM / فحص الوزن الزائد.'],
+  'Gross weight per container not given — needed for VGM / overweight check.': ['Sin peso bruto por contenedor — hace falta para el VGM / control de sobrepeso.', 'وزن ناخالص هر کانتینر داده نشده — برای VGM / کنترل اضافه‌وزن لازم است.', 'لم يُذكر الوزن الإجمالي لكل حاوية — مطلوب لـ VGM / فحص الوزن الزائد.'],
   'Gross weight not given.': ['Sin peso bruto.', 'وزن ناخالص داده نشده.', 'لم يُذكر الوزن الإجمالي.'],
   'Volume / dimensions missing — chargeable weight can’t be checked.': ['Faltan volumen / medidas — no se puede comprobar el peso tasable.', 'حجم / ابعاد داده نشده — وزن قابل محاسبه قابل بررسی نیست.', 'الحجم / الأبعاد ناقصة — لا يمكن التحقق من الوزن المحتسب.'],
   'Trailer type not stated.': ['Tipo de tráiler no indicado.', 'نوع تریلر مشخص نشده.', 'نوع المقطورة غير مذكور.'],
@@ -196,9 +201,13 @@ const FIXED: Record<string, [string, string, string]> = {
   'Commodity not described.': ['Mercancía no descrita.', 'کالا توضیح داده نشده.', 'لم تُوصف السلعة.'],
   'DG status unknown.': ['No se sabe si es mercancía peligrosa (DG).', 'وضعیت کالای خطرناک (DG) نامشخص است.', 'حالة البضائع الخطرة (DG) غير معروفة.'],
   'Dangerous goods — DG surcharges and carrier acceptance not in sample rates.': ['Mercancía peligrosa — los recargos DG y la aceptación de la naviera no están en las tarifas de ejemplo.', 'کالای خطرناک — هزینه‌های DG و پذیرش حمل‌کننده در نرخ‌های نمونه نیست.', 'بضائع خطرة — رسوم DG الإضافية وقبول الناقل غير مشمولة في أسعار العيّنة.'],
-  'Container type not stated — priced as standard (GP).': ['Tipo de contenedor no indicado — cotizado como estándar (GP).', 'نوع کانتینر مشخص نشده — به‌صورت استاندارد (GP) قیمت داده شد.', 'نوع الحاوية غير مذكور — تم التسعير كحاوية قياسية (GP).'],
+  'Container type not stated — priced using standard GP rates; confirm with the line.': ['Tipo de contenedor no indicado — cotizado con tarifas estándar GP; confirmar con la naviera.', 'نوع کانتینر مشخص نشده — با نرخ استاندارد GP قیمت داده شد؛ با خط کشتیرانی تأیید شود.', 'نوع الحاوية غير مذكور — سُعِّر بأسعار GP القياسية؛ للتأكيد مع الخط.'],
+  'No rate on file for this lane — main freight is a SAMPLE estimate; get line rates before sending.': ['No hay tarifa para esta ruta — el flete principal es una estimación de EJEMPLO; pide tarifas a las navieras antes de enviar.', 'نرخی برای این مسیر ثبت نشده — کرایه اصلی برآورد نمونه است؛ پیش از ارسال از خطوط نرخ بگیرید.', 'لا يوجد سعر مسجّل لهذا المسار — أجرة الشحن الرئيسية تقدير عيّنة؛ اطلب أسعار الخطوط قبل الإرسال.'],
+  'Requested services are priced as SAMPLE estimates — confirm with the insurer / customs broker / trucker before sending.': ['Los servicios solicitados tienen precios de EJEMPLO — confírmalos con la aseguradora / agente de aduanas / transportista antes de enviar.', 'خدمات درخواستی با برآورد نمونه قیمت‌گذاری شده‌اند — پیش از ارسال با بیمه‌گر / ترخیص‌کار / شرکت حمل تأیید کنید.', 'الخدمات المطلوبة مسعّرة بتقديرات عيّنة — أكّدها مع شركة التأمين / المخلّص الجمركي / الناقل قبل الإرسال.'],
+  'Cargo value not given — insurance shows the SAMPLE minimum.': ['Sin valor de la mercancía — el seguro muestra el mínimo de EJEMPLO.', 'ارزش کالا داده نشده — بیمه حداقل نمونه را نشان می‌دهد.', 'لم تُذكر قيمة البضاعة — يظهر التأمين بالحد الأدنى للعيّنة.'],
 };
 const PAT: [RegExp, string, string, string][] = [
+  [/^(.+): priced using standard GP rates; confirm with the line\.$/, '$1: cotizado con tarifas estándar GP; confirmar con la naviera.', '$1: با نرخ استاندارد GP قیمت داده شد؛ با خط کشتیرانی تأیید شود.', '$1: سُعِّر بأسعار GP القياسية؛ للتأكيد مع الخط.'],
   [/^Mode not stated — assumed AIR \(urgent, (.+) kg\)\.$/, 'Modo no indicado — se asume AÉREO (urgente, $1 kg).', 'حالت حمل ذکر نشده — هوایی فرض شد (فوری، $1 کیلو).', 'وسيلة النقل غير مذكورة — افتُرض الشحن الجوي (عاجل، $1 كجم).'],
   [/^"(.+)" read as (.+) for (.+)\.$/, '«$1» leído como $2 para $3.', '«$1» به‌عنوان $2 برای $3 خوانده شد.', 'قُرئ «$1» على أنه $2 لـ $3.'],
   [/^"(.+)" — assumed Monday (.+)\.$/, '«$1» — se asume el lunes $2.', '«$1» — دوشنبه $2 فرض شد.', '«$1» — افتُرض يوم الاثنين $2.'],

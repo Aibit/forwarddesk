@@ -33,7 +33,7 @@ const LIDX: Record<Lang, 0 | 1 | 2 | 3> = { en: 0, es: 1, fa: 2, ar: 3 };
 export function JobsView({ onDraftQuote, onOpenClient, openRequest }: { onDraftQuote: (text: string, customer?: string) => void; onOpenClient?: (customer: string) => void; openRequest?: { id: string; n: number } | null }) {
   const [lang] = useUiLang<Lang>();
   const { clients } = useStore();
-  /** E: agent at the port of discharge; I: agent at the port of loading (I2, I4–I8). */
+  /** E: agent at the port of discharge; I: agent at the port of loading. */
   const agentOf = (j: Job) => agentForPort(clientForJob(clients, j.customer), j.dir === 'import' ? j.pol : j.pod);
   const [now, setNow] = useState(() => Date.now());
   const jobs = useJobs();
@@ -223,7 +223,6 @@ export function JobsView({ onDraftQuote, onOpenClient, openRequest }: { onDraftQ
               );
             })}
           </div>
-          {!isLive() && <p className="j-foot">{L('buildOrder')}</p>}
         </section>
 
         <section className="q-panel j-tracker" aria-label={L('deadlines')} data-testid="deadline-tracker">
@@ -714,7 +713,7 @@ function NewJobForm({ lang, clients, onClose, onCreated }: { lang: Lang; clients
   const L = (k: Key) => tr(lang, k);
   const [dir, setDir] = useState<'export' | 'import'>('export');
   const [cid, setCid] = useState(clients[0]?.id ?? '');
-  const [pol, setPol] = useState('Bandar Abbas');
+  const [pol, setPol] = useState('Jebel Ali');
   const [pod, setPod] = useState('');
   const [commodity, setCommodity] = useState('');
   const [line, setLine] = useState('');
@@ -724,7 +723,7 @@ function NewJobForm({ lang, clients, onClose, onCreated }: { lang: Lang; clients
   const [err, setErr] = useState<string | null>(null);
   const flip = (d: 'export' | 'import') => {
     setDir(d);
-    if (d === 'import') { setPod('Bandar Abbas'); if (pol === 'Bandar Abbas') setPol(''); } else { setPol('Bandar Abbas'); if (pod === 'Bandar Abbas') setPod(''); }
+    if (d === 'import') { setPod('Jebel Ali'); if (pol === 'Jebel Ali') setPol(''); } else { setPol('Jebel Ali'); if (pod === 'Jebel Ali') setPod(''); }
   };
   const c = clients.find((x) => x.id === cid);
   const ok = c && pol.trim() && pod.trim() && commodity.trim();

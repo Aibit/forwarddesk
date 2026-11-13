@@ -278,7 +278,7 @@ function ClientDashboard({ c, k, lang, L, deadline, onBack, onEdit, onOpenJob, o
             <dt>{L('clearanceAgent')}</dt>
             <dd>{c.clearanceAgent.name || '—'}{c.clearanceAgent.phone ? <><br /><bdi className="mono" dir="ltr">{fmtPhone(c.clearanceAgent.phone)}</bdi></> : null}{c.clearanceAgent.whatsapp ? <><br /><span className="c-sub">{wt(lang, 'wa')}</span> <bdi className="mono" dir="ltr">{fmtPhone(c.clearanceAgent.whatsapp)}</bdi></> : null}</dd>
             <dt>{L('baContact')}</dt>
-            <dd>{c.bandarAbbas.name || '—'}{c.bandarAbbas.phone ? <><br /><bdi className="mono" dir="ltr">{fmtPhone(c.bandarAbbas.phone)}</bdi></> : null}{c.bandarAbbas.whatsapp ? <><br /><span className="c-sub">{wt(lang, 'wa')}</span> <bdi className="mono" dir="ltr">{fmtPhone(c.bandarAbbas.whatsapp)}</bdi></> : null}</dd>
+            <dd>{c.portOffice.name || '—'}{c.portOffice.phone ? <><br /><bdi className="mono" dir="ltr">{fmtPhone(c.portOffice.phone)}</bdi></> : null}{c.portOffice.whatsapp ? <><br /><span className="c-sub">{wt(lang, 'wa')}</span> <bdi className="mono" dir="ltr">{fmtPhone(c.portOffice.whatsapp)}</bdi></> : null}</dd>
           </dl>
           <h3>{L('defaults')}</h3>
           <dl className="c-defs">
@@ -350,9 +350,9 @@ function ClientForm({ c, L, lang, onClose, onSaved }: { c: Client; L: (k: CKey) 
           <PhoneField label={`${L('clearanceAgent')} · ${L('phone')}`} value={d.clearanceAgent.phone} onChange={(v) => up('clearanceAgent', { ...d.clearanceAgent, phone: v })} testid="cf-broker-phone" />
           <PhoneField label={`${L('clearanceAgent')} · ${wt(lang, 'waNumber')}`} hint={wt(lang, 'sameAsPhone')} value={d.clearanceAgent.whatsapp ?? ''} onChange={(v) => up('clearanceAgent', { ...d.clearanceAgent, whatsapp: v })} testid="cf-broker-wa" />
           <span className="c-field" aria-hidden="true" />
-          <Field label={`${L('baContact')} · ${L('name')}`}><input className="c-in" value={d.bandarAbbas.name} onChange={(e) => up('bandarAbbas', { ...d.bandarAbbas, name: e.target.value })} /></Field>
-          <PhoneField label={`${L('baContact')} · ${L('phone')}`} value={d.bandarAbbas.phone} onChange={(v) => up('bandarAbbas', { ...d.bandarAbbas, phone: v })} testid="cf-office-phone" />
-          <PhoneField label={`${L('baContact')} · ${wt(lang, 'waNumber')}`} hint={wt(lang, 'sameAsPhone')} value={d.bandarAbbas.whatsapp ?? ''} onChange={(v) => up('bandarAbbas', { ...d.bandarAbbas, whatsapp: v })} testid="cf-office-wa" />
+          <Field label={`${L('baContact')} · ${L('name')}`}><input className="c-in" value={d.portOffice.name} onChange={(e) => up('portOffice', { ...d.portOffice, name: e.target.value })} /></Field>
+          <PhoneField label={`${L('baContact')} · ${L('phone')}`} value={d.portOffice.phone} onChange={(v) => up('portOffice', { ...d.portOffice, phone: v })} testid="cf-office-phone" />
+          <PhoneField label={`${L('baContact')} · ${wt(lang, 'waNumber')}`} hint={wt(lang, 'sameAsPhone')} value={d.portOffice.whatsapp ?? ''} onChange={(v) => up('portOffice', { ...d.portOffice, whatsapp: v })} testid="cf-office-wa" />
           <span className="c-field" aria-hidden="true" />
           <Field label={L('language')}>
             <select className="c-in" value={d.lang} onChange={(e) => up('lang', e.target.value as CLang)}>

@@ -85,7 +85,7 @@ export function makeLiveData(api: FsApi, env: { db: () => any; uid: () => string
     store.hydrate({ clients });
   }
   const portalClient = (id: string, p: DocumentData): Client => ({
-    id, name: '', contactName: '', phone: '', email: '', address: '', clearanceAgent: { name: '', phone: '' }, bandarAbbas: { name: '', phone: '' },
+    id, name: '', contactName: '', phone: '', email: '', address: '', clearanceAgent: { name: '', phone: '' }, portOffice: { name: '', phone: '' },
     lang: 'en', incoterm: 'FOB', marginPct: 0, lines: [], freeTimeRequest: null, paymentTerms: '', notes: '', agents: [], lanes: [],
     ...(p as Partial<Client>),
   });

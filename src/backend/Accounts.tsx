@@ -315,7 +315,7 @@ export function VerifyScreen() {
 }
 
 // ───────── Onboarding wizard ─────────
-const CURRENCIES = ['USD', 'EUR', 'AED', 'IRR', 'CNY', 'INR', 'TRY', 'GBP', 'SAR', 'OMR', 'QAR', 'PKR'];
+const CURRENCIES = ['USD', 'EUR', 'AED', 'CNY', 'INR', 'TRY', 'GBP', 'SAR', 'OMR', 'QAR', 'PKR'];
 export function ProfileFields({ p, set, disabled }: { p: AccountProfile; set: (p: AccountProfile) => void; disabled?: boolean }) {
   const { t } = useT();
   return (

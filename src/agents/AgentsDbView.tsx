@@ -571,7 +571,7 @@ function AgentForm({ a, L, lang, onClose, onSaved }: { a: DbAgent; L: (k: string
           {txt('paymentTerms', L('payTerms'), '', false, '30 days after invoice')}
           <label className="c-field"><span>{L('credit')}</span><input className="c-in" dir="ltr" inputMode="decimal" value={credit} onChange={(e) => setCredit(e.target.value)} data-testid="af-credit" /></label>
           <label className="c-field"><span>{L('currency')}</span>
-            <select className="c-in" value={d.currency ?? 'USD'} onChange={(e) => up('currency', e.target.value)} data-testid="af-currency">{['USD', 'EUR', 'AED', 'CNY', 'INR', 'GBP', 'TRY', 'IRR', 'OTHER'].map((c) => <option key={c}>{c}</option>)}</select>
+            <select className="c-in" value={d.currency ?? 'USD'} onChange={(e) => up('currency', e.target.value)} data-testid="af-currency">{['USD', 'EUR', 'AED', 'CNY', 'INR', 'GBP', 'TRY', 'SAR', 'OTHER'].map((c) => <option key={c}>{c}</option>)}</select>
           </label>
           <div className="c-field"><span>{L('rating')}</span><Stars n={d.rating ?? 0} onPick={(n) => up('rating', n)} /></div>
           <label className="c-field span2"><span>{L('tags')} ({L('tagsHint')})</span><input className="c-in" value={tagTxt} onChange={(e) => setTagTxt(e.target.value)} data-testid="af-tags" /></label>

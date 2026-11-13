@@ -2,8 +2,8 @@ import type { QuoteFields } from './parser';
 import type { Quote } from './rates';
 import type { Tariffs } from '../jobs/tariffs';
 
-/** Export / import quote sections around the client's home port (brief E3/E4 export, I2/I13 import). Tariffs are SAMPLE data. */
-export const HOME_PORT = 'Bandar Abbas';
+/** Export / import quote sections around the forwarder's home port. Tariffs are SAMPLE data. */
+export const HOME_PORT = 'Jebel Ali';
 export type TradeDir = 'export' | 'import';
 type L3 = 'en' | 'es' | 'fa' | 'ar';
 const base = (s: string | null) => (s ?? '').toLowerCase().replace(/\s*\(.*\)$/, '').trim();
@@ -17,13 +17,14 @@ export function autoDir(f: Pick<QuoteFields, 'origin' | 'destination'>): TradeDi
 const T: Record<string, [string, string, string, string]> = {
   export: ['EXPORT QUOTATION', 'COTIZACIÓN DE EXPORTACIÓN', 'پیش‌فاکتور صادرات', 'عرض سعر تصدير'],
   import: ['IMPORT QUOTATION', 'COTIZACIÓN DE IMPORTACIÓN', 'پیش‌فاکتور واردات', 'عرض سعر استيراد'],
-  localExp: ['Origin charges at Bandar Abbas', 'Gastos en origen en Bandar Abbas', 'هزینه‌های مبدأ در بندرعباس', 'رسوم المنشأ في بندر عباس'],
-  localImp: ['Destination charges at Bandar Abbas', 'Gastos en destino en Bandar Abbas', 'هزینه‌های مقصد در بندرعباس', 'رسوم الوجهة في بندر عباس'],
-  tariffSrc: ['per Shipping Association / Ports Organization tariff (sample figures — confirm)', 'según tarifa de la Asociación de Navieras / Organización de Puertos (cifras de ejemplo — confirmar)', 'طبق تعرفه انجمن کشتیرانی / سازمان بنادر (ارقام نمونه — تأیید شود)', 'وفق تعرفة جمعية الملاحة / منظمة الموانئ (أرقام عيّنة — للتأكيد)'],
-  thc: ['THC (Ports Organization)', 'THC (Organización de Puertos)', 'THC (سازمان بنادر)', 'THC (منظمة الموانئ)'],
-  bl: ['B/L fee (Shipping Association)', 'Emisión B/L (Asociación de Navieras)', 'هزینه بارنامه (انجمن کشتیرانی)', 'رسوم بوليصة الشحن (جمعية الملاحة)'],
+  localExp: ['Origin charges at Jebel Ali', 'Gastos en origen en Jebel Ali', 'هزینه‌های مبدأ در جبل علی', 'رسوم المنشأ في جبل علي'],
+  localImp: ['Destination charges at Jebel Ali', 'Gastos en destino en Jebel Ali', 'هزینه‌های مقصد در جبل علی', 'رسوم الوجهة في جبل علي'],
+  crossTitle: ['Cross-trade: no leg at Jebel Ali, so no Jebel Ali local charges. Origin and destination charges for the ports on this lane are in the lines above (SAMPLE).', 'Cross-trade: sin tramo en Jebel Ali, así que no hay gastos locales de Jebel Ali. Los gastos en origen y destino de los puertos de esta ruta están en las líneas de arriba (EJEMPLO).', 'حمل بین دو بندر خارجی: مسیری در جبل علی نیست، پس هزینه محلی جبل علی ندارد. هزینه‌های مبدأ و مقصد بنادر این مسیر در ردیف‌های بالا آمده است (نمونه).', 'شحن بين ميناءين آخرين: لا مسار في جبل علي، فلا رسوم محلية لجبل علي. رسوم المنشأ والوجهة لموانئ هذا المسار في البنود أعلاه (عيّنة).'],
+  tariffSrc: ['per port and line / agent tariffs (sample figures — confirm)', 'según tarifas del puerto y de la naviera / agente (cifras de ejemplo — confirmar)', 'طبق تعرفه بندر و خط / نماینده (ارقام نمونه — تأیید شود)', 'وفق تعرفة الميناء والخط / الوكيل (أرقام عيّنة — للتأكيد)'],
+  thc: ['THC (port tariff)', 'THC (tarifa portuaria)', 'THC (تعرفه بندر)', 'THC (تعرفة الميناء)'],
+  bl: ['B/L fee (line / agent)', 'Emisión B/L (naviera / agente)', 'هزینه بارنامه (خط / نماینده)', 'رسوم بوليصة الشحن (الخط / الوكيل)'],
   seal: ['Seal fee', 'Precinto', 'هزینه پلمب', 'رسوم الختم'],
-  doFee: ['DO fee (Shipping Association)', 'Despacho DO (Asociación de Navieras)', 'هزینه ترخیصیه / DO (انجمن کشتیرانی)', 'رسوم إذن التسليم (جمعية الملاحة)'],
+  doFee: ['DO fee (line / agent)', 'Despacho DO (naviera / agente)', 'هزینه دی‌او (خط / نماینده)', 'رسوم إذن التسليم (الخط / الوكيل)'],
   warehouse: ['Port warehouse / storage', 'Almacén / almacenaje portuario', 'انبارداری بندر', 'مستودع / تخزين الميناء'],
   atCost: ['at cost, after the free storage period', 'al coste, tras el periodo libre', 'به قیمت تمام‌شده، پس از دوره رایگان', 'بالتكلفة، بعد فترة التخزين المجانية'],
   included: ['included in the totals above', 'incluido en los totales', 'در جمع بالا منظور شده', 'مشمولة في الإجماليات أعلاه'],
@@ -33,7 +34,7 @@ const T: Record<string, [string, string, string, string]> = {
   days: ['days', 'días', 'روز', 'أيام'],
   cutoff: ['Cut-off: cargo and documents 48 h before vessel closing', 'Cut-off: mercancía y documentos 48 h antes del cierre del buque', 'کات‌آف: بار و مدارک ۴۸ ساعت پیش از بسته شدن کشتی', 'Cut-off: البضائع والمستندات قبل ٤٨ ساعة من إغلاق السفينة'],
   obl: ['Original B/L released after all charges are paid', 'B/L original se entrega tras el pago de todos los gastos', 'بارنامه اصلی پس از پرداخت همه هزینه‌ها تحویل می‌شود', 'تُسلَّم بوليصة الشحن الأصلية بعد دفع جميع الرسوم'],
-  collect: ['Freight: usually collect (paid at Bandar Abbas before DO release)', 'Flete: normalmente a cobrar (pagado en Bandar Abbas antes del DO)', 'کرایه: معمولاً پس‌کرایه (پرداخت در بندرعباس پیش از ترخیصیه)', 'أجرة الشحن: عادةً تُحصَّل عند الوصول (تُدفع في بندر عباس قبل الإفراج عن إذن التسليم)'],
+  collect: ['Freight: usually collect (paid at Jebel Ali before DO release)', 'Flete: normalmente a cobrar (pagado en Jebel Ali antes del DO)', 'کرایه: معمولاً پس‌کرایه (پرداخت در جبل علی پیش از صدور دی‌او)', 'أجرة الشحن: عادةً تُحصَّل عند الوصول (تُدفع في جبل علي قبل الإفراج عن إذن التسليم)'],
   prepaid: ['Freight: prepaid at origin', 'Flete: prepagado en origen', 'کرایه: پیش‌کرایه در مبدأ', 'أجرة الشحن: مدفوعة مسبقًا في المنشأ'],
   cheques: ['Guarantee cheques', 'Cheques de garantía', 'چک‌های تضمین', 'شيكات الضمان'],
   chqDem: ['demurrage cheque per B/L', 'cheque de demora por B/L', 'چک دموراژ برای هر بارنامه', 'شيك غرامة تأخير لكل بوليصة'],
@@ -49,10 +50,15 @@ const I: Record<L3, number> = { en: 0, es: 1, fa: 2, ar: 3 };
 export const tl3 = (lang: L3, k: keyof typeof T) => T[k][I[lang]];
 
 export interface TradeLine { label: string; amount: number | null; note: string; included: boolean }
-export interface TradeBlock { dir: TradeDir; title: string; localTitle: string; lines: TradeLine[]; notes: string[]; currency: string }
+export interface TradeBlock { dir: TradeDir; title: string; localTitle: string; lines: TradeLine[]; notes: string[]; currency: string; cross?: boolean }
 
-export function tradeBlock(dir: TradeDir, f: QuoteFields, q: Quote | null, t: Tariffs, lang: L3, payment?: string | null): TradeBlock {
+/** cross = the home port is neither POL nor POD: no home-port local charges at all (only the lane's own charges, in the quote lines). */
+export function tradeBlock(dir: TradeDir, f: QuoteFields, q: Quote | null, t: Tariffs, lang: L3, payment?: string | null, cross = false): TradeBlock {
   const L = (k: keyof typeof T) => tl3(lang, k);
+  if (cross) {
+    const free = q?.freeDays != null ? `${q.freeDays} ${L('days')}` : L('tbcLine');
+    return { dir, title: L(dir), localTitle: L('crossTitle'), lines: [], notes: [`${L('freeDest')}: ${free}`, L('cutoff'), L('obl')], currency: t.currency, cross: true };
+  }
   const eq = f.equipment ?? {};
   const n20 = eq['20GP'] ?? 0;
   const n40 = (eq['40GP'] ?? 0) + (eq['40HC'] ?? 0) + (eq['45HC'] ?? 0);
@@ -86,6 +92,7 @@ export function tradeBlock(dir: TradeDir, f: QuoteFields, q: Quote | null, t: Ta
 
 export function tradeText(b: TradeBlock, lang: L3): string[] {
   const L = (k: keyof typeof T) => tl3(lang, k);
+  if (b.cross) return [b.localTitle, ...b.notes.map((x) => `• ${x}`)];
   return [
     `${b.localTitle}:`,
     ...b.lines.map((l) => `  ${l.label}: ${l.amount != null ? `${b.currency} ${l.amount.toLocaleString('en-US')}` : '—'}${l.note ? ` (${l.note})` : ''} — ${l.included ? L('included') : l.amount != null ? L('local') : ''}`.replace(/ — $/, '')),

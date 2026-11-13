@@ -2,6 +2,7 @@ import { jsPDF } from 'jspdf';
 import { COORDS, greatCircle, haversineKm } from './geo';
 import type { QMode } from './locations';
 import type { Issue, QuoteFields } from './parser';
+import { HOME_PORT } from './trade';
 import type { Badge, Quote, Side } from './rates';
 import { BADGE_L } from './optlabels';
 import { isoToday, quoteNumber } from './quoteno';
@@ -60,7 +61,7 @@ const T = {
     internal: 'INTERNAL — NOT FOR CUSTOMER', subjectCarrier: 'subject to carrier confirmation', asap: 'ASAP',
     optionsHead: 'OPTIONS COMPARISON', option: 'Option', from: 'FROM', nOptions: (n: number) => `${n} options · all-in for the charges listed`, routing: 'Routing', freeTime: 'Free time at destination',
     sailing: 'ETD → ETA', freightItems: 'Main freight', common: 'Origin / destination / customs', commonHead: 'CHARGES INCLUDED IN EVERY OPTION', vsCheapest: 'vs cheapest', cheapest: 'cheapest', na: 'n/a', scheduleOpt: 'Schedule shown for Option 1', total2: 'TOTAL',
-    sides: { origin: 'Origin', freight: 'Main freight', destination: 'Destination', customs: 'Customs' } as Record<Side, string>,
+    sides: { origin: 'Origin', freight: 'Main freight', destination: 'Destination', customs: 'Customs', services: 'Requested services' } as Record<Side, string>,
     basisL: { per_container: 'per container', per_kg: 'per kg', per_wm: 'per W/M', per_truck: 'per truck', per_shipment: 'per shipment' } as Record<string, string>,
     modes: { fcl: 'Ocean FCL', lcl: 'Ocean LCL', air: 'Air freight', road: 'Road freight' } as Record<QMode, string>,
     stages: {
@@ -88,7 +89,7 @@ const T = {
     internal: 'INTERNO — NO ENVIAR AL CLIENTE', subjectCarrier: 'sujeto a confirmación de la naviera', asap: 'Lo antes posible',
     optionsHead: 'COMPARATIVA DE OPCIONES', option: 'Opción', from: 'DESDE', nOptions: (n: number) => `${n} opciones · total de los conceptos detallados`, routing: 'Ruta', freeTime: 'Free time destino',
     sailing: 'ETD → ETA', freightItems: 'Flete principal', common: 'Origen / destino / aduanas', commonHead: 'CARGOS INCLUIDOS EN TODAS LAS OPCIONES', vsCheapest: 'vs la más barata', cheapest: 'la más barata', na: 'n/a', scheduleOpt: 'Calendario de la opción 1', total2: 'TOTAL',
-    sides: { origin: 'Origen', freight: 'Flete principal', destination: 'Destino', customs: 'Aduanas' } as Record<Side, string>,
+    sides: { origin: 'Origen', freight: 'Flete principal', destination: 'Destino', customs: 'Aduanas', services: 'Servicios solicitados' } as Record<Side, string>,
     basisL: { per_container: 'por contenedor', per_kg: 'por kg', per_wm: 'por W/M', per_truck: 'por camión', per_shipment: 'por envío' } as Record<string, string>,
     modes: { fcl: 'Marítimo FCL', lcl: 'Marítimo LCL (grupaje)', air: 'Aéreo', road: 'Carretera' } as Record<QMode, string>,
     stages: {
@@ -106,7 +107,13 @@ const T = {
   },
 };
 
-const SIDE_ORDER: Side[] = ['origin', 'freight', 'destination', 'customs'];
+const SIDE_ORDER: Side[] = ['origin', 'freight', 'destination', 'customs', 'services'];
+/** Charge name in the quote language; app-made lines keep their SAMPLE marker. */
+function lineName(l: Quote['lines'][number], lang: 'en' | 'es'): string {
+  if (lang === 'es' && l.labels) return `${l.labels[1]}${l.estimate ? ' (estimación de EJEMPLO)' : ''}`;
+  if (lang === 'es' && l.estimate) return l.charge.replace(/ \(SAMPLE estimate\)$/, ' (estimación de EJEMPLO)');
+  return l.charge;
+}
 
 function b64(buf: ArrayBuffer): string {
   const bytes = new Uint8Array(buf);
@@ -292,7 +299,7 @@ export async function generateQuotePdf(inp: PdfInput): Promise<{ blob: Blob; fil
             font('MonoM', 7.6, C.ink);
             doc.text(money(fr(o).reduce((s2, l) => s2 + l.sell, 0)) + (o.staleCount ? ' *' : ''), x + 3, yy);
             font('PlexR', 5.9, C.muted);
-            doc.text(fit(fr(o).map((l) => l.charge).join(' + '), colW - 5), x + 3, yy + 3.3);
+            doc.text(fit(fr(o).map((l) => lineName(l, lang)).join(' + '), colW - 5), x + 3, yy + 3.3);
           },
         },
         ...(commonLines.length ? [{ k: L.common, h: 6, draw: (_o: Quote, x: number, yy: number) => { font('MonoR', 7.4, C.text); doc.text(money(commonSum), x + 3, yy); } }] : []),
@@ -382,7 +389,7 @@ export async function generateQuotePdf(inp: PdfInput): Promise<{ blob: Blob; fil
           const x = M + (i < half ? 0 : cw2 + 8);
           const y2 = yy + 4 + (i % half) * 4.2;
           font('PlexR', 7, C.text);
-          doc.text(fit(`${l.charge} · ${L.basisL[l.basis] ?? l.basis}${l.qty !== 1 ? ` ×${qtyFmt(l.qty)}` : ''}`, cw2 - 22), x + 1, y2);
+          doc.text(fit(`${lineName(l, lang)} · ${L.basisL[l.basis] ?? l.basis}${l.qty !== 1 ? ` ×${qtyFmt(l.qty)}` : ''}`, cw2 - 22), x + 1, y2);
           font('MonoM', 7.2, C.ink);
           doc.text(money(l.sell), x + cw2, y2, { align: 'right' });
           drawC(C.line);
@@ -728,7 +735,7 @@ export async function generateQuotePdf(inp: PdfInput): Promise<{ blob: Blob; fil
       y += h + 9;
     }
     // ── Local charges at the home port (export / import) ──
-    if (inp.trade) {
+    if (inp.trade && inp.trade.lines.length) {
       const tb = inp.trade;
       const rowsH = tb.lines.length * 5.2 + 5;
       y = ensure(y, rowsH + 8);
@@ -742,7 +749,7 @@ export async function generateQuotePdf(inp: PdfInput): Promise<{ blob: Blob; fil
         font('MonoM', 7.6, C.ink);
         doc.text(l.amount != null ? `${tb.currency} ${money(l.amount)}` : '—', M + CW * 0.52, cy, { align: 'right' });
         font('PlexR', 6.6, C.muted);
-        const st = l.included ? (lang === 'es' ? 'incluido en el total' : 'included in total') : l.amount != null ? (lang === 'es' ? 'pagadero en Bandar Abbas, no incluido' : 'payable at Bandar Abbas, not in total') : '';
+        const st = l.included ? (lang === 'es' ? 'incluido en el total' : 'included in total') : l.amount != null ? (lang === 'es' ? `pagadero en ${HOME_PORT}, no incluido` : `payable at ${HOME_PORT}, not in total`) : '';
         doc.text(fit([l.note, st].filter(Boolean).join(' · '), CW * 0.44), M + CW * 0.55, cy);
       });
       y += rowsH + 9;
@@ -810,7 +817,7 @@ export async function generateQuotePdf(inp: PdfInput): Promise<{ blob: Blob; fil
         const stale = l.stale;
         anyStale = anyStale || stale;
         font('PlexR', 7.8, C.text);
-        doc.text(fit(l.charge + (stale ? ' *' : ''), cols.basis - cols.desc - 4), cols.desc + 1, y);
+        doc.text(fit(lineName(l, lang) + (stale ? ' *' : ''), cols.basis - cols.desc - 4), cols.desc + 1, y);
         font('PlexR', 7, C.muted);
         doc.text(L.basisL[l.basis] ?? l.basis, cols.basis, y);
         font('MonoR', 7.4, C.muted);
@@ -854,7 +861,7 @@ export async function generateQuotePdf(inp: PdfInput): Promise<{ blob: Blob; fil
     const terms = [
       ...(inp.trade ? inp.trade.notes : []),
       ...(inp.msds ? [lang === 'es' ? `MSDS recibida (${inp.msds.name}, ${fmtDate(new Date(inp.msds.at).toISOString().slice(0, 10), lang)}); aceptación final sujeta a la naviera.` : `MSDS received (${inp.msds.name}, ${fmtDate(new Date(inp.msds.at).toISOString().slice(0, 10), lang)}); final acceptance subject to the line.`] : []),
-      ...L.termsList(fmtDate(validMin, lang), f.incoterm ?? 'FOB', q.excluded.map((l) => l.charge)),
+      ...L.termsList(fmtDate(validMin, lang), f.incoterm ?? 'FOB', q.excluded.map((l) => lineName(l, lang))),
     ];
     const drawTerms = (x0: number, y0: number, colW: number, cols: number): number => {
       font('PlexR', 6.3, C.muted);

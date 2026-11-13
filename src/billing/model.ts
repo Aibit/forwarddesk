@@ -101,7 +101,7 @@ export interface JobDoc {
   updatedAt?: number;
 }
 
-export const CURRENCIES = ['USD', 'EUR', 'AED', 'CNY', 'INR', 'IRR'];
+export const CURRENCIES = ['USD', 'EUR', 'AED', 'CNY', 'INR', 'SAR'];
 
 export interface ChargeCode { code: string; name: [string, string, string, string]; side: 'both' | 'sell' | 'buy' }
 export const DEFAULT_CATALOG: ChargeCode[] = [

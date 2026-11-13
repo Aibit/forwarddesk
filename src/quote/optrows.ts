@@ -10,7 +10,7 @@ const IX: Record<QLang, number> = { en: 0, es: 1, fa: 2, ar: 3 };
 
 export type ColKey =
   | 'carrier' | 'mode' | 'route' | 'etd' | 'eta' | 'transit' | 'freq' | 'cutoff' | 'freeO' | 'freeD' | 'equip'
-  | 'freight' | 'surch' | 'thcO' | 'thcD' | 'local' | 'docs' | 'customs' | 'buy' | 'sell' | 'margin' | 'marginPct'
+  | 'freight' | 'surch' | 'thcO' | 'thcD' | 'local' | 'docs' | 'customs' | 'extras' | 'buy' | 'sell' | 'margin' | 'marginPct'
   | 'currency' | 'conv' | 'payment' | 'valid' | 'source' | 'rateDate' | 'quotes' | 'bookings' | 'winRate' | 'notes';
 
 export type ColKind = 'text' | 'money' | 'int' | 'pct' | 'date';
@@ -46,6 +46,7 @@ export const COLS: ColDef[] = [
   { key: 'local', label: ['Local charges', 'Gastos locales', 'هزینه‌های محلی', 'الرسوم المحلية'], kind: 'money', def: false, w: 12 },
   { key: 'docs', label: ['Docs / B/L fee', 'Documentación / B/L', 'هزینه اسناد / بارنامه', 'رسوم المستندات / البوليصة'], kind: 'money', def: false, w: 12 },
   { key: 'customs', label: ['Customs clearance', 'Despacho de aduanas', 'ترخیص گمرکی', 'التخليص الجمركي'], kind: 'money', def: false, w: 12 },
+  { key: 'extras', label: ['Requested services', 'Servicios solicitados', 'خدمات درخواستی', 'الخدمات المطلوبة'], kind: 'money', def: false, w: 12 },
   { key: 'buy', label: ['Total buy', 'Compra total', 'جمع خرید', 'إجمالي الشراء'], kind: 'money', def: true, w: 12 },
   { key: 'sell', label: ['Sell', 'Venta', 'فروش', 'البيع'], kind: 'money', def: true, w: 12 },
   { key: 'margin', label: ['Margin', 'Margen', 'سود', 'الهامش'], kind: 'money', def: true, w: 12 },
@@ -124,6 +125,7 @@ export interface OptRow {
   local: number;
   docs: number;
   customs: number;
+  extras: number;
   buy: number;
   sell: number;
   margin: number;
@@ -155,9 +157,10 @@ function addDays(iso: string, n: number): string {
 }
 
 /** Breakdown buckets; the sum always equals the option's total buy. */
-export function bucketOf(l: QuoteLine): 'freight' | 'surch' | 'thcO' | 'thcD' | 'local' | 'docs' | 'customs' {
+export function bucketOf(l: QuoteLine): 'freight' | 'surch' | 'thcO' | 'thcD' | 'local' | 'docs' | 'customs' | 'extras' {
   const c = l.charge;
   if (l.side === 'customs') return 'customs';
+  if (l.side === 'services') return 'extras';
   if (l.side === 'freight') return /freight|linehaul/i.test(c) ? 'freight' : 'surch';
   if (/\bTHC\b/i.test(c)) return l.side === 'origin' ? 'thcO' : 'thcD';
   if (/B\/L|\bdocs?\b|AWB|\bDO\b|delivery order/i.test(c)) return 'docs';
@@ -189,7 +192,7 @@ export function buildRows(opts: Quote[], ctx: RowCtx): OptRow[] {
   const today = ctx.today ?? new Date();
   const t0 = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 12).getTime();
   const rows: OptRow[] = opts.map((q, idx) => {
-    const sum = { freight: 0, surch: 0, thcO: 0, thcD: 0, local: 0, docs: 0, customs: 0 };
+    const sum = { freight: 0, surch: 0, thcO: 0, thcD: 0, local: 0, docs: 0, customs: 0, extras: 0 };
     for (const l of q.lines) sum[bucketOf(l)] += l.buy;
     for (const k of Object.keys(sum) as (keyof typeof sum)[]) sum[k] = Math.round(sum[k] * 100) / 100;
     const routing = q.routing ?? null;

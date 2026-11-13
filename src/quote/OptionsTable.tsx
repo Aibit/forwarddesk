@@ -318,7 +318,7 @@ function Cell({ r, k, ui, cur }: { r: OptRow; k: ColKey; ui: QLang; cur: string 
 }
 
 /** Best value per field among the compared rows (lower is better for cost/time, higher for margin/free time/win rate). */
-const LOWER: ColKey[] = ['transit', 'freight', 'surch', 'thcO', 'thcD', 'local', 'docs', 'customs', 'buy', 'sell', 'conv'];
+const LOWER: ColKey[] = ['transit', 'freight', 'surch', 'thcO', 'thcD', 'local', 'docs', 'customs', 'extras', 'buy', 'sell', 'conv'];
 const HIGHER: ColKey[] = ['margin', 'marginPct', 'freeO', 'freeD', 'winRate', 'quotes', 'bookings'];
 function Compare({ rows, ui, cur, cols, activeIdx, onSelect, onClose }: { rows: OptRow[]; ui: QLang; cur: string; cols: ColKey[]; activeIdx: number; onSelect: (i: number) => void; onClose: () => void }) {
   const best = (k: ColKey): number | null => {

@@ -23,7 +23,7 @@ await env.withSecurityRulesDisabled(async (ctx) => {
   await setDoc(doc(db, `${O}/quotes/Q1`), { clientId: 'C', status: 'sent', options: [{ carrier: 'A', sell: 1000 }] });
   await setDoc(doc(db, `${O}/quotes/Q1/private/costs`), { options: [{ carrier: 'A', buy: 800, margin: 200 }] });
   await setDoc(doc(db, `${O}/quotes/Q2`), { clientId: 'D', status: 'sent', options: [] });
-  await setDoc(doc(db, `${O}/lanes/L1`), { id: 'L1', clientId: 'C', source: 'desk', pol: 'Bandar Abbas', pod: 'Jebel Ali',
+  await setDoc(doc(db, `${O}/lanes/L1`), { id: 'L1', clientId: 'C', source: 'desk', pol: 'Jebel Ali', pod: 'Dammam',
     commodity: 'Bitumen', hs: '271320', volume: { amount: 10, unit: 'TEU', period: 'month' }, payment: 'Prepaid',
     target: { amount: 900, currency: 'USD', per: 'container' }, notes: '' });
   await setDoc(doc(db, `${O}/agents/A1`), { name: 'Agent' });
@@ -48,7 +48,7 @@ async function t(name, p) {
   try { await p; pass++; console.log('  ok  ', name); }
   catch (e) { fail++; console.log('  FAIL', name, '-', e.message?.split('\n')[0]); }
 }
-const lane = (id, cid, extra = {}) => ({ id, clientId: cid, source: 'portal', pol: 'Bandar Abbas', pod: 'Mundra',
+const lane = (id, cid, extra = {}) => ({ id, clientId: cid, source: 'portal', pol: 'Jebel Ali', pod: 'Mundra',
   commodity: 'Bitumen', hs: '271320', volume: { amount: 4, unit: 'TEU', period: 'month' }, payment: 'Prepaid',
   target: { amount: 800, currency: 'USD', per: 'container' }, notes: 'RFQ', dg: false, msds: null, submittedAt: 1, ...extra });
 

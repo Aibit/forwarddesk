@@ -15,6 +15,20 @@ export interface QuoteFields {
   readyDate: string | null; // ISO yyyy-mm-dd, or 'ASAP'
   cargo: string | null;
   dg: DgState;
+  /** Extra services asked for in the request (insurance, customs clearance, trucking). */
+  services?: ServiceReq[];
+  /** Declared cargo value (for insurance), and its currency. */
+  cargoValue?: number | null;
+  cargoValueCur?: string | null;
+}
+
+export type ServiceKind = 'insurance' | 'customsOrigin' | 'customsDest' | 'pickup' | 'delivery';
+export interface ServiceReq {
+  kind: ServiceKind;
+  /** Words in the request that asked for it. */
+  evidence: string;
+  /** Place named with it ("customs clearance in Dubai"), when one was. */
+  place?: string | null;
 }
 
 /** missing = blocks pricing (red); ambiguous / confirm = priced, but ask the customer (amber); assumed = info. */
@@ -270,7 +284,7 @@ export function parseRequest(raw: string, extraLocations: string[] = [], today =
     parseIssues.push({
       field: 'equipment',
       kind: 'ambiguous',
-      message: 'Container type not stated — priced as standard (GP).',
+      message: 'Container type not stated — priced using standard GP rates; confirm with the line.',
       question: { en: 'Do you need standard (GP) or high-cube (HC) containers?', es: '¿Necesitáis contenedores estándar (GP) o high cube (HC)?' },
     });
   }
@@ -334,8 +348,11 @@ export function parseRequest(raw: string, extraLocations: string[] = [], today =
   else if (known) cargo = known[0];
   if (cargo) evidence.cargo = cargo;
 
+  // ── Extra services & cargo value ──
+  const { services, cargoValue, cargoValueCur } = parseServices(text, hits, originBase, destBase, mode);
+
   return {
-    fields: { mode, origin, destination, equipment, weightKg, volumeCbm, pieces, incoterm, readyDate, cargo, dg },
+    fields: { mode, origin, destination, equipment, weightKg, volumeCbm, pieces, incoterm, readyDate, cargo, dg, services, cargoValue, cargoValueCur },
     parseIssues,
     evidence,
     originOptions,
@@ -345,6 +362,68 @@ export function parseRequest(raw: string, extraLocations: string[] = [], today =
     weightPerUnit,
     language,
   };
+}
+
+/** Requested services ("insurance", "customs clearance in Dubai", "door delivery") and the declared cargo value. */
+function parseServices(text: string, hits: Hit[], originBase: string | null, destBase: string | null, mode: QMode | null): { services: ServiceReq[]; cargoValue: number | null; cargoValueCur: string | null } {
+  const lower = normalize(text);
+  const services: ServiceReq[] = [];
+  const same = (a: string | null, b: string | null) => !!a && !!b && (a === b || resolveForMode(a, mode).name === resolveForMode(b, mode).name);
+  /** Nearest named place right after (or just before) a keyword. */
+  const placeNear = (start: number, end: number): string | null => {
+    const after = hits.filter((h) => h.index >= end && h.index - end <= 40).sort((a, b) => a.index - b.index)[0];
+    if (after) return after.base;
+    const before = hits.filter((h) => h.index + h.word.length <= start && start - (h.index + h.word.length) <= 20).sort((a, b) => b.index - a.index)[0];
+    return before?.base ?? null;
+  };
+  const negated = (idx: number) => /\b(no|not|without|sin|excluding|except)\s+(\w+\s+){0,2}$/.test(lower.slice(Math.max(0, idx - 24), idx));
+  // insurance
+  const ins = lower.match(/\b(insurance|insure[ds]?|seguro|asegurar|asegurad[ao]s?)\b/);
+  if (ins && !negated(ins.index ?? 0) && !/\binsurance (not|no) (needed|required)\b/.test(lower)) services.push({ kind: 'insurance', evidence: ins[0] });
+  // customs clearance
+  const cre = /\b(export (?:customs(?: clearance)?|clearance|declaration)|import (?:customs(?: clearance)?|clearance)|customs(?: clearance| brokerage| formalities)?|clearance|despacho(?: de (?:aduanas|importacion|exportacion)| aduanero)?|aduanas?)\b/g;
+  let cm: RegExpExecArray | null;
+  const both = /\b(both ends|origin and destination|at both|ambos lados|origen y destino)\b/.test(lower);
+  while ((cm = cre.exec(lower))) {
+    const w = cm[0];
+    if (/^aduanas?$/.test(w) && !/despacho|tramit|clear/.test(lower.slice(Math.max(0, cm.index - 25), cm.index + 30))) continue;
+    if (negated(cm.index)) continue;
+    const place = placeNear(cm.index, cm.index + w.length);
+    let kind: ServiceKind;
+    if (/^export|exportacion/.test(w)) kind = 'customsOrigin';
+    else if (/^import|importacion/.test(w)) kind = 'customsDest';
+    else if (place && same(place, originBase) && !same(place, destBase)) kind = 'customsOrigin';
+    else kind = 'customsDest';
+    const add = (k: ServiceKind) => { if (!services.some((x) => x.kind === k)) services.push({ kind: k, evidence: w, place: place && (k === 'customsDest' ? !same(place, originBase) || same(place, destBase) : same(place, originBase)) ? place : null }); };
+    add(kind);
+    if (both) { add('customsOrigin'); add('customsDest'); }
+  }
+  // trucking
+  const pick = lower.match(/\b(pick ?-?up from|pick ?-?up at|door pick ?-?up|pickup trucking|collection from|collect from|recogida en|recoger en|trucking (?:at|from) origin|haulage (?:at|from) origin|pre-?carriage)\b/);
+  if (pick && !negated(pick.index ?? 0)) services.push({ kind: 'pickup', evidence: pick[0], place: placeNear(pick.index ?? 0, (pick.index ?? 0) + pick[0].length) });
+  const del = lower.match(/\b(door delivery|deliver(?:y|ed)? to (?:the |our |their |a )?(?:door|warehouse|factory|site|consignee|premises|plant|store)|delivery to(?! order)|delivery in|entrega en|entregar en|on-?carriage|inland delivery|trucking (?:to|at) (?:destination|the warehouse|warehouse)|haulage (?:to|at) destination|delivery trucking)\b/);
+  if (del && !negated(del.index ?? 0)) services.push({ kind: 'delivery', evidence: del[0], place: placeNear(del.index ?? 0, (del.index ?? 0) + del[0].length) });
+  if (!pick && !del) {
+    const tr = lower.match(/\b(trucking|haulage|transporte terrestre|transport to (?:the |our )?(?:warehouse|factory|site))\b/);
+    if (tr && !negated(tr.index ?? 0)) {
+      const place = placeNear(tr.index ?? 0, (tr.index ?? 0) + tr[0].length);
+      services.push({ kind: place && same(place, originBase) && !same(place, destBase) ? 'pickup' : 'delivery', evidence: tr[0], place });
+    }
+  }
+  // declared cargo value
+  let cargoValue: number | null = null;
+  let cargoValueCur: string | null = null;
+  const vm = lower.match(/\b(?:cargo value|goods value|invoice value|commercial value|declared value|insured value|value of (?:the )?(?:cargo|goods)|valor(?: de (?:la )?mercancia| declarado| de factura)?|worth|value)\b[^0-9$€]{0,25}?(usd|us\$|\$|eur|€|aed|gbp)?\s*(\d+(?:[.,]\d+)*)\s*(k\b|usd|eur|aed|gbp|€|\$)?/)
+    ?? lower.match(/(usd|us\$|\$|eur|€|aed)\s*(\d+(?:[.,]\d+)*)\s*(k\b)?\s*(?:cargo |goods |invoice )?value/);
+  if (vm) {
+    const n = parseNum(vm[2]);
+    if (Number.isFinite(n) && n > 0) {
+      cargoValue = /^k$/.test(vm[3] ?? '') ? n * 1000 : n;
+      const c = (vm[1] || (/^k$/.test(vm[3] ?? '') ? '' : vm[3]) || 'usd').replace('us$', 'usd').replace('$', 'usd').replace('€', 'eur');
+      cargoValueCur = c.toUpperCase();
+    }
+  }
+  return { services, cargoValue, cargoValueCur };
 }
 
 /** Air chargeable weight at 1:6000 (1 cbm = 166.67 kg), rounded up to the next 0.5 kg. */
@@ -370,7 +449,7 @@ export function missingIssues(f: QuoteFields): Issue[] {
   if (f.mode === 'fcl' && Object.keys(f.equipment).filter((k) => k !== 'FTL').length === 0)
     out.push({ field: 'equipment', kind: 'missing', message: 'Container count / type missing.', question: q('How many containers, and which type (20GP / 40GP / 40HC)?', '¿Cuántos contenedores y de qué tipo (20GP / 40GP / 40HC)?') });
   if (f.mode === 'fcl' && f.weightKg == null)
-    out.push({ field: 'weightKg', kind: 'confirm', message: 'Gross weight per container not given — priced anyway; needed for VGM / overweight check.', question: q('What is the approximate gross weight per container?', '¿Cuál es el peso bruto aproximado por contenedor?') });
+    out.push({ field: 'weightKg', kind: 'confirm', message: 'Gross weight per container not given — needed for VGM / overweight check.', question: q('What is the approximate gross weight per container?', '¿Cuál es el peso bruto aproximado por contenedor?') });
   if ((f.mode === 'air' || f.mode === 'lcl' || f.mode === 'road') && f.weightKg == null)
     out.push({ field: 'weightKg', kind: f.mode === 'road' ? 'confirm' : 'missing', message: 'Gross weight not given.', question: q('What is the total gross weight (kg)?', '¿Cuál es el peso bruto total (kg)?') });
   if ((f.mode === 'air' || f.mode === 'lcl') && f.volumeCbm == null)

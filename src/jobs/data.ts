@@ -93,7 +93,7 @@ export function sampleJobs(now = Date.now()): Job[] {
   const t = (d: number, h = 0) => now + d * D + h * H;
   return [
     {
-      id: 'FD-E-1042', dir: 'export', customer: 'Customer A', commodity: 'Bitumen 60/70 in drums', pol: 'Bandar Abbas', pod: 'Jebel Ali',
+      id: 'FD-E-1042', dir: 'export', customer: 'Customer A', commodity: 'Bitumen 60/70 in drums', pol: 'Jebel Ali', pod: 'Dammam',
       line: 'Line A (sample)', step: 'E18',
       containers: [
         box('LNAU', '204118', 'LA-482913', '20', 10, t(-7, -12), null, { heavy: true }),
@@ -112,14 +112,14 @@ export function sampleJobs(now = Date.now()): Job[] {
         { key: 'originalBl', status: 'pending' },
       ],
       log: [
-        { at: t(-8), text: 'E11 Release order received from Line A, sent to Bandar Abbas office' },
+        { at: t(-8), text: 'E11 Release order received from Line A, sent to Jebel Ali office' },
         { at: t(-7, -12), text: 'E12 Clearance agent collected release order and 2 seals' },
         { at: t(-1, -6), text: 'E15 Export declaration filed' },
         { at: t(-0, -3), text: 'E17 Customs papers handed to the line — first vessel ALPHA', kind: 'info' },
       ],
     },
     {
-      id: 'FD-E-1038', dir: 'export', customer: 'Customer B', commodity: 'Stone blocks', pol: 'Bandar Abbas', pod: 'Shanghai',
+      id: 'FD-E-1038', dir: 'export', customer: 'Customer B', commodity: 'Stone blocks', pol: 'Jebel Ali', pod: 'Shanghai',
       line: 'Line B (sample)', step: 'E21',
       containers: [
         box('LNBU', '310452', 'LB-117205', '20', 10, t(-15), t(-2), { heavy: true }),
@@ -153,7 +153,7 @@ export function sampleJobs(now = Date.now()): Job[] {
       ],
     },
     {
-      id: 'FD-E-1047', dir: 'export', customer: 'Customer C', commodity: 'Bitumen in drums', pol: 'Bandar Abbas', pod: 'Nhava Sheva',
+      id: 'FD-E-1047', dir: 'export', customer: 'Customer C', commodity: 'Bitumen in drums', pol: 'Jebel Ali', pod: 'Nhava Sheva',
       line: 'Lines A, B, C asked', step: 'E3', plannedEquipment: "2 × 20′ heavy",
       containers: [],
       charges: [], cheques: [],
@@ -162,10 +162,10 @@ export function sampleJobs(now = Date.now()): Job[] {
         { at: t(0, -6), text: 'E2 Rate request by WhatsApp: 2 × 20′ heavy bitumen to Nhava Sheva' },
         { at: t(0, -4), text: 'E3 Asked Line A, Line B, Line C for rates — 1 of 3 replied' },
       ],
-      quoteText: 'Hi, need price for 2x20GP heavy Bandar Abbas to Nhava Sheva, bitumen in drums, approx 24 tons per container, ready next week. Thanks',
+      quoteText: 'Hi, need price for 2x20GP heavy Jebel Ali to Nhava Sheva, bitumen in drums, approx 24 tons per container, ready next week. Thanks',
     },
     {
-      id: 'FD-E-1031', dir: 'export', customer: 'Customer B', commodity: 'Stone blocks', pol: 'Bandar Abbas', pod: 'Shanghai',
+      id: 'FD-E-1031', dir: 'export', customer: 'Customer B', commodity: 'Stone blocks', pol: 'Jebel Ali', pod: 'Shanghai',
       line: 'Line A (sample)', step: 'E14',
       containers: [
         ...['118020', '118035', '118041', '118057', '118063', '118079'].map((s, i) => box('LNAU', s, `LA-49${3100 + i}`, '20', 21, t(-9), null, { heavy: true })),
@@ -189,7 +189,7 @@ export function sampleJobs(now = Date.now()): Job[] {
       ],
     },
     {
-      id: 'FD-I-0877', dir: 'import', customer: 'Customer D', commodity: 'Basmati rice, bagged', pol: 'Nhava Sheva', pod: 'Bandar Abbas',
+      id: 'FD-I-0877', dir: 'import', customer: 'Customer D', commodity: 'Basmati rice, bagged', pol: 'Nhava Sheva', pod: 'Jebel Ali',
       line: 'Line C (sample)', step: 'I14', docDelay: true,
       containers: [
         box('LNCU', '502214', 'LC-90311', '20', 21, t(-52), null),
@@ -218,7 +218,7 @@ export function sampleJobs(now = Date.now()): Job[] {
       ],
     },
     {
-      id: 'FD-I-0912', dir: 'import', customer: 'Customer E', commodity: 'Machinery spare parts', pol: 'Shanghai', pod: 'Bandar Abbas',
+      id: 'FD-I-0912', dir: 'import', customer: 'Customer E', commodity: 'Machinery spare parts', pol: 'Shanghai', pod: 'Jebel Ali',
       line: 'Line B (sample)', step: 'I11',
       containers: [
         box('LNBU', '771304', 'LB-220871', '40HC', 14, t(-4), null),
@@ -245,7 +245,7 @@ export function sampleJobs(now = Date.now()): Job[] {
       ],
     },
     {
-      id: 'FD-I-0921', dir: 'import', customer: 'Customer F', commodity: 'Industrial spare parts', pol: 'Hamburg', pod: 'Bandar Abbas',
+      id: 'FD-I-0921', dir: 'import', customer: 'Customer F', commodity: 'Industrial spare parts', pol: 'Hamburg', pod: 'Jebel Ali',
       line: 'Line D (sample)', step: 'I9',
       containers: [box('LNDU', '640085', 'LD-55120', '40', 21, null, null)],
       vessel: { name: 'SAMPLE VESSEL FOXTROT', eta: t(6, 8) },
@@ -265,7 +265,7 @@ export function sampleJobs(now = Date.now()): Job[] {
       ],
     },
     {
-      id: 'FD-I-0859', dir: 'import', customer: 'Customer G', commodity: 'Ceramic tiles', pol: 'Shanghai', pod: 'Bandar Abbas',
+      id: 'FD-I-0859', dir: 'import', customer: 'Customer G', commodity: 'Ceramic tiles', pol: 'Shanghai', pod: 'Jebel Ali',
       line: 'Line A (sample)', step: 'I15',
       containers: [box('LNAU', '880561', 'LA-301877', '20', 21, t(-18), t(-1), { returned: 'checking' })],
       vessel: { name: 'SAMPLE VESSEL GOLF', eta: t(-18) },

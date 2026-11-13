@@ -8,7 +8,7 @@ import { lineRank, type CLang, type Client } from './store';
 import { MsdsSlot } from './Msds';
 import './clients.css';
 
-const PORTS = ['Bandar Abbas', 'Jebel Ali', 'Nhava Sheva', 'Mundra', 'Shanghai (Yangshan)', 'Shanghai (Waigaoqiao)', 'Ningbo', 'Hamburg', 'Barcelona', 'Valencia'];
+const PORTS = ['Jebel Ali', 'Dammam', 'Nhava Sheva', 'Mundra', 'Shanghai (Yangshan)', 'Shanghai (Waigaoqiao)', 'Ningbo', 'Hamburg', 'Barcelona', 'Valencia'];
 
 export interface LaneBest { carrier: string; sell: number; perUnit: number | null; diff: number | null }
 /** Best current sell option for a lane at the client's margin (sample rates; client "avoid" lines skipped). */
