@@ -32,18 +32,18 @@ fcl,Shanghai (Waigaoqiao),*,*,Export docs / B/L fee,origin,per_shipment,USD,60,,
 fcl,*,Barcelona,*,Destination THC,destination,per_container,USD,260,,2026-12-25,,Terminal tariff,,,
 fcl,*,Barcelona,*,Delivery order / handling,destination,per_shipment,USD,90,,2026-12-25,,Sample agent,,,
 fcl,*,Barcelona,*,Import customs clearance,customs,per_shipment,USD,110,,2027-02-08,,Sample broker,,,
-fcl,Bandar Abbas,Nhava Sheva,20GP,Ocean freight,freight,per_container,USD,690,,2026-11-24,5,Sample Line A,Direct,10,Tue
-fcl,Bandar Abbas,Nhava Sheva,20GP,BAF (bunker surcharge),freight,per_container,USD,110,,2026-11-24,,Sample Line A,Direct,10,Tue
-fcl,Bandar Abbas,Nhava Sheva,20GP,Heavy-weight surcharge,freight,per_container,USD,75,,2026-11-24,,Sample Line A,Direct,10,Tue
-fcl,Bandar Abbas,Nhava Sheva,20GP,Ocean freight,freight,per_container,USD,560,,2026-11-24,8,Sample Line B,via Jebel Ali,14,Sat
-fcl,Bandar Abbas,Nhava Sheva,20GP,BAF (bunker surcharge),freight,per_container,USD,95,,2026-11-24,,Sample Line B,via Jebel Ali,14,Sat
-fcl,Bandar Abbas,Nhava Sheva,20GP,Heavy-weight surcharge,freight,per_container,USD,75,,2026-11-24,,Sample Line B,via Jebel Ali,14,Sat
-fcl,Bandar Abbas,Nhava Sheva,20GP,Ocean freight,freight,per_container,USD,760,,2026-11-20,4,Sample Line C,Direct,21,Thu
-fcl,Bandar Abbas,Nhava Sheva,20GP,BAF (bunker surcharge),freight,per_container,USD,120,,2026-11-20,,Sample Line C,Direct,21,Thu
-fcl,Bandar Abbas,Jebel Ali,20GP,Ocean freight,freight,per_container,USD,380,,2026-11-24,2,Sample Line A,Direct,10,Sun
-fcl,Bandar Abbas,*,*,THC (Ports Organization tariff),origin,per_container,USD,110,,2027-03-10,,Ports Organization (sample),,,
-fcl,Bandar Abbas,*,*,B/L fee,origin,per_shipment,USD,60,,2027-03-10,,Shipping Association (sample),,,
-fcl,Bandar Abbas,*,*,Seal fee,origin,per_container,USD,15,,2027-03-10,,Sample Line A,,,
+fcl,Jebel Ali,Nhava Sheva,20GP,Ocean freight,freight,per_container,USD,690,,2026-11-24,5,Sample Line A,Direct,10,Tue
+fcl,Jebel Ali,Nhava Sheva,20GP,BAF (bunker surcharge),freight,per_container,USD,110,,2026-11-24,,Sample Line A,Direct,10,Tue
+fcl,Jebel Ali,Nhava Sheva,20GP,Heavy-weight surcharge,freight,per_container,USD,75,,2026-11-24,,Sample Line A,Direct,10,Tue
+fcl,Jebel Ali,Nhava Sheva,20GP,Ocean freight,freight,per_container,USD,560,,2026-11-24,8,Sample Line B,via Salalah,14,Sat
+fcl,Jebel Ali,Nhava Sheva,20GP,BAF (bunker surcharge),freight,per_container,USD,95,,2026-11-24,,Sample Line B,via Salalah,14,Sat
+fcl,Jebel Ali,Nhava Sheva,20GP,Heavy-weight surcharge,freight,per_container,USD,75,,2026-11-24,,Sample Line B,via Salalah,14,Sat
+fcl,Jebel Ali,Nhava Sheva,20GP,Ocean freight,freight,per_container,USD,760,,2026-11-20,4,Sample Line C,Direct,21,Thu
+fcl,Jebel Ali,Nhava Sheva,20GP,BAF (bunker surcharge),freight,per_container,USD,120,,2026-11-20,,Sample Line C,Direct,21,Thu
+fcl,Jebel Ali,Dammam,20GP,Ocean freight,freight,per_container,USD,380,,2026-11-24,3,Sample Line A,Direct,10,Sun
+fcl,Jebel Ali,*,*,THC (port tariff),origin,per_container,USD,110,,2027-03-10,,Port tariff (sample),,,
+fcl,Jebel Ali,*,*,B/L fee,origin,per_shipment,USD,60,,2027-03-10,,Line / agent tariff (sample),,,
+fcl,Jebel Ali,*,*,Seal fee,origin,per_container,USD,15,,2027-03-10,,Sample Line A,,,
 fcl,*,Nhava Sheva,*,Destination THC,destination,per_container,USD,140,,2026-12-25,,Terminal tariff,,,
 lcl,Ningbo,Valencia,*,Ocean freight (LCL),freight,per_wm,USD,48,48,2026-12-01,34,Sample Consol,Direct consol,,Fri
 lcl,Ningbo,Valencia,*,BAF (LCL),freight,per_wm,USD,9,,2026-11-20,,Sample Consol,Direct consol,,Fri
